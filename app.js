@@ -1,5 +1,5 @@
 // Enhanced Trading Dashboard Application with Comprehensive Trade Analysis
-// Updated to handle new trade analysis segments and improved AI suggestions
+// Fixed version with proper data saving and loading
 
 class TradingDashboardApp {
     constructor() {
@@ -98,19 +98,42 @@ class TradingDashboardApp {
         if (!this.currentUser) return [];
 
         try {
-            const { data, error } = await this.supabase
+            console.log('Loading trades for user:', this.currentUser.id);
+            
+            // Try to load from enhanced_trades first, then fall back to trades
+            let data, error;
+            
+            // First try enhanced_trades table
+            const enhancedResult = await this.supabase
+                .from('enhanced_trades')
+                .select('*')
+                .eq('user_id', this.currentUser.id)
+                .order('entry_date', { ascending: false });
+
+            console.log('Enhanced trades result:', enhancedResult);
+
+            if (enhancedResult.data && enhancedResult.data.length > 0) {
+                console.log('Found', enhancedResult.data.length, 'enhanced trades');
+                return enhancedResult.data;
+            }
+
+            // Fall back to regular trades table
+            const tradesResult = await this.supabase
                 .from('trades')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .order('entry_date', { ascending: false });
 
-            if (error) {
-                console.error('Error loading trades:', error);
+            console.log('Regular trades result:', tradesResult);
+
+            if (tradesResult.error) {
+                console.error('Error loading trades:', tradesResult.error);
                 this.showToast('Error loading trades', 'error');
                 return [];
             }
 
-            return data || [];
+            console.log('Found', tradesResult.data?.length || 0, 'regular trades');
+            return tradesResult.data || [];
         } catch (error) {
             console.error('Error in loadTrades:', error);
             return [];
@@ -360,6 +383,7 @@ class TradingDashboardApp {
             this.showToast('Error logging out', 'error');
         }
     }
+
     /* ======================== UI MANAGEMENT ======================== */
 
     showAuthScreen() {
@@ -539,7 +563,10 @@ class TradingDashboardApp {
 
     async renderDashboard() {
         try {
+            console.log('Loading trades for dashboard...'); // Debug log
             const trades = await this.loadTrades();
+            console.log('Loaded trades:', trades); // Debug log
+            
             const stats = this.calculateStats(trades);
             
             // Update stats display
@@ -569,6 +596,7 @@ class TradingDashboardApp {
             
         } catch (error) {
             console.error('Error rendering dashboard:', error);
+            this.showToast('Error loading dashboard data', 'error');
         }
     }
 
@@ -816,6 +844,8 @@ class TradingDashboardApp {
             const formData = new FormData(event.target);
             const tradeData = this.extractEnhancedTradeData(formData);
 
+            console.log('Extracted trade data:', tradeData); // Debug log
+
             // Basic validation
             const requiredFields = ['entryDate', 'exitDate', 'symbol', 'direction', 'quantity', 
                                   'entryPrice', 'exitPrice', 'strategy'];
@@ -837,15 +867,23 @@ class TradingDashboardApp {
                 return;
             }
 
-            await this.saveEnhancedTrade(tradeData);
+            console.log('Saving trade...'); // Debug log
+            const savedTrade = await this.saveEnhancedTrade(tradeData);
+            console.log('Trade saved successfully:', savedTrade); // Debug log
+
             this.showToast('Trade analysis saved successfully! 🎉', 'success');
             
+            // Reset form and redirect
             event.target.reset();
-            this.showSection('dashboard');
+            
+            // Small delay to ensure the data is saved before redirecting
+            setTimeout(() => {
+                this.showSection('dashboard');
+            }, 500);
 
         } catch (error) {
             console.error('Error saving enhanced trade:', error);
-            this.showToast('Error saving trade. Please try again.', 'error');
+            this.showToast(`Error saving trade: ${error.message}`, 'error');
         } finally {
             if (submitButton) {
                 this.setButtonLoading(submitButton, false);
@@ -871,6 +909,7 @@ class TradingDashboardApp {
 
         return data;
     }
+
     async saveEnhancedTrade(tradeData) {
         if (!this.currentUser) return null;
 
@@ -887,38 +926,7 @@ class TradingDashboardApp {
                 stop_loss: tradeData.stopLoss ? parseFloat(tradeData.stopLoss) : null,
                 target_price: tradeData.targetPrice ? parseFloat(tradeData.targetPrice) : null,
                 strategy: tradeData.strategy,
-                exit_reason: tradeData.exitReason,
                 notes: tradeData.notes || '',
-
-                // Enhanced analysis fields
-                setup_quality: parseInt(tradeData.setupQuality) || 7,
-                market_condition: tradeData.marketCondition,
-                confluence_factors: tradeData.confluenceFactors || '',
-                risk_reward_planned: tradeData.riskRewardPlanned,
-                setup_confidence: parseInt(tradeData.setupConfidence) || 7,
-                entry_trigger: tradeData.entryTrigger,
-                
-                position_sizing_method: tradeData.positionSizing,
-                stress_level: parseInt(tradeData.stressLevel) || 3,
-                monitoring_frequency: tradeData.monitoringFreq,
-                adjustments_made: tradeData.adjustmentsMade || '',
-                emotions_managed: parseInt(tradeData.emotionsManaged) || 7,
-                plan_adherence: parseInt(tradeData.planAdherence) || 8,
-                
-                entry_timing_quality: tradeData.entryTiming,
-                exit_timing_quality: tradeData.exitTiming,
-                exit_emotion: tradeData.exitEmotion,
-                lessons_learned: tradeData.lessonsLearned || '',
-                would_repeat: tradeData.wouldRepeat || 'Maybe',
-                
-                // Psychology fields (cleaned up)
-                sleep_quality: parseInt(tradeData.sleepQuality) || 7,
-                physical_condition: parseInt(tradeData.physicalCondition) || 7,
-                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
-                fomo_level: parseInt(tradeData.fomoLevel) || 3,
-                overall_mood: tradeData.overallMood,
-                distraction_level: parseInt(tradeData.distractionLevel) || 3,
-
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -940,38 +948,100 @@ class TradingDashboardApp {
                 tradeToSave.risk_reward_ratio = 0;
             }
 
-            const { data, error } = await this.supabase
+            // Try to save to enhanced_trades table first
+            const enhancedTradeData = {
+                ...tradeToSave,
+                // Enhanced analysis fields
+                setup_quality: parseInt(tradeData.setupQuality) || 7,
+                market_condition: tradeData.marketCondition || null,
+                confluence_factors: tradeData.confluenceFactors || '',
+                risk_reward_planned: tradeData.riskRewardPlanned || null,
+                setup_confidence: parseInt(tradeData.setupConfidence) || 7,
+                entry_trigger: tradeData.entryTrigger || null,
+                
+                position_sizing_method: tradeData.positionSizing || null,
+                stress_level: parseInt(tradeData.stressLevel) || 3,
+                monitoring_frequency: tradeData.monitoringFreq || null,
+                adjustments_made: tradeData.adjustmentsMade || '',
+                emotions_managed: parseInt(tradeData.emotionsManaged) || 7,
+                plan_adherence: parseInt(tradeData.planAdherence) || 8,
+                
+                entry_timing_quality: tradeData.entryTiming || null,
+                exit_reason: tradeData.exitReason || null,
+                exit_timing_quality: tradeData.exitTiming || null,
+                exit_emotion: tradeData.exitEmotion || null,
+                lessons_learned: tradeData.lessonsLearned || '',
+                would_repeat: tradeData.wouldRepeat || 'Maybe',
+                
+                // Psychology fields
+                sleep_quality: parseInt(tradeData.sleepQuality) || 7,
+                physical_condition: parseInt(tradeData.physicalCondition) || 7,
+                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
+                fomo_level: parseInt(tradeData.fomoLevel) || 3,
+                overall_mood: tradeData.overallMood || null,
+                distraction_level: parseInt(tradeData.distractionLevel) || 3
+            };
+
+            console.log('Attempting to save enhanced trade:', enhancedTradeData);
+
+            const { data: enhancedData, error: enhancedError } = await this.supabase
                 .from('enhanced_trades')
-                .insert([tradeToSave])
+                .insert([enhancedTradeData])
                 .select()
                 .single();
 
-            if (error) {
-                console.error('Error saving enhanced trade:', error);
-                // Fall back to regular trades table if enhanced doesn't exist
-                const { data: fallbackData, error: fallbackError } = await this.supabase
-                    .from('trades')
-                    .insert([{
-                        ...tradeToSave,
-                        // Map some enhanced fields to existing fields
-                        confidence_level: tradeToSave.setup_confidence,
-                        market_sentiment: tradeToSave.market_condition,
-                        pre_stress: tradeToSave.stress_level,
-                        stress_during: tradeToSave.stress_level,
-                        position_comfort: tradeToSave.emotions_managed,
-                        primary_exit_reason: tradeToSave.exit_reason,
-                        would_take_again: tradeToSave.would_repeat
-                    }])
-                    .select()
-                    .single();
-
-                if (fallbackError) {
-                    throw fallbackError;
-                }
-                return fallbackData;
+            if (!enhancedError && enhancedData) {
+                console.log('Successfully saved to enhanced_trades:', enhancedData);
+                return enhancedData;
             }
 
-            return data;
+            console.log('Enhanced trades failed, trying regular trades table:', enhancedError);
+
+            // Fall back to regular trades table with mapped fields
+            const regularTradeData = {
+                ...tradeToSave,
+                // Map enhanced fields to existing fields for compatibility
+                confidence_level: parseInt(tradeData.setupConfidence) || 7,
+                market_sentiment: tradeData.marketCondition || 'Neutral',
+                pre_stress: parseInt(tradeData.stressLevel) || 3,
+                stress_during: parseInt(tradeData.stressLevel) || 3,
+                position_comfort: parseInt(tradeData.emotionsManaged) || 7,
+                primary_exit_reason: tradeData.exitReason || 'Manual Exit',
+                exit_emotion: tradeData.exitEmotion || 'Neutral',
+                would_take_again: tradeData.wouldRepeat || 'Maybe',
+                
+                // New fields that exist in the regular trades table
+                setup_quality: parseInt(tradeData.setupQuality) || 7,
+                entry_timing_quality: tradeData.entryTiming || null,
+                exit_timing_quality: tradeData.exitTiming || null,
+                lessons_learned: tradeData.lessonsLearned || '',
+                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
+                
+                // Basic psychology fields
+                sleep_quality: parseInt(tradeData.sleepQuality) || 7,
+                physical_condition: parseInt(tradeData.physicalCondition) || 7,
+                fomo_level: parseInt(tradeData.fomoLevel) || 3,
+                
+                // Set exit reason for the trades table
+                exit_reason: tradeData.exitReason || 'Manual Exit'
+            };
+
+            console.log('Attempting to save to regular trades table:', regularTradeData);
+
+            const { data: regularData, error: regularError } = await this.supabase
+                .from('trades')
+                .insert([regularTradeData])
+                .select()
+                .single();
+
+            if (regularError) {
+                console.error('Error saving to trades table:', regularError);
+                throw regularError;
+            }
+
+            console.log('Successfully saved to trades table:', regularData);
+            return regularData;
+
         } catch (error) {
             console.error('Error in saveEnhancedTrade:', error);
             throw error;
@@ -1280,8 +1350,7 @@ class TradingDashboardApp {
 
         const avgSetupQuality = setupQualityTrades.reduce((sum, t) => sum + (t.setup_quality || t.confidence_level), 0) / setupQualityTrades.length;
         const highQualityTrades = setupQualityTrades.filter(t => (t.setup_quality || t.confidence_level) >= 8);
-        const lowQualityTrades = setupQualityTrades.filter(t => (t.setup_quality || t.confidence_level) <= 5);
-
+        
         if (highQualityTrades.length > 0) {
             const highQualityWinRate = (highQualityTrades.filter(t => t.net_pl > 0).length / highQualityTrades.length) * 100;
             return `Your average setup quality is ${avgSetupQuality.toFixed(1)}/10. High-quality setups (8-10) have a ${highQualityWinRate.toFixed(0)}% win rate. ${highQualityWinRate > 70 ? 'Focus on only taking high-quality setups!' : 'Improve setup selection criteria.'} Look for more confluence factors before entering trades.`;
@@ -1328,8 +1397,8 @@ class TradingDashboardApp {
         const perfectEntries = entryQualities.filter(q => q === 'Perfect').length;
         const perfectExits = exitQualities.filter(q => q === 'Perfect').length;
         
-        const entryScore = (perfectEntries / entryQualities.length) * 100;
-        const exitScore = (perfectExits / exitQualities.length) * 100;
+        const entryScore = entryQualities.length > 0 ? (perfectEntries / entryQualities.length) * 100 : 0;
+        const exitScore = exitQualities.length > 0 ? (perfectExits / exitQualities.length) * 100 : 0;
 
         let analysis = `Entry timing: ${entryScore.toFixed(0)}% perfect entries. Exit timing: ${exitScore.toFixed(0)}% perfect exits. `;
         
