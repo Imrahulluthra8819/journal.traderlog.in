@@ -1,5 +1,5 @@
-// Enhanced Trading Dashboard Application with Comprehensive Trade Analysis
-// Fixed version with proper data saving and loading
+// Enhanced Trading Dashboard Application with Mobile Optimization and Currency Support
+// Fixed version with mobile UI, currency selector, reports section, and trade details popup
 
 class TradingDashboardApp {
     constructor() {
@@ -18,6 +18,8 @@ class TradingDashboardApp {
 
         this.currentUser = null;
         this.charts = {};
+        this.selectedCurrency = 'INR'; // Default currency
+        this.exchangeRates = { INR: 1, USD: 0.012 }; // 1 INR = 0.012 USD (approximate)
         
         // Initialize the app
         this.init();
@@ -54,6 +56,51 @@ class TradingDashboardApp {
         } catch (error) {
             console.error('Initialization error:', error);
             this.showToast('Failed to initialize app. Please refresh.', 'error');
+        }
+    }
+
+    /* ======================== CURRENCY FUNCTIONS ======================== */
+
+    formatCurrency(value) {
+        const convertedValue = this.convertCurrency(value, 'INR', this.selectedCurrency);
+        const sign = convertedValue < 0 ? '-' : '';
+        const symbol = this.selectedCurrency === 'USD' ? '$' : '₹';
+        
+        return sign + symbol + Math.abs(convertedValue).toLocaleString(
+            this.selectedCurrency === 'USD' ? 'en-US' : 'en-IN', 
+            { 
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2 
+            }
+        );
+    }
+
+    convertCurrency(amount, fromCurrency, toCurrency) {
+        if (fromCurrency === toCurrency) return amount;
+        
+        // Convert to base currency (INR) first, then to target
+        const inINR = fromCurrency === 'INR' ? amount : amount / this.exchangeRates[fromCurrency];
+        return toCurrency === 'INR' ? inINR : inINR * this.exchangeRates[toCurrency];
+    }
+
+    setupCurrencySelector() {
+        const currencySelector = document.getElementById('currencySelector');
+        if (currencySelector) {
+            currencySelector.value = this.selectedCurrency;
+            currencySelector.addEventListener('change', (e) => {
+                this.selectedCurrency = e.target.value;
+                this.updateAllCurrencyDisplays();
+                this.showToast(`Currency changed to ${this.selectedCurrency}`, 'success');
+            });
+        }
+    }
+
+    async updateAllCurrencyDisplays() {
+        // Refresh current section to update currency displays
+        const activeSection = document.querySelector('.section.active');
+        if (activeSection) {
+            const sectionId = activeSection.id;
+            await this.showSection(sectionId);
         }
     }
 
@@ -401,6 +448,7 @@ class TradingDashboardApp {
         }
         
         this.updateUserInfo();
+        this.setupCurrencySelector();
         this.showSection('dashboard');
     }
 
@@ -452,6 +500,45 @@ class TradingDashboardApp {
         const nextMonth = document.getElementById('nextMonth');
         if (prevMonth) prevMonth.addEventListener('click', () => this.changeCalendarMonth(-1));
         if (nextMonth) nextMonth.addEventListener('click', () => this.changeCalendarMonth(1));
+
+        // Mobile hamburger menu
+        this.setupMobileMenu();
+    }
+
+    setupMobileMenu() {
+        // Add mobile menu toggle functionality
+        const createMobileMenuToggle = () => {
+            const navbar = document.querySelector('.navbar .nav-container');
+            if (!navbar || document.querySelector('.mobile-menu-toggle')) return;
+
+            const mobileToggle = document.createElement('button');
+            mobileToggle.className = 'mobile-menu-toggle';
+            mobileToggle.innerHTML = '☰';
+            mobileToggle.style.display = 'none';
+            
+            navbar.insertBefore(mobileToggle, navbar.firstChild);
+
+            mobileToggle.addEventListener('click', () => {
+                const navMenu = document.querySelector('.nav-menu');
+                if (navMenu) {
+                    navMenu.classList.toggle('mobile-active');
+                    mobileToggle.innerHTML = navMenu.classList.contains('mobile-active') ? '✕' : '☰';
+                }
+            });
+
+            // Close menu when clicking on nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    const navMenu = document.querySelector('.nav-menu');
+                    if (navMenu) {
+                        navMenu.classList.remove('mobile-active');
+                        mobileToggle.innerHTML = '☰';
+                    }
+                });
+            });
+        };
+
+        setTimeout(createMobileMenuToggle, 100);
     }
 
     updateUserInfo() {
@@ -509,15 +596,107 @@ class TradingDashboardApp {
         }
     }
 
-    /* ======================== HELPER FUNCTIONS ======================== */
+    /* ======================== TRADE DETAILS POPUP ======================== */
 
-    formatCurrency(value) {
-        const sign = value < 0 ? '-' : '';
-        return sign + '₹' + Math.abs(value).toLocaleString('en-IN', { 
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2 
+    showTradeDetailsPopup(trade) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'trade-modal-overlay';
+        modal.innerHTML = `
+            <div class="trade-modal">
+                <div class="trade-modal-header">
+                    <h3>📊 Trade Details</h3>
+                    <button class="trade-modal-close">&times;</button>
+                </div>
+                <div class="trade-modal-body">
+                    <div class="trade-detail-grid">
+                        <div class="trade-detail-item">
+                            <label>Symbol:</label>
+                            <span class="trade-symbol">${trade.symbol}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Direction:</label>
+                            <span class="trade-direction ${trade.direction.toLowerCase()}">${trade.direction}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Quantity:</label>
+                            <span>${trade.quantity}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Entry Price:</label>
+                            <span>${this.formatCurrency(trade.entry_price)}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Exit Price:</label>
+                            <span>${this.formatCurrency(trade.exit_price)}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>P&L:</label>
+                            <span class="${trade.net_pl >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(trade.net_pl)}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Strategy:</label>
+                            <span>${trade.strategy}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Entry Date:</label>
+                            <span>${this.formatDate(trade.entry_date)}</span>
+                        </div>
+                        <div class="trade-detail-item">
+                            <label>Exit Date:</label>
+                            <span>${this.formatDate(trade.exit_date)}</span>
+                        </div>
+                        ${trade.setup_quality ? `
+                        <div class="trade-detail-item">
+                            <label>Setup Quality:</label>
+                            <span>${trade.setup_quality}/10</span>
+                        </div>` : ''}
+                        ${trade.risk_reward_ratio ? `
+                        <div class="trade-detail-item">
+                            <label>Risk:Reward:</label>
+                            <span>1:${trade.risk_reward_ratio.toFixed(2)}</span>
+                        </div>` : ''}
+                        ${trade.entry_timing_quality ? `
+                        <div class="trade-detail-item">
+                            <label>Entry Timing:</label>
+                            <span>${trade.entry_timing_quality}</span>
+                        </div>` : ''}
+                        ${trade.exit_timing_quality ? `
+                        <div class="trade-detail-item">
+                            <label>Exit Timing:</label>
+                            <span>${trade.exit_timing_quality}</span>
+                        </div>` : ''}
+                        ${trade.lessons_learned ? `
+                        <div class="trade-detail-item full-width">
+                            <label>Lessons Learned:</label>
+                            <span>${trade.lessons_learned}</span>
+                        </div>` : ''}
+                        ${trade.notes ? `
+                        <div class="trade-detail-item full-width">
+                            <label>Notes:</label>
+                            <span>${trade.notes}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add event listeners
+        const closeBtn = modal.querySelector('.trade-modal-close');
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
         });
     }
+
+    /* ======================== HELPER FUNCTIONS ======================== */
 
     formatDate(dateString) {
         return new Date(dateString).toLocaleDateString('en-IN', {
@@ -649,7 +828,7 @@ class TradingDashboardApp {
         }
 
         container.innerHTML = trades.map(trade => `
-            <div class="trade-item">
+            <div class="trade-item" data-trade-id="${trade.id}" style="cursor: pointer;">
                 <div class="trade-info">
                     <div class="trade-symbol">${trade.symbol}</div>
                     <div class="trade-direction ${trade.direction.toLowerCase()}">${trade.direction}</div>
@@ -660,6 +839,13 @@ class TradingDashboardApp {
                 </div>
             </div>
         `).join('');
+
+        // Add click listeners for trade details popup
+        container.querySelectorAll('.trade-item').forEach((item, index) => {
+            item.addEventListener('click', () => {
+                this.showTradeDetailsPopup(trades[index]);
+            });
+        });
     }
 
     async saveDailyConfidence() {
@@ -1073,6 +1259,7 @@ class TradingDashboardApp {
 
         try {
             const trades = await this.loadTrades();
+            console.log('History: Loaded trades:', trades);
             
             if (!trades || trades.length === 0) {
                 container.innerHTML = `
@@ -1088,43 +1275,68 @@ class TradingDashboardApp {
             }
 
             container.innerHTML = `
-                <table class="trade-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Symbol</th>
-                            <th>Direction</th>
-                            <th>Quantity</th>
-                            <th>Entry</th>
-                            <th>Exit</th>
-                            <th>P&L</th>
-                            <th>Strategy</th>
-                            <th>Setup Quality</th>
-                            <th>R:R</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${trades.map(trade => `
+                <div class="history-controls">
+                    <div class="history-stats">
+                        <span>Total Trades: <strong>${trades.length}</strong></span>
+                        <span>Win Rate: <strong>${this.calculateStats(trades).winRate}%</strong></span>
+                        <span>Total P&L: <strong class="${this.calculateStats(trades).totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(this.calculateStats(trades).totalPL)}</strong></span>
+                    </div>
+                </div>
+                <div class="history-table-container">
+                    <table class="trade-table">
+                        <thead>
                             <tr>
-                                <td data-label="Date">${this.formatDate(trade.entry_date)}</td>
-                                <td data-label="Symbol"><strong>${trade.symbol}</strong></td>
-                                <td data-label="Direction">
-                                    <span class="trade-direction ${trade.direction.toLowerCase()}">${trade.direction}</span>
-                                </td>
-                                <td data-label="Quantity">${trade.quantity}</td>
-                                <td data-label="Entry">₹${trade.entry_price}</td>
-                                <td data-label="Exit">₹${trade.exit_price}</td>
-                                <td data-label="P&L" class="${trade.net_pl >= 0 ? 'positive' : 'negative'}">
-                                    <strong>${this.formatCurrency(trade.net_pl)}</strong>
-                                </td>
-                                <td data-label="Strategy">${trade.strategy}</td>
-                                <td data-label="Setup Quality">${trade.setup_quality || trade.confidence_level || 'N/A'}/10</td>
-                                <td data-label="R:R">${trade.risk_reward_ratio ? `1:${trade.risk_reward_ratio.toFixed(2)}` : 'N/A'}</td>
+                                <th>Date</th>
+                                <th>Symbol</th>
+                                <th>Direction</th>
+                                <th>Quantity</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>P&L</th>
+                                <th>Strategy</th>
+                                <th>Setup Quality</th>
+                                <th>R:R</th>
+                                <th>Actions</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${trades.map((trade, index) => `
+                                <tr>
+                                    <td data-label="Date">${this.formatDate(trade.entry_date)}</td>
+                                    <td data-label="Symbol"><strong>${trade.symbol}</strong></td>
+                                    <td data-label="Direction">
+                                        <span class="trade-direction ${trade.direction.toLowerCase()}">${trade.direction}</span>
+                                    </td>
+                                    <td data-label="Quantity">${trade.quantity}</td>
+                                    <td data-label="Entry">${this.formatCurrency(trade.entry_price)}</td>
+                                    <td data-label="Exit">${this.formatCurrency(trade.exit_price)}</td>
+                                    <td data-label="P&L" class="${trade.net_pl >= 0 ? 'positive' : 'negative'}">
+                                        <strong>${this.formatCurrency(trade.net_pl)}</strong>
+                                    </td>
+                                    <td data-label="Strategy">${trade.strategy}</td>
+                                    <td data-label="Setup Quality">${trade.setup_quality || trade.confidence_level || 'N/A'}/10</td>
+                                    <td data-label="R:R">${trade.risk_reward_ratio ? `1:${trade.risk_reward_ratio.toFixed(2)}` : 'N/A'}</td>
+                                    <td data-label="Actions">
+                                        <button class="btn btn--sm btn--outline view-details-btn" data-trade-index="${index}">
+                                            👁️ View
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
+
+            // Add click listeners for view details buttons
+            container.querySelectorAll('.view-details-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.tradeIndex);
+                    this.showTradeDetailsPopup(trades[index]);
+                });
+            });
+
         } catch (error) {
             console.error('Error rendering history:', error);
             container.innerHTML = '<div class="loading">Error loading trade history</div>';
@@ -1223,8 +1435,8 @@ class TradingDashboardApp {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) {
-                                    return '₹' + value.toLocaleString('en-IN');
+                                callback: (value) => {
+                                    return this.formatCurrency(value);
                                 }
                             }
                         }
@@ -1277,8 +1489,8 @@ class TradingDashboardApp {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) {
-                                    return '₹' + value.toLocaleString('en-IN');
+                                callback: (value) => {
+                                    return this.formatCurrency(value);
                                 }
                             }
                         }
@@ -1593,30 +1805,223 @@ class TradingDashboardApp {
         return worst || null;
     }
 
-    /* ======================== REPORTS ======================== */
+    /* ======================== REPORTS WITH CHARTS AND CALENDAR ======================== */
 
     async renderReports() {
         try {
             const trades = await this.loadTrades();
+            const confidenceEntries = await this.loadConfidenceEntries();
+            
+            console.log('Reports: Loading trades and confidence entries', trades, confidenceEntries);
             
             this.renderCalendar(trades);
             this.generateReports(trades);
+            this.renderReportsCharts(trades);
+            
         } catch (error) {
             console.error('Error rendering reports:', error);
         }
     }
 
     renderCalendar(trades) {
-        // Calendar rendering logic here
         const calendarTitle = document.getElementById('calendarTitle');
+        const calendarContainer = document.getElementById('calendar');
+        
+        if (!calendarContainer) return;
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        
         if (calendarTitle) {
-            const now = new Date();
             calendarTitle.textContent = `P&L Calendar - ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+        }
+
+        // Generate calendar HTML
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+
+        // Calculate daily P&L
+        const dailyPL = {};
+        trades.forEach(trade => {
+            const tradeDate = new Date(trade.entry_date).toDateString();
+            if (!dailyPL[tradeDate]) {
+                dailyPL[tradeDate] = 0;
+            }
+            dailyPL[tradeDate] += trade.net_pl;
+        });
+
+        let calendarHTML = `
+            <div class="calendar-grid">
+                <div class="calendar-header">
+                    <div class="day-name">Sun</div>
+                    <div class="day-name">Mon</div>
+                    <div class="day-name">Tue</div>
+                    <div class="day-name">Wed</div>
+                    <div class="day-name">Thu</div>
+                    <div class="day-name">Fri</div>
+                    <div class="day-name">Sat</div>
+                </div>
+                <div class="calendar-body">
+        `;
+
+        // Empty cells for days before the first day of the month
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            calendarHTML += '<div class="calendar-day empty"></div>';
+        }
+
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const dateString = date.toDateString();
+            const pl = dailyPL[dateString] || 0;
+            
+            let dayClass = 'calendar-day';
+            if (pl > 1000) dayClass += ' profit-high';
+            else if (pl > 0) dayClass += ' profit-low';
+            else if (pl < -1000) dayClass += ' loss-high';
+            else if (pl < 0) dayClass += ' loss-low';
+            else dayClass += ' no-trades';
+            
+            if (date.toDateString() === new Date().toDateString()) {
+                dayClass += ' today';
+            }
+
+            calendarHTML += `
+                <div class="${dayClass}" title="${pl !== 0 ? this.formatCurrency(pl) : 'No trades'}">
+                    <div class="day-number">${day}</div>
+                    ${pl !== 0 ? `<div class="day-pl">${this.formatCurrency(pl)}</div>` : ''}
+                </div>
+            `;
+        }
+
+        calendarHTML += `
+                </div>
+            </div>
+        `;
+
+        calendarContainer.innerHTML = calendarHTML;
+    }
+
+    renderReportsCharts(trades) {
+        if (!trades || trades.length === 0) return;
+
+        // Destroy existing charts
+        Object.keys(this.charts).forEach(key => {
+            if (key.includes('report') && this.charts[key] && typeof this.charts[key].destroy === 'function') {
+                this.charts[key].destroy();
+                delete this.charts[key];
+            }
+        });
+
+        setTimeout(() => {
+            this.renderMonthlyPLChart(trades);
+            this.renderWinLossChart(trades);
+        }, 100);
+    }
+
+    renderMonthlyPLChart(trades) {
+        const ctx = document.getElementById('monthlyPLChart');
+        if (!ctx) return;
+
+        try {
+            // Group trades by month
+            const monthlyData = {};
+            trades.forEach(trade => {
+                const date = new Date(trade.entry_date);
+                const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                
+                if (!monthlyData[monthKey]) {
+                    monthlyData[monthKey] = 0;
+                }
+                monthlyData[monthKey] += trade.net_pl;
+            });
+
+            const sortedMonths = Object.keys(monthlyData).sort();
+            const labels = sortedMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            });
+            const data = sortedMonths.map(month => monthlyData[month]);
+
+            this.charts.reportMonthlyPL = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Monthly P&L',
+                        data: data,
+                        backgroundColor: data.map(value => 
+                            value >= 0 ? 'rgba(33, 128, 141, 0.8)' : 'rgba(192, 21, 47, 0.8)')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => this.formatCurrency(value)
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering monthly P&L chart:', error);
+        }
+    }
+
+    renderWinLossChart(trades) {
+        const ctx = document.getElementById('winLossChart');
+        if (!ctx) return;
+
+        try {
+            const wins = trades.filter(t => t.net_pl > 0).length;
+            const losses = trades.filter(t => t.net_pl < 0).length;
+            const breakeven = trades.filter(t => t.net_pl === 0).length;
+
+            this.charts.reportWinLoss = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wins', 'Losses', 'Breakeven'],
+                    datasets: [{
+                        data: [wins, losses, breakeven],
+                        backgroundColor: [
+                            'rgba(33, 128, 141, 0.8)',
+                            'rgba(192, 21, 47, 0.8)',
+                            'rgba(128, 128, 128, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering win/loss chart:', error);
         }
     }
 
     changeCalendarMonth(delta) {
+        // Calendar navigation logic - you can implement this to show different months
         console.log('Calendar month changed by', delta);
+        // For now, just show a message
+        this.showToast(`Calendar navigation: ${delta > 0 ? 'Next' : 'Previous'} month`, 'info');
     }
 
     generateReports(trades) {
