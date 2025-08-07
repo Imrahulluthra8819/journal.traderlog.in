@@ -149,35 +149,119 @@
             font-size: 0.9rem;
         }
 
+        /* Enhanced Add Trade Form Styling */
+        .add-trade-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .trade-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .trade-form-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .trade-form-section h3 {
+            margin: 0 0 1.5rem 0;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(33, 128, 141, 0.1);
+        }
+
         /* Live Calculator */
         .calculated-fields {
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-radius: 12px;
+            padding: 2rem;
             margin: 2rem 0;
-            border: 1px solid var(--border-color);
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 4px 20px rgba(33, 128, 141, 0.1);
+        }
+
+        .calculated-fields h4 {
+            margin: 0 0 1.5rem 0;
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            text-align: center;
+            font-weight: 600;
         }
 
         .calc-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
-            margin-top: 1rem;
         }
 
         .calc-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem;
+            padding: 1rem;
             background: var(--bg-primary);
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+
+        .calc-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .calc-label {
             font-weight: 500;
             color: var(--text-secondary);
+            font-size: 0.9rem;
         }
 
         .calc-value {
@@ -191,6 +275,70 @@
 
         .calc-value.negative {
             color: #ef4444;
+        }
+
+        /* Range Inputs for Analysis */
+        .analysis-slider {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .slider-label {
+            min-width: 120px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .slider-output {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary-color);
+            background: var(--bg-primary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        /* Submit Button */
+        .trade-submit-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn--submit {
+            background: linear-gradient(135deg, var(--primary-color), #1a6b75);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(33, 128, 141, 0.3);
+        }
+
+        .btn--submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 128, 141, 0.4);
+        }
+
+        .btn--submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         /* Trade Modal */
@@ -279,6 +427,36 @@
             font-weight: 600;
             color: var(--text-primary);
             font-size: 1rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .chart-container h3 {
+            margin: 0 0 1.5rem 0;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            max-height: 400px !important;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
         }
 
         /* Calendar */
@@ -407,27 +585,6 @@
         .legend-color.loss-low { background: rgba(239, 68, 68, 0.5); }
         .legend-color.loss-high { background: rgba(239, 68, 68, 0.8); }
 
-        /* Chart Container */
-        .chart-container {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .chart-container h3 {
-            margin: 0 0 1.5rem 0;
-            font-size: 1.2rem;
-            color: var(--text-primary);
-            text-align: center;
-        }
-
-        .chart-container canvas {
-            width: 100% !important;
-            max-height: 400px !important;
-        }
-
         /* Toast */
         .toast-container {
             position: fixed;
@@ -462,8 +619,26 @@
             }
         }
 
-        /* Mobile Fixes */
-        @media (max-width: 640px) {
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .trade-form-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .calc-grid {
+                grid-template-columns: 1fr;
+            }
+            
             .trade-detail-grid {
                 grid-template-columns: 1fr;
             }
@@ -476,18 +651,6 @@
             .day-name {
                 padding: 0.75rem 0.5rem;
                 font-size: 0.8rem;
-            }
-            
-            .calc-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .confidence-controls {
-                align-items: stretch;
-            }
-            
-            .confidence-display {
-                margin-top: 1rem;
             }
         }
     </style>
@@ -706,152 +869,302 @@
                     </div>
                 </section>
 
-                <!-- Add Trade -->
+                <!-- Enhanced Add Trade Section -->
                 <section id="add-trade" class="section">
                     <div class="section-header">
-                        <h1>📝 Add New Trade</h1>
+                        <h1>📝 Add New Trade Analysis</h1>
+                        <p>Comprehensive trade tracking with psychology and performance metrics</p>
                     </div>
 
-                    <div class="card">
-                        <div class="card__body">
-                            <form id="addTradeForm">
-                                <!-- Currency Selector -->
-                                <div class="trade-currency-selector">
-                                    <label for="tradeCurrencySelector">💱 Trading Currency:</label>
-                                    <select id="tradeCurrencySelector">
-                                        <option value="INR">Indian Rupee (₹)</option>
-                                        <option value="USD">US Dollar ($)</option>
-                                    </select>
+                    <div class="add-trade-container">
+                        <form id="addTradeForm">
+                            <!-- Currency Selector -->
+                            <div class="trade-currency-selector">
+                                <label for="tradeCurrencySelector">💱 Trading Currency:</label>
+                                <select id="tradeCurrencySelector">
+                                    <option value="INR">Indian Rupee (₹)</option>
+                                    <option value="USD">US Dollar ($)</option>
+                                </select>
+                            </div>
+
+                            <!-- Main Trade Form Grid -->
+                            <div class="trade-form-grid">
+                                <!-- Basic Trade Information -->
+                                <div class="trade-form-section">
+                                    <h3>📊 Basic Trade Information</h3>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="entryDate" class="form-label">Entry Date & Time</label>
+                                            <input type="datetime-local" id="entryDate" name="entryDate" class="form-control" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exitDate" class="form-label">Exit Date & Time</label>
+                                            <input type="datetime-local" id="exitDate" name="exitDate" class="form-control" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="symbol" class="form-label">Symbol</label>
+                                            <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g., NIFTY, AAPL, BANKNIFTY" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="direction" class="form-label">Direction</label>
+                                            <select id="direction" name="direction" class="form-control" required>
+                                                <option value="">Select Direction</option>
+                                                <option value="Long">Long (Buy)</option>
+                                                <option value="Short">Short (Sell)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="quantity" class="form-label">Quantity</label>
+                                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="strategy" class="form-label">Primary Strategy</label>
+                                            <select id="strategy" name="strategy" class="form-control" required>
+                                                <option value="">Select Strategy</option>
+                                                <option value="Breakout">Breakout</option>
+                                                <option value="Pullback">Pullback</option>
+                                                <option value="Support/Resistance">Support/Resistance</option>
+                                                <option value="Trendline">Trendline</option>
+                                                <option value="Gap Trading">Gap Trading</option>
+                                                <option value="Scalping">Scalping</option>
+                                                <option value="Swing Trading">Swing Trading</option>
+                                                <option value="Momentum">Momentum</option>
+                                                <option value="Mean Reversion">Mean Reversion</option>
+                                                <option value="Options">Options Strategy</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <!-- Basic Info -->
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="entryDate" class="form-label">Entry Date & Time</label>
-                                        <input type="datetime-local" id="entryDate" name="entryDate" class="form-control" required>
+                                <!-- Price Information -->
+                                <div class="trade-form-section">
+                                    <h3>💰 Price Information</h3>
+                                    
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="entryPrice" class="form-label">Entry Price <span id="entryCurrencySymbol">(₹)</span></label>
+                                            <input type="number" id="entryPrice" name="entryPrice" class="form-control" step="0.01" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="exitPrice" class="form-label">Exit Price <span id="exitCurrencySymbol">(₹)</span></label>
+                                            <input type="number" id="exitPrice" name="exitPrice" class="form-control" step="0.01" required>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="exitDate" class="form-label">Exit Date & Time</label>
-                                        <input type="datetime-local" id="exitDate" name="exitDate" class="form-control" required>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="stopLoss" class="form-label">Stop Loss <span id="slCurrencySymbol">(₹)</span></label>
+                                            <input type="number" id="stopLoss" name="stopLoss" class="form-control" step="0.01">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="targetPrice" class="form-label">Target Price <span id="targetCurrencySymbol">(₹)</span></label>
+                                            <input type="number" id="targetPrice" name="targetPrice" class="form-control" step="0.01">
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="symbol" class="form-label">Symbol</label>
-                                        <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g., NIFTY, AAPL" required>
+                                </div>
+                            </div>
+
+                            <!-- Live P&L Calculator -->
+                            <div class="calculated-fields">
+                                <h4>📊 Live Trade Calculations</h4>
+                                <div class="calc-grid">
+                                    <div class="calc-item">
+                                        <span class="calc-label">Gross P&L:</span>
+                                        <span id="calcGrossPL" class="calc-value">₹0.00</span>
                                     </div>
+                                    <div class="calc-item">
+                                        <span class="calc-label">Net P&L:</span>
+                                        <span id="calcNetPL" class="calc-value">₹0.00</span>
+                                    </div>
+                                    <div class="calc-item">
+                                        <span class="calc-label">Risk:Reward:</span>
+                                        <span id="calcRR" class="calc-value">N/A</span>
+                                    </div>
+                                    <div class="calc-item">
+                                        <span class="calc-label">% Return:</span>
+                                        <span id="calcReturn" class="calc-value">0.00%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Analysis Grid -->
+                            <div class="trade-form-grid">
+                                <!-- Setup Analysis -->
+                                <div class="trade-form-section">
+                                    <h3>🔍 Setup Analysis</h3>
+                                    
+                                    <div class="slider-container">
+                                        <span class="slider-label">Setup Quality:</span>
+                                        <input type="range" id="setupQuality" name="setupQuality" class="analysis-slider range-input" min="1" max="10" value="7">
+                                        <span id="setupQualityOutput" class="slider-output">7</span>
+                                    </div>
+
                                     <div class="form-group">
-                                        <label for="direction" class="form-label">Direction</label>
-                                        <select id="direction" name="direction" class="form-control" required>
-                                            <option value="">Select Direction</option>
-                                            <option value="Long">Long</option>
-                                            <option value="Short">Short</option>
+                                        <label for="marketCondition" class="form-label">Market Condition</label>
+                                        <select id="marketCondition" name="marketCondition" class="form-control">
+                                            <option value="">Select Condition</option>
+                                            <option value="Trending Strong">Trending Strong</option>
+                                            <option value="Trending Weak">Trending Weak</option>
+                                            <option value="Sideways/Range">Sideways/Range</option>
+                                            <option value="Volatile/Choppy">Volatile/Choppy</option>
+                                            <option value="Low Volume">Low Volume</option>
+                                            <option value="High Volume">High Volume</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="quantity" class="form-label">Quantity</label>
-                                        <input type="number" id="quantity" name="quantity" class="form-control" min="1" required>
+
+                                    <div class="slider-container">
+                                        <span class="slider-label">Pre-Entry Confidence:</span>
+                                        <input type="range" id="confidence" name="confidence" class="analysis-slider range-input" min="1" max="10" value="7">
+                                        <span id="confidenceOutput" class="slider-output">7</span>
                                     </div>
+
                                     <div class="form-group">
-                                        <label for="strategy" class="form-label">Strategy</label>
-                                        <select id="strategy" name="strategy" class="form-control" required>
-                                            <option value="">Select Strategy</option>
-                                            <option value="Breakout">Breakout</option>
-                                            <option value="Pullback">Pullback</option>
-                                            <option value="Support/Resistance">Support/Resistance</option>
-                                            <option value="Scalping">Scalping</option>
-                                            <option value="Swing Trading">Swing Trading</option>
+                                        <label for="entryTrigger" class="form-label">Entry Trigger</label>
+                                        <select id="entryTrigger" name="entryTrigger" class="form-control">
+                                            <option value="">Select Trigger</option>
+                                            <option value="Breakout">Price Breakout</option>
+                                            <option value="Pullback">Pullback to Support</option>
+                                            <option value="Signal">Technical Signal</option>
+                                            <option value="Pattern">Chart Pattern</option>
+                                            <option value="Volume">Volume Spike</option>
+                                            <option value="News">News/Event</option>
                                             <option value="Other">Other</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <!-- Exit Analysis -->
+                                <div class="trade-form-section">
+                                    <h3>🎯 Exit Analysis</h3>
+                                    
                                     <div class="form-group">
-                                        <label for="entryPrice" class="form-label">Entry Price <span id="entryCurrencySymbol">(₹)</span></label>
-                                        <input type="number" id="entryPrice" name="entryPrice" class="form-control" step="0.01" required>
+                                        <label for="exitReason" class="form-label">Exit Reason</label>
+                                        <select id="exitReason" name="exitReason" class="form-control">
+                                            <option value="">Select Exit Reason</option>
+                                            <option value="Target Hit">Target Hit</option>
+                                            <option value="Stop Loss Hit">Stop Loss Hit</option>
+                                            <option value="Time Exit">Time-based Exit</option>
+                                            <option value="Manual Profit">Manual Profit Taking</option>
+                                            <option value="Fear Exit">Fear-based Exit</option>
+                                            <option value="News Event">News/Event Exit</option>
+                                            <option value="Technical Signal">Technical Signal</option>
+                                            <option value="Risk Management">Risk Management</option>
+                                        </select>
                                     </div>
+
                                     <div class="form-group">
-                                        <label for="exitPrice" class="form-label">Exit Price <span id="exitCurrencySymbol">(₹)</span></label>
-                                        <input type="number" id="exitPrice" name="exitPrice" class="form-control" step="0.01" required>
+                                        <label for="exitTiming" class="form-label">Exit Timing Quality</label>
+                                        <select id="exitTiming" name="exitTiming" class="form-control">
+                                            <option value="">Rate Exit Timing</option>
+                                            <option value="Perfect">Perfect</option>
+                                            <option value="Good">Good</option>
+                                            <option value="Average">Average</option>
+                                            <option value="Poor">Poor</option>
+                                            <option value="Terrible">Terrible</option>
+                                        </select>
                                     </div>
+
                                     <div class="form-group">
-                                        <label for="stopLoss" class="form-label">Stop Loss <span id="slCurrencySymbol">(₹)</span></label>
-                                        <input type="number" id="stopLoss" name="stopLoss" class="form-control" step="0.01">
+                                        <label for="exitEmotion" class="form-label">Exit Emotion</label>
+                                        <select id="exitEmotion" name="exitEmotion" class="form-control">
+                                            <option value="">Select Emotion</option>
+                                            <option value="Satisfied">Satisfied</option>
+                                            <option value="Relieved">Relieved</option>
+                                            <option value="Excited">Excited</option>
+                                            <option value="Frustrated">Frustrated</option>
+                                            <option value="Angry">Angry</option>
+                                            <option value="Disappointed">Disappointed</option>
+                                            <option value="Regretful">Regretful</option>
+                                            <option value="Neutral">Neutral</option>
+                                            <option value="Confident">Confident</option>
+                                        </select>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="targetPrice" class="form-label">Target Price <span id="targetCurrencySymbol">(₹)</span></label>
-                                        <input type="number" id="targetPrice" name="targetPrice" class="form-control" step="0.01">
+
+                                    <div class="slider-container">
+                                        <span class="slider-label">Stress Level:</span>
+                                        <input type="range" id="stressLevel" name="stressLevel" class="analysis-slider range-input" min="1" max="10" value="3">
+                                        <span id="stressLevelOutput" class="slider-output">3</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Psychology Section -->
+                            <div class="trade-form-section">
+                                <h3>🧠 Psychology & State Analysis</h3>
+                                
+                                <div class="form-row">
+                                    <div class="slider-container">
+                                        <span class="slider-label">Sleep Quality:</span>
+                                        <input type="range" id="sleepQuality" name="sleepQuality" class="analysis-slider range-input" min="1" max="10" value="7">
+                                        <span id="sleepQualityOutput" class="slider-output">7</span>
+                                    </div>
+                                    
+                                    <div class="slider-container">
+                                        <span class="slider-label">Mental Clarity:</span>
+                                        <input type="range" id="mentalClarity" name="mentalClarity" class="analysis-slider range-input" min="1" max="10" value="7">
+                                        <span id="mentalClarityOutput" class="slider-output">7</span>
                                     </div>
                                 </div>
 
-                                <!-- Live Calculator -->
-                                <div class="calculated-fields">
-                                    <h4>📊 Trade Calculations</h4>
-                                    <div class="calc-grid">
-                                        <div class="calc-item">
-                                            <span class="calc-label">Gross P&L:</span>
-                                            <span id="calcGrossPL" class="calc-value">₹0.00</span>
-                                        </div>
-                                        <div class="calc-item">
-                                            <span class="calc-label">Net P&L:</span>
-                                            <span id="calcNetPL" class="calc-value">₹0.00</span>
-                                        </div>
-                                        <div class="calc-item">
-                                            <span class="calc-label">Risk:Reward:</span>
-                                            <span id="calcRR" class="calc-value">N/A</span>
-                                        </div>
-                                        <div class="calc-item">
-                                            <span class="calc-label">% Return:</span>
-                                            <span id="calcReturn" class="calc-value">0.00%</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Additional Fields -->
-                                <details class="collapse-card" open>
-                                    <summary>📊 Additional Analysis</summary>
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="setupQuality" class="form-label">Setup Quality (1-10): <span id="setupQualityOutput">7</span></label>
-                                            <input type="range" id="setupQuality" name="setupQuality" class="range-input" min="1" max="10" value="7">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exitReason" class="form-label">Exit Reason</label>
-                                            <select id="exitReason" name="exitReason" class="form-control">
-                                                <option value="">Select Reason</option>
-                                                <option value="Target Hit">Target Hit</option>
-                                                <option value="Stop Loss">Stop Loss Hit</option>
-                                                <option value="Manual Exit">Manual Exit</option>
-                                                <option value="Time Exit">Time Exit</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exitEmotion" class="form-label">Exit Emotion</label>
-                                            <select id="exitEmotion" name="exitEmotion" class="form-control">
-                                                <option value="">Select Emotion</option>
-                                                <option value="Satisfied">Satisfied</option>
-                                                <option value="Relieved">Relieved</option>
-                                                <option value="Frustrated">Frustrated</option>
-                                                <option value="Excited">Excited</option>
-                                                <option value="Neutral">Neutral</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="confidence" class="form-label">Confidence (1-10): <span id="confidenceOutput">7</span></label>
-                                            <input type="range" id="confidence" name="confidence" class="range-input" min="1" max="10" value="7">
-                                        </div>
-                                    </div>
-                                </details>
-
-                                <!-- Notes -->
                                 <div class="form-group">
-                                    <label for="notes" class="form-label">📝 Notes</label>
-                                    <textarea id="notes" name="notes" class="form-control" rows="4" placeholder="Add your trade notes..."></textarea>
+                                    <label for="overallMood" class="form-label">Overall Mood</label>
+                                    <select id="overallMood" name="overallMood" class="form-control">
+                                        <option value="">Select Mood</option>
+                                        <option value="Very Positive">Very Positive</option>
+                                        <option value="Positive">Positive</option>
+                                        <option value="Neutral">Neutral</option>
+                                        <option value="Negative">Negative</option>
+                                        <option value="Very Negative">Very Negative</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Notes Section -->
+                            <div class="trade-form-section">
+                                <h3>📝 Trade Notes & Lessons</h3>
+                                
+                                <div class="form-group">
+                                    <label for="notes" class="form-label">Trade Notes</label>
+                                    <textarea id="notes" name="notes" class="form-control" rows="4" placeholder="What happened in this trade? Market conditions, your thoughts, etc."></textarea>
                                 </div>
 
-                                <!-- Submit -->
-                                <button type="submit" class="btn btn--primary btn--lg btn--full-width">
-                                    <span class="btn-text">💾 Save Trade</span>
-                                    <span class="loading-spinner" style="display: none;">Saving...</span>
+                                <div class="form-group">
+                                    <label for="lessonsLearned" class="form-label">Key Lessons Learned</label>
+                                    <textarea id="lessonsLearned" name="lessonsLearned" class="form-control" rows="3" placeholder="What did you learn from this trade? What would you do differently?"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="wouldRepeat" class="form-label">Would you take this trade again?</label>
+                                    <select id="wouldRepeat" name="wouldRepeat" class="form-control">
+                                        <option value="">Select Answer</option>
+                                        <option value="Definitely Yes">Definitely Yes</option>
+                                        <option value="Probably Yes">Probably Yes</option>
+                                        <option value="Maybe">Maybe</option>
+                                        <option value="Probably No">Probably No</option>
+                                        <option value="Definitely No">Definitely No</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Submit Section -->
+                            <div class="trade-submit-section">
+                                <button type="submit" class="btn--submit">
+                                    <span class="btn-text">💾 Save Comprehensive Trade Analysis</span>
+                                    <span class="loading-spinner" style="display: none;">Saving Analysis...</span>
                                 </button>
-                            </form>
-                        </div>
+                                <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                                    Your detailed trade analysis will be saved with all psychology and performance metrics
+                                </p>
+                            </div>
+                        </form>
                     </div>
                 </section>
 
@@ -865,15 +1178,17 @@
                     </div>
                 </section>
 
-                <!-- Analytics -->
+                <!-- Enhanced Analytics -->
                 <section id="analytics" class="section">
                     <div class="section-header">
-                        <h1>Analytics</h1>
+                        <h1>📊 Advanced Analytics</h1>
+                        <p>Comprehensive performance analysis with interactive charts</p>
                     </div>
 
+                    <!-- Performance Summary -->
                     <div class="card">
                         <div class="card__header">
-                            <h3>Performance Summary</h3>
+                            <h3>Performance Overview</h3>
                         </div>
                         <div class="card__body">
                             <div class="summary-stats">
@@ -889,19 +1204,54 @@
                                     <span class="label">Net P&L:</span>
                                     <span class="value" id="analyticsNetPL">₹0</span>
                                 </div>
+                                <div class="summary-item">
+                                    <span class="label">Best Trade:</span>
+                                    <span class="value positive" id="analyticsBestTrade">₹0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="label">Worst Trade:</span>
+                                    <span class="value negative" id="analyticsWorstTrade">₹0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="label">Avg Risk:Reward:</span>
+                                    <span class="value" id="analyticsAvgRR">1:0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Interactive Charts Grid -->
                     <div class="charts-grid">
                         <div class="chart-container">
-                            <h3>P&L Over Time</h3>
+                            <h3>📈 Cumulative P&L Over Time</h3>
                             <canvas id="plChart"></canvas>
                         </div>
+                        
                         <div class="chart-container">
-                            <h3>Strategy Performance</h3>
+                            <h3>📊 Strategy Performance</h3>
                             <canvas id="strategyChart"></canvas>
                         </div>
+                        
+                        <div class="chart-container">
+                            <h3>🎯 Win/Loss Distribution</h3>
+                            <canvas id="winLossChart"></canvas>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h3>📅 Monthly Performance</h3>
+                            <canvas id="monthlyAnalyticsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Additional Analytics -->
+                    <div class="chart-container">
+                        <h3>⭐ Setup Quality vs Performance</h3>
+                        <canvas id="setupQualityChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>🧠 Psychology Impact Analysis</h3>
+                        <canvas id="psychologyChart"></canvas>
                     </div>
                 </section>
 
@@ -942,7 +1292,7 @@
                     </div>
 
                     <div class="chart-container">
-                        <h3>Monthly P&L</h3>
+                        <h3>Monthly P&L Overview</h3>
                         <canvas id="monthlyPLChart"></canvas>
                     </div>
 
