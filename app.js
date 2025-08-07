@@ -1,5 +1,5 @@
 // Enhanced Trading Dashboard Application with Mobile Optimization and Currency Support
-// Fixed version with mobile UI, currency selector, reports section, and trade details popup
+// Complete fixed version with all functionality working properly
 
 class TradingDashboardApp {
     constructor() {
@@ -19,7 +19,9 @@ class TradingDashboardApp {
         this.currentUser = null;
         this.charts = {};
         this.selectedCurrency = 'INR'; // Default currency
+        this.tradeCurrency = 'INR'; // Currency for adding trades
         this.exchangeRates = { INR: 1, USD: 0.012 }; // 1 INR = 0.012 USD (approximate)
+        this.currentCalendarDate = new Date();
         
         // Initialize the app
         this.init();
@@ -61,13 +63,14 @@ class TradingDashboardApp {
 
     /* ======================== CURRENCY FUNCTIONS ======================== */
 
-    formatCurrency(value) {
-        const convertedValue = this.convertCurrency(value, 'INR', this.selectedCurrency);
+    formatCurrency(value, currency = null) {
+        const targetCurrency = currency || this.selectedCurrency;
+        const convertedValue = this.convertCurrency(value, 'INR', targetCurrency);
         const sign = convertedValue < 0 ? '-' : '';
-        const symbol = this.selectedCurrency === 'USD' ? '$' : '₹';
+        const symbol = targetCurrency === 'USD' ? '$' : '₹';
         
         return sign + symbol + Math.abs(convertedValue).toLocaleString(
-            this.selectedCurrency === 'USD' ? 'en-US' : 'en-IN', 
+            targetCurrency === 'USD' ? 'en-US' : 'en-IN', 
             { 
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2 
@@ -84,15 +87,55 @@ class TradingDashboardApp {
     }
 
     setupCurrencySelector() {
+        // Main navigation currency selector
         const currencySelector = document.getElementById('currencySelector');
         if (currencySelector) {
             currencySelector.value = this.selectedCurrency;
             currencySelector.addEventListener('change', (e) => {
                 this.selectedCurrency = e.target.value;
                 this.updateAllCurrencyDisplays();
-                this.showToast(`Currency changed to ${this.selectedCurrency}`, 'success');
+                this.showToast(`Display currency changed to ${this.selectedCurrency}`, 'success');
             });
         }
+
+        // Mobile currency selector
+        const mobileCurrencySelector = document.getElementById('mobileCurrencySelector');
+        if (mobileCurrencySelector) {
+            mobileCurrencySelector.value = this.selectedCurrency;
+            mobileCurrencySelector.addEventListener('change', (e) => {
+                this.selectedCurrency = e.target.value;
+                // Sync with main selector
+                if (currencySelector) {
+                    currencySelector.value = this.selectedCurrency;
+                }
+                this.updateAllCurrencyDisplays();
+                this.showToast(`Display currency changed to ${this.selectedCurrency}`, 'success');
+            });
+        }
+
+        // Trade currency selector
+        const tradeCurrencySelector = document.getElementById('tradeCurrencySelector');
+        if (tradeCurrencySelector) {
+            tradeCurrencySelector.value = this.tradeCurrency;
+            tradeCurrencySelector.addEventListener('change', (e) => {
+                this.tradeCurrency = e.target.value;
+                this.updateTradeCurrencyLabels();
+                this.calculateLivePL();
+                this.showToast(`Trade currency changed to ${this.tradeCurrency}`, 'success');
+            });
+        }
+    }
+
+    updateTradeCurrencyLabels() {
+        const symbol = this.tradeCurrency === 'USD' ? '($)' : '(₹)';
+        const elements = ['entryCurrencySymbol', 'exitCurrencySymbol', 'slCurrencySymbol', 'targetCurrencySymbol'];
+        
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = symbol;
+            }
+        });
     }
 
     async updateAllCurrencyDisplays() {
@@ -458,16 +501,30 @@ class TradingDashboardApp {
             btn.addEventListener('click', () => this.showSection(btn.dataset.section));
         });
 
-        // Header actions
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.logout());
-        }
+        // Header actions (both desktop and mobile)
+        const logoutBtns = ['logoutBtn', 'mobileLogoutBtn'];
+        logoutBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => this.logout());
+            }
+        });
 
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            themeToggle.addEventListener('click', () => this.toggleTheme());
-        }
+        const themeToggleBtns = ['themeToggle', 'mobileThemeToggle'];
+        themeToggleBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => this.toggleTheme());
+            }
+        });
+
+        const exportBtns = ['exportData', 'mobileExportData'];
+        exportBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => this.exportCSV());
+            }
+        });
 
         const quickAddTrade = document.getElementById('quickAddTrade');
         if (quickAddTrade) {
@@ -489,12 +546,6 @@ class TradingDashboardApp {
         // Setup forms
         this.setupAddTradeForm();
 
-        // Export
-        const exportBtn = document.getElementById('exportData');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportCSV());
-        }
-
         // Calendar navigation
         const prevMonth = document.getElementById('prevMonth');
         const nextMonth = document.getElementById('nextMonth');
@@ -506,47 +557,47 @@ class TradingDashboardApp {
     }
 
     setupMobileMenu() {
-        // Add mobile menu toggle functionality
-        const createMobileMenuToggle = () => {
-            const navbar = document.querySelector('.navbar .nav-container');
-            if (!navbar || document.querySelector('.mobile-menu-toggle')) return;
+        const mobileToggle = document.querySelector('.mobile-menu-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        const mobileUserInfo = document.querySelector('.mobile-user-info');
 
-            const mobileToggle = document.createElement('button');
-            mobileToggle.className = 'mobile-menu-toggle';
-            mobileToggle.innerHTML = '☰';
-            mobileToggle.style.display = 'none';
-            
-            navbar.insertBefore(mobileToggle, navbar.firstChild);
-
+        if (mobileToggle && navMenu) {
             mobileToggle.addEventListener('click', () => {
-                const navMenu = document.querySelector('.nav-menu');
-                if (navMenu) {
-                    navMenu.classList.toggle('mobile-active');
-                    mobileToggle.innerHTML = navMenu.classList.contains('mobile-active') ? '✕' : '☰';
+                const isActive = navMenu.classList.contains('mobile-active');
+                
+                if (isActive) {
+                    navMenu.classList.remove('mobile-active');
+                    if (mobileUserInfo) mobileUserInfo.classList.remove('mobile-active');
+                    mobileToggle.innerHTML = '☰';
+                } else {
+                    navMenu.classList.add('mobile-active');
+                    if (mobileUserInfo) mobileUserInfo.classList.add('mobile-active');
+                    mobileToggle.innerHTML = '✕';
                 }
             });
 
             // Close menu when clicking on nav links
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', () => {
-                    const navMenu = document.querySelector('.nav-menu');
-                    if (navMenu) {
-                        navMenu.classList.remove('mobile-active');
-                        mobileToggle.innerHTML = '☰';
-                    }
+                    navMenu.classList.remove('mobile-active');
+                    if (mobileUserInfo) mobileUserInfo.classList.remove('mobile-active');
+                    mobileToggle.innerHTML = '☰';
                 });
             });
-        };
-
-        setTimeout(createMobileMenuToggle, 100);
+        }
     }
 
     updateUserInfo() {
         const username = this.currentUser?.username || this.currentUser?.email?.split('@')[0] || 'User';
-        const nameElement = document.getElementById('currentUserName');
-        if (nameElement) {
-            nameElement.textContent = username;
-        }
+        
+        // Update both desktop and mobile user names
+        const userNameElements = ['currentUserName', 'mobileCurrentUserName'];
+        userNameElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = username;
+            }
+        });
     }
 
     toggleTheme() {
@@ -556,10 +607,14 @@ class TradingDashboardApp {
         const next = current === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-color-scheme', next);
         
-        const themeToggle = document.getElementById('themeToggle');
-        if (themeToggle) {
-            themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
-        }
+        // Update both theme toggle buttons
+        const themeToggleBtns = ['themeToggle', 'mobileThemeToggle'];
+        themeToggleBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.textContent = next === 'dark' ? '☀️' : '🌙';
+            }
+        });
     }
 
     async showSection(sectionId) {
@@ -605,7 +660,7 @@ class TradingDashboardApp {
         modal.innerHTML = `
             <div class="trade-modal">
                 <div class="trade-modal-header">
-                    <h3>📊 Trade Details</h3>
+                    <h3>📊 Trade Analysis Details</h3>
                     <button class="trade-modal-close">&times;</button>
                 </div>
                 <div class="trade-modal-body">
@@ -666,6 +721,16 @@ class TradingDashboardApp {
                             <label>Exit Timing:</label>
                             <span>${trade.exit_timing_quality}</span>
                         </div>` : ''}
+                        ${trade.market_condition ? `
+                        <div class="trade-detail-item">
+                            <label>Market Condition:</label>
+                            <span>${trade.market_condition}</span>
+                        </div>` : ''}
+                        ${trade.exit_emotion ? `
+                        <div class="trade-detail-item">
+                            <label>Exit Emotion:</label>
+                            <span>${trade.exit_emotion}</span>
+                        </div>` : ''}
                         ${trade.lessons_learned ? `
                         <div class="trade-detail-item full-width">
                             <label>Lessons Learned:</label>
@@ -702,7 +767,9 @@ class TradingDashboardApp {
         return new Date(dateString).toLocaleDateString('en-IN', {
             year: 'numeric',
             month: 'short',
-            day: '2-digit'
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
         });
     }
 
@@ -716,7 +783,9 @@ class TradingDashboardApp {
         container.appendChild(toast);
         
         setTimeout(() => {
-            toast.remove();
+            if (toast.parentNode) {
+                toast.remove();
+            }
         }, 3000);
     }
 
@@ -949,7 +1018,7 @@ class TradingDashboardApp {
 
     setupLivePLCalculator() {
         // Get calculation elements
-        const fields = ['quantity', 'entryPrice', 'exitPrice', 'direction', 'stopLoss'];
+        const fields = ['quantity', 'entryPrice', 'exitPrice', 'direction', 'stopLoss', 'tradeCurrencySelector'];
         
         fields.forEach(fieldId => {
             const field = document.getElementById(fieldId);
@@ -968,10 +1037,15 @@ class TradingDashboardApp {
         const stopLoss = parseFloat(document.getElementById('stopLoss')?.value) || 0;
 
         if (!quantity || !entryPrice || !exitPrice || !direction) {
+            // Clear calculations
+            this.updateElement('calcGrossPL', this.formatCurrency(0, this.tradeCurrency));
+            this.updateElement('calcNetPL', this.formatCurrency(0, this.tradeCurrency));
+            this.updateElement('calcRR', 'N/A');
+            this.updateElement('calcReturn', '0.00%');
             return;
         }
 
-        // Calculate P&L
+        // Calculate P&L in trade currency
         const priceDiff = direction === 'Long' ? 
             (exitPrice - entryPrice) : (entryPrice - exitPrice);
         
@@ -989,9 +1063,9 @@ class TradingDashboardApp {
             }
         }
 
-        // Update display
-        this.updateElement('calcGrossPL', this.formatCurrency(grossPL));
-        this.updateElement('calcNetPL', this.formatCurrency(netPL));
+        // Update display with trade currency
+        this.updateElement('calcGrossPL', this.formatCurrency(grossPL, this.tradeCurrency));
+        this.updateElement('calcNetPL', this.formatCurrency(netPL, this.tradeCurrency));
         this.updateElement('calcRR', rrRatio);
         this.updateElement('calcReturn', returnPct.toFixed(2) + '%');
 
@@ -1015,6 +1089,9 @@ class TradingDashboardApp {
             const exit = new Date(now.getTime() + 2 * 60 * 60 * 1000);
             exitDate.value = exit.toISOString().slice(0, 16);
         }
+
+        // Update currency labels
+        this.updateTradeCurrencyLabels();
 
         // Calculate initial P&L
         setTimeout(() => this.calculateLivePL(), 100);
@@ -1117,13 +1194,22 @@ class TradingDashboardApp {
                 updated_at: new Date().toISOString()
             };
 
-            // Calculate P&L
+            // Calculate P&L - store in INR base currency
             const priceDiff = tradeData.direction === 'Long' ? 
                 (tradeToSave.exit_price - tradeToSave.entry_price) :
                 (tradeToSave.entry_price - tradeToSave.exit_price);
             
-            tradeToSave.gross_pl = priceDiff * tradeToSave.quantity;
-            tradeToSave.net_pl = tradeToSave.gross_pl - (Math.abs(tradeToSave.gross_pl) * 0.01);
+            let grossPL = priceDiff * tradeToSave.quantity;
+            let netPL = grossPL - (Math.abs(grossPL) * 0.01);
+
+            // Convert to INR if trade currency is USD
+            if (this.tradeCurrency === 'USD') {
+                grossPL = this.convertCurrency(grossPL, 'USD', 'INR');
+                netPL = this.convertCurrency(netPL, 'USD', 'INR');
+            }
+
+            tradeToSave.gross_pl = grossPL;
+            tradeToSave.net_pl = netPL;
 
             // Calculate risk-reward ratio
             if (tradeToSave.stop_loss) {
@@ -1274,12 +1360,14 @@ class TradingDashboardApp {
                 return;
             }
 
+            const stats = this.calculateStats(trades);
+
             container.innerHTML = `
                 <div class="history-controls">
                     <div class="history-stats">
                         <span>Total Trades: <strong>${trades.length}</strong></span>
-                        <span>Win Rate: <strong>${this.calculateStats(trades).winRate}%</strong></span>
-                        <span>Total P&L: <strong class="${this.calculateStats(trades).totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(this.calculateStats(trades).totalPL)}</strong></span>
+                        <span>Win Rate: <strong>${stats.winRate}%</strong></span>
+                        <span>Total P&L: <strong class="${stats.totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(stats.totalPL)}</strong></span>
                     </div>
                 </div>
                 <div class="history-table-container">
@@ -1829,12 +1917,11 @@ class TradingDashboardApp {
         
         if (!calendarContainer) return;
 
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth();
+        const year = this.currentCalendarDate.getFullYear();
+        const month = this.currentCalendarDate.getMonth();
         
         if (calendarTitle) {
-            calendarTitle.textContent = `P&L Calendar - ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
+            calendarTitle.textContent = `P&L Calendar - ${this.currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
         }
 
         // Generate calendar HTML
@@ -1908,7 +1995,7 @@ class TradingDashboardApp {
     renderReportsCharts(trades) {
         if (!trades || trades.length === 0) return;
 
-        // Destroy existing charts
+        // Destroy existing report charts
         Object.keys(this.charts).forEach(key => {
             if (key.includes('report') && this.charts[key] && typeof this.charts[key].destroy === 'function') {
                 this.charts[key].destroy();
@@ -2018,10 +2105,12 @@ class TradingDashboardApp {
     }
 
     changeCalendarMonth(delta) {
-        // Calendar navigation logic - you can implement this to show different months
-        console.log('Calendar month changed by', delta);
-        // For now, just show a message
-        this.showToast(`Calendar navigation: ${delta > 0 ? 'Next' : 'Previous'} month`, 'info');
+        this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + delta);
+        
+        // Re-render calendar with new month
+        const trades = this.loadTrades().then(trades => {
+            this.renderCalendar(trades);
+        });
     }
 
     generateReports(trades) {
@@ -2136,6 +2225,13 @@ class TradingDashboardApp {
                 <div class="report-item">
                     <span class="report-label">Trades:</span>
                     <span class="report-value">${bestStrategy.count}</span>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="report-item">
+                    <span class="report-label">Status:</span>
+                    <span class="report-value">Need more trades for analysis</span>
                 </div>
             `;
         }
