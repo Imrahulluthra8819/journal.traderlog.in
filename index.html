@@ -133,6 +133,13 @@
                 </ul>
                 
                 <div class="nav-user">
+                    <div class="currency-selector">
+                        <label for="currencySelector">Currency:</label>
+                        <select id="currencySelector">
+                            <option value="INR">INR (₹)</option>
+                            <option value="USD">USD ($)</option>
+                        </select>
+                    </div>
                     <div class="user-info">
                         <span class="user-name" id="currentUserName">User</span>
                     </div>
@@ -764,10 +771,21 @@
                     </div>
                 </section>
 
-                <!-- Reports Section -->
+                <!-- Enhanced Reports Section -->
                 <section id="reports" class="section">
                     <div class="section-header">
                         <h1>Reports & Calendar</h1>
+                    </div>
+
+                    <!-- Performance Charts -->
+                    <div class="chart-container">
+                        <h3>Monthly P&L Performance</h3>
+                        <canvas id="monthlyPLChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Win/Loss Distribution</h3>
+                        <canvas id="winLossChart"></canvas>
                     </div>
 
                     <!-- P&L Calendar -->
@@ -775,7 +793,7 @@
                         <div class="card__header">
                             <div class="calendar-nav">
                                 <button id="prevMonth" class="btn btn--secondary">‹</button>
-                                <h3 id="calendarTitle">P&L Calendar - July 2025</h3>
+                                <h3 id="calendarTitle">P&L Calendar - August 2025</h3>
                                 <button id="nextMonth" class="btn btn--secondary">›</button>
                             </div>
                         </div>
@@ -786,7 +804,7 @@
                             <div class="calendar-legend">
                                 <div class="legend-item">
                                     <div class="legend-color profit-high"></div>
-                                    <span>High Profit (&gt;₹1000)</span>
+                                    <span>High Profit (>₹1000)</span>
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-color profit-low"></div>
@@ -802,7 +820,7 @@
                                 </div>
                                 <div class="legend-item">
                                     <div class="legend-color loss-high"></div>
-                                    <span>High Loss (&lt;-₹1000)</span>
+                                    <span>High Loss (<-₹1000)</span>
                                 </div>
                             </div>
                         </div>
