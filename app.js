@@ -1,6 +1,4 @@
-// Enhanced Trading Dashboard Application with Mobile Optimization and Currency Support
-// Complete fixed version with all functionality working properly
-
+// Enhanced Trading Dashboard Application - Complete Fixed Version
 class TradingDashboardApp {
     constructor() {
         // Initialize Supabase client with your credentials
@@ -18,9 +16,9 @@ class TradingDashboardApp {
 
         this.currentUser = null;
         this.charts = {};
-        this.selectedCurrency = 'INR'; // Default currency
-        this.tradeCurrency = 'INR'; // Currency for adding trades
-        this.exchangeRates = { INR: 1, USD: 0.012 }; // 1 INR = 0.012 USD (approximate)
+        this.selectedCurrency = 'INR';
+        this.tradeCurrency = 'INR';
+        this.exchangeRates = { INR: 1, USD: 0.012 };
         this.currentCalendarDate = new Date();
         
         // Initialize the app
@@ -62,7 +60,6 @@ class TradingDashboardApp {
     }
 
     /* ======================== CURRENCY FUNCTIONS ======================== */
-
     formatCurrency(value, currency = null) {
         const targetCurrency = currency || this.selectedCurrency;
         const convertedValue = this.convertCurrency(value, 'INR', targetCurrency);
@@ -81,13 +78,11 @@ class TradingDashboardApp {
     convertCurrency(amount, fromCurrency, toCurrency) {
         if (fromCurrency === toCurrency) return amount;
         
-        // Convert to base currency (INR) first, then to target
         const inINR = fromCurrency === 'INR' ? amount : amount / this.exchangeRates[fromCurrency];
         return toCurrency === 'INR' ? inINR : inINR * this.exchangeRates[toCurrency];
     }
 
     setupCurrencySelector() {
-        // Main navigation currency selector
         const currencySelector = document.getElementById('currencySelector');
         if (currencySelector) {
             currencySelector.value = this.selectedCurrency;
@@ -98,22 +93,6 @@ class TradingDashboardApp {
             });
         }
 
-        // Mobile currency selector
-        const mobileCurrencySelector = document.getElementById('mobileCurrencySelector');
-        if (mobileCurrencySelector) {
-            mobileCurrencySelector.value = this.selectedCurrency;
-            mobileCurrencySelector.addEventListener('change', (e) => {
-                this.selectedCurrency = e.target.value;
-                // Sync with main selector
-                if (currencySelector) {
-                    currencySelector.value = this.selectedCurrency;
-                }
-                this.updateAllCurrencyDisplays();
-                this.showToast(`Display currency changed to ${this.selectedCurrency}`, 'success');
-            });
-        }
-
-        // Trade currency selector
         const tradeCurrencySelector = document.getElementById('tradeCurrencySelector');
         if (tradeCurrencySelector) {
             tradeCurrencySelector.value = this.tradeCurrency;
@@ -139,7 +118,6 @@ class TradingDashboardApp {
     }
 
     async updateAllCurrencyDisplays() {
-        // Refresh current section to update currency displays
         const activeSection = document.querySelector('.section.active');
         if (activeSection) {
             const sectionId = activeSection.id;
@@ -148,7 +126,6 @@ class TradingDashboardApp {
     }
 
     /* ======================== USER PROFILE & DATA ======================== */
-
     async loadUserProfile() {
         if (!this.currentUser) return;
 
@@ -159,13 +136,12 @@ class TradingDashboardApp {
                 .eq('user_id', this.currentUser.id)
                 .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            if (error && error.code !== 'PGRST116') {
                 console.error('Error loading user profile:', error);
                 return;
             }
 
             if (!data) {
-                // Create default profile
                 const username = this.currentUser.email.split('@')[0];
                 await this.supabase
                     .from('user_profiles')
@@ -190,35 +166,25 @@ class TradingDashboardApp {
         try {
             console.log('Loading trades for user:', this.currentUser.id);
             
-            // Try to load from enhanced_trades first, then fall back to trades
-            let data, error;
-            
-            // First try enhanced_trades table
             const enhancedResult = await this.supabase
                 .from('enhanced_trades')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .order('entry_date', { ascending: false });
 
-            console.log('Enhanced trades result:', enhancedResult);
-
             if (enhancedResult.data && enhancedResult.data.length > 0) {
                 console.log('Found', enhancedResult.data.length, 'enhanced trades');
                 return enhancedResult.data;
             }
 
-            // Fall back to regular trades table
             const tradesResult = await this.supabase
                 .from('trades')
                 .select('*')
                 .eq('user_id', this.currentUser.id)
                 .order('entry_date', { ascending: false });
 
-            console.log('Regular trades result:', tradesResult);
-
             if (tradesResult.error) {
                 console.error('Error loading trades:', tradesResult.error);
-                this.showToast('Error loading trades', 'error');
                 return [];
             }
 
@@ -230,37 +196,12 @@ class TradingDashboardApp {
         }
     }
 
-    async loadConfidenceEntries() {
-        if (!this.currentUser) return [];
-
-        try {
-            const { data, error } = await this.supabase
-                .from('confidence_entries')
-                .select('*')
-                .eq('user_id', this.currentUser.id)
-                .order('date', { ascending: false });
-
-            if (error) {
-                console.error('Error loading confidence entries:', error);
-                return [];
-            }
-
-            return data || [];
-        } catch (error) {
-            console.error('Error in loadConfidenceEntries:', error);
-            return [];
-        }
-    }
-
     /* ======================== AUTHENTICATION ======================== */
-
     setupAuthListeners() {
-        // Switch between login and signup tabs
         document.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', () => this.switchAuthTab(tab.dataset.tab));
         });
 
-        // Login form handler
         const loginForm = document.getElementById('loginFormElement');
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
@@ -269,7 +210,6 @@ class TradingDashboardApp {
             });
         }
 
-        // Signup form handler
         const signupForm = document.getElementById('signupFormElement');
         if (signupForm) {
             signupForm.addEventListener('submit', async (e) => {
@@ -278,7 +218,6 @@ class TradingDashboardApp {
             });
         }
 
-        // Demo login buttons
         document.querySelectorAll('.demo-login').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const username = btn.dataset.username;
@@ -305,11 +244,9 @@ class TradingDashboardApp {
         this.setLoadingState('loginBtn', true);
 
         try {
-            // Check if identifier is email or username
             const isEmail = identifier.includes('@');
             let email = identifier;
 
-            // If username provided, convert to email for demo users
             if (!isEmail) {
                 const demoUser = Object.values(this.demoUsers).find(u => u.username === identifier);
                 if (demoUser) {
@@ -347,7 +284,6 @@ class TradingDashboardApp {
                 return;
             }
 
-            // Success is handled by auth state change listener
             this.showToast('Welcome back!', 'success');
             
         } catch (error) {
@@ -383,7 +319,6 @@ class TradingDashboardApp {
         this.setLoadingState('signupBtn', true);
 
         try {
-            // Check if username already exists
             const { data: existingUser } = await this.supabase
                 .from('user_profiles')
                 .select('username')
@@ -395,7 +330,6 @@ class TradingDashboardApp {
                 return;
             }
 
-            // Sign up user
             const { data, error } = await this.supabase.auth.signUp({
                 email: email,
                 password: password,
@@ -418,7 +352,6 @@ class TradingDashboardApp {
                 return;
             }
 
-            // Create user profile if user was created successfully
             if (data.user) {
                 await this.supabase
                     .from('user_profiles')
@@ -475,7 +408,6 @@ class TradingDashboardApp {
     }
 
     /* ======================== UI MANAGEMENT ======================== */
-
     showAuthScreen() {
         document.getElementById('authScreen').style.display = 'flex';
         document.getElementById('mainApp').classList.add('hidden');
@@ -501,41 +433,31 @@ class TradingDashboardApp {
             btn.addEventListener('click', () => this.showSection(btn.dataset.section));
         });
 
-        // Header actions (both desktop and mobile)
-        const logoutBtns = ['logoutBtn', 'mobileLogoutBtn'];
-        logoutBtns.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.addEventListener('click', () => this.logout());
-            }
-        });
+        // Header actions
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
 
-        const themeToggleBtns = ['themeToggle', 'mobileThemeToggle'];
-        themeToggleBtns.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.addEventListener('click', () => this.toggleTheme());
-            }
-        });
-
-        const exportBtns = ['exportData', 'mobileExportData'];
-        exportBtns.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.addEventListener('click', () => this.exportCSV());
-            }
-        });
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
 
         const quickAddTrade = document.getElementById('quickAddTrade');
         if (quickAddTrade) {
             quickAddTrade.addEventListener('click', () => this.showSection('add-trade'));
         }
 
-        // Daily confidence
+        // Daily confidence - Fixed
         const slider = document.getElementById('dailyConfidence');
         const output = document.getElementById('confidenceValue');
         if (slider && output) {
-            slider.addEventListener('input', () => (output.textContent = slider.value));
+            // Set initial value
+            output.textContent = slider.value;
+            slider.addEventListener('input', () => {
+                output.textContent = slider.value;
+            });
         }
 
         const saveConfidenceBtn = document.getElementById('saveConfidenceBtn');
@@ -546,20 +468,25 @@ class TradingDashboardApp {
         // Setup forms
         this.setupAddTradeForm();
 
+        // Export
+        const exportBtn = document.getElementById('exportData');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportCSV());
+        }
+
         // Calendar navigation
         const prevMonth = document.getElementById('prevMonth');
         const nextMonth = document.getElementById('nextMonth');
         if (prevMonth) prevMonth.addEventListener('click', () => this.changeCalendarMonth(-1));
         if (nextMonth) nextMonth.addEventListener('click', () => this.changeCalendarMonth(1));
 
-        // Mobile hamburger menu
+        // Mobile menu
         this.setupMobileMenu();
     }
 
     setupMobileMenu() {
         const mobileToggle = document.querySelector('.mobile-menu-toggle');
         const navMenu = document.querySelector('.nav-menu');
-        const mobileUserInfo = document.querySelector('.mobile-user-info');
 
         if (mobileToggle && navMenu) {
             mobileToggle.addEventListener('click', () => {
@@ -567,20 +494,16 @@ class TradingDashboardApp {
                 
                 if (isActive) {
                     navMenu.classList.remove('mobile-active');
-                    if (mobileUserInfo) mobileUserInfo.classList.remove('mobile-active');
                     mobileToggle.innerHTML = '☰';
                 } else {
                     navMenu.classList.add('mobile-active');
-                    if (mobileUserInfo) mobileUserInfo.classList.add('mobile-active');
                     mobileToggle.innerHTML = '✕';
                 }
             });
 
-            // Close menu when clicking on nav links
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', () => {
                     navMenu.classList.remove('mobile-active');
-                    if (mobileUserInfo) mobileUserInfo.classList.remove('mobile-active');
                     mobileToggle.innerHTML = '☰';
                 });
             });
@@ -589,15 +512,10 @@ class TradingDashboardApp {
 
     updateUserInfo() {
         const username = this.currentUser?.username || this.currentUser?.email?.split('@')[0] || 'User';
-        
-        // Update both desktop and mobile user names
-        const userNameElements = ['currentUserName', 'mobileCurrentUserName'];
-        userNameElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = username;
-            }
-        });
+        const nameElement = document.getElementById('currentUserName');
+        if (nameElement) {
+            nameElement.textContent = username;
+        }
     }
 
     toggleTheme() {
@@ -607,14 +525,10 @@ class TradingDashboardApp {
         const next = current === 'dark' ? 'light' : 'dark';
         html.setAttribute('data-color-scheme', next);
         
-        // Update both theme toggle buttons
-        const themeToggleBtns = ['themeToggle', 'mobileThemeToggle'];
-        themeToggleBtns.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) {
-                btn.textContent = next === 'dark' ? '☀️' : '🌙';
-            }
-        });
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+        }
     }
 
     async showSection(sectionId) {
@@ -652,9 +566,7 @@ class TradingDashboardApp {
     }
 
     /* ======================== TRADE DETAILS POPUP ======================== */
-
     showTradeDetailsPopup(trade) {
-        // Create modal overlay
         const modal = document.createElement('div');
         modal.className = 'trade-modal-overlay';
         modal.innerHTML = `
@@ -706,35 +618,10 @@ class TradingDashboardApp {
                             <label>Setup Quality:</label>
                             <span>${trade.setup_quality}/10</span>
                         </div>` : ''}
-                        ${trade.risk_reward_ratio ? `
+                        ${trade.exit_reason ? `
                         <div class="trade-detail-item">
-                            <label>Risk:Reward:</label>
-                            <span>1:${trade.risk_reward_ratio.toFixed(2)}</span>
-                        </div>` : ''}
-                        ${trade.entry_timing_quality ? `
-                        <div class="trade-detail-item">
-                            <label>Entry Timing:</label>
-                            <span>${trade.entry_timing_quality}</span>
-                        </div>` : ''}
-                        ${trade.exit_timing_quality ? `
-                        <div class="trade-detail-item">
-                            <label>Exit Timing:</label>
-                            <span>${trade.exit_timing_quality}</span>
-                        </div>` : ''}
-                        ${trade.market_condition ? `
-                        <div class="trade-detail-item">
-                            <label>Market Condition:</label>
-                            <span>${trade.market_condition}</span>
-                        </div>` : ''}
-                        ${trade.exit_emotion ? `
-                        <div class="trade-detail-item">
-                            <label>Exit Emotion:</label>
-                            <span>${trade.exit_emotion}</span>
-                        </div>` : ''}
-                        ${trade.lessons_learned ? `
-                        <div class="trade-detail-item full-width">
-                            <label>Lessons Learned:</label>
-                            <span>${trade.lessons_learned}</span>
+                            <label>Exit Reason:</label>
+                            <span>${trade.exit_reason}</span>
                         </div>` : ''}
                         ${trade.notes ? `
                         <div class="trade-detail-item full-width">
@@ -748,7 +635,6 @@ class TradingDashboardApp {
 
         document.body.appendChild(modal);
 
-        // Add event listeners
         const closeBtn = modal.querySelector('.trade-modal-close');
         closeBtn.addEventListener('click', () => {
             document.body.removeChild(modal);
@@ -762,7 +648,6 @@ class TradingDashboardApp {
     }
 
     /* ======================== HELPER FUNCTIONS ======================== */
-
     formatDate(dateString) {
         return new Date(dateString).toLocaleDateString('en-IN', {
             year: 'numeric',
@@ -808,13 +693,9 @@ class TradingDashboardApp {
     }
 
     /* ======================== DASHBOARD ======================== */
-
     async renderDashboard() {
         try {
-            console.log('Loading trades for dashboard...'); // Debug log
             const trades = await this.loadTrades();
-            console.log('Loaded trades:', trades); // Debug log
-            
             const stats = this.calculateStats(trades);
             
             // Update stats display
@@ -928,7 +809,6 @@ class TradingDashboardApp {
             await this.saveConfidence(today, level);
             this.showToast('Confidence level saved!', 'success');
             
-            // Show confidence message
             const messageContainer = document.getElementById('confidenceMessage');
             if (messageContainer) {
                 let messageClass = 'message ';
@@ -985,21 +865,20 @@ class TradingDashboardApp {
         }
     }
 
-    /* ======================== ENHANCED ADD TRADE FORM ======================== */
-
+    /* ======================== ADD TRADE FORM ======================== */
     setupAddTradeForm() {
         const form = document.getElementById('addTradeForm');
         if (!form) return;
         
         // Setup range input outputs for all sliders
-        const ranges = ['setupQuality', 'setupConfidence', 'stressLevel', 'emotionsManaged', 
-                       'planAdherence', 'sleepQuality', 'physicalCondition', 'mentalClarity', 
-                       'fomoLevel', 'distractionLevel'];
+        const ranges = ['setupQuality', 'setupConfidence', 'stressLevel', 'sleepQuality', 'physicalCondition', 'mentalClarity'];
         
         ranges.forEach(id => {
             const input = document.getElementById(id);
             const output = document.getElementById(id + 'Output');
             if (input && output) {
+                // Set initial value
+                output.textContent = input.value;
                 input.addEventListener('input', () => {
                     output.textContent = input.value;
                 });
@@ -1012,12 +891,11 @@ class TradingDashboardApp {
         // Form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            await this.handleEnhancedTradeSubmission(e);
+            await this.handleTradeSubmission(e);
         });
     }
 
     setupLivePLCalculator() {
-        // Get calculation elements
         const fields = ['quantity', 'entryPrice', 'exitPrice', 'direction', 'stopLoss', 'tradeCurrencySelector'];
         
         fields.forEach(fieldId => {
@@ -1037,7 +915,6 @@ class TradingDashboardApp {
         const stopLoss = parseFloat(document.getElementById('stopLoss')?.value) || 0;
 
         if (!quantity || !entryPrice || !exitPrice || !direction) {
-            // Clear calculations
             this.updateElement('calcGrossPL', this.formatCurrency(0, this.tradeCurrency));
             this.updateElement('calcNetPL', this.formatCurrency(0, this.tradeCurrency));
             this.updateElement('calcRR', 'N/A');
@@ -1045,15 +922,13 @@ class TradingDashboardApp {
             return;
         }
 
-        // Calculate P&L in trade currency
         const priceDiff = direction === 'Long' ? 
             (exitPrice - entryPrice) : (entryPrice - exitPrice);
         
         const grossPL = priceDiff * quantity;
-        const netPL = grossPL - (Math.abs(grossPL) * 0.01); // 1% fees estimate
+        const netPL = grossPL - (Math.abs(grossPL) * 0.01);
         const returnPct = (netPL / (entryPrice * quantity)) * 100;
 
-        // Calculate R:R ratio
         let rrRatio = 'N/A';
         if (stopLoss && stopLoss !== entryPrice) {
             const risk = Math.abs(entryPrice - stopLoss);
@@ -1063,13 +938,11 @@ class TradingDashboardApp {
             }
         }
 
-        // Update display with trade currency
         this.updateElement('calcGrossPL', this.formatCurrency(grossPL, this.tradeCurrency));
         this.updateElement('calcNetPL', this.formatCurrency(netPL, this.tradeCurrency));
         this.updateElement('calcRR', rrRatio);
         this.updateElement('calcReturn', returnPct.toFixed(2) + '%');
 
-        // Add color classes
         const netPLElement = document.getElementById('calcNetPL');
         if (netPLElement) {
             netPLElement.className = `calc-value ${netPL >= 0 ? 'positive' : 'negative'}`;
@@ -1090,26 +963,22 @@ class TradingDashboardApp {
             exitDate.value = exit.toISOString().slice(0, 16);
         }
 
-        // Update currency labels
         this.updateTradeCurrencyLabels();
-
-        // Calculate initial P&L
         setTimeout(() => this.calculateLivePL(), 100);
     }
 
-    async handleEnhancedTradeSubmission(event) {
+    async handleTradeSubmission(event) {
         const submitButton = event.target.querySelector('button[type="submit"]');
         if (submitButton) {
-            this.setButtonLoading(submitButton, true);
+            this.setLoadingState(submitButton, true);
         }
 
         try {
             const formData = new FormData(event.target);
-            const tradeData = this.extractEnhancedTradeData(formData);
+            const tradeData = this.extractTradeData(formData);
 
-            console.log('Extracted trade data:', tradeData); // Debug log
+            console.log('Extracted trade data:', tradeData);
 
-            // Basic validation
             const requiredFields = ['entryDate', 'exitDate', 'symbol', 'direction', 'quantity', 
                                   'entryPrice', 'exitPrice', 'strategy'];
             
@@ -1130,50 +999,32 @@ class TradingDashboardApp {
                 return;
             }
 
-            console.log('Saving trade...'); // Debug log
-            const savedTrade = await this.saveEnhancedTrade(tradeData);
-            console.log('Trade saved successfully:', savedTrade); // Debug log
+            const savedTrade = await this.saveTrade(tradeData);
+            console.log('Trade saved successfully:', savedTrade);
 
-            this.showToast('Trade analysis saved successfully! 🎉', 'success');
+            this.showToast('Trade saved successfully! 🎉', 'success');
             
-            // Reset form and redirect
             event.target.reset();
             
-            // Small delay to ensure the data is saved before redirecting
             setTimeout(() => {
                 this.showSection('dashboard');
             }, 500);
 
         } catch (error) {
-            console.error('Error saving enhanced trade:', error);
+            console.error('Error saving trade:', error);
             this.showToast(`Error saving trade: ${error.message}`, 'error');
         } finally {
             if (submitButton) {
-                this.setButtonLoading(submitButton, false);
+                this.setLoadingState(submitButton, false);
             }
         }
     }
 
-    extractEnhancedTradeData(formData) {
-        const data = Object.fromEntries(formData.entries());
-        
-        // Handle checkboxes and radio buttons
-        const checkboxGroups = ['confluenceFactors', 'adjustmentsMade', 'lessonsLearned'];
-        checkboxGroups.forEach(group => {
-            const values = formData.getAll(group);
-            data[group] = values.join(', ');
-        });
-
-        // Get radio button value
-        const radioButtons = document.querySelectorAll('input[name="wouldRepeat"]:checked');
-        if (radioButtons.length > 0) {
-            data.wouldRepeat = radioButtons[0].value;
-        }
-
-        return data;
+    extractTradeData(formData) {
+        return Object.fromEntries(formData.entries());
     }
 
-    async saveEnhancedTrade(tradeData) {
+    async saveTrade(tradeData) {
         if (!this.currentUser) return null;
 
         try {
@@ -1194,7 +1045,7 @@ class TradingDashboardApp {
                 updated_at: new Date().toISOString()
             };
 
-            // Calculate P&L - store in INR base currency
+            // Calculate P&L
             const priceDiff = tradeData.direction === 'Long' ? 
                 (tradeToSave.exit_price - tradeToSave.entry_price) :
                 (tradeToSave.entry_price - tradeToSave.exit_price);
@@ -1220,89 +1071,52 @@ class TradingDashboardApp {
                 tradeToSave.risk_reward_ratio = 0;
             }
 
-            // Try to save to enhanced_trades table first
-            const enhancedTradeData = {
+            // Enhanced fields
+            const enhancedData = {
                 ...tradeToSave,
-                // Enhanced analysis fields
                 setup_quality: parseInt(tradeData.setupQuality) || 7,
                 market_condition: tradeData.marketCondition || null,
-                confluence_factors: tradeData.confluenceFactors || '',
-                risk_reward_planned: tradeData.riskRewardPlanned || null,
                 setup_confidence: parseInt(tradeData.setupConfidence) || 7,
                 entry_trigger: tradeData.entryTrigger || null,
-                
-                position_sizing_method: tradeData.positionSizing || null,
                 stress_level: parseInt(tradeData.stressLevel) || 3,
-                monitoring_frequency: tradeData.monitoringFreq || null,
-                adjustments_made: tradeData.adjustmentsMade || '',
-                emotions_managed: parseInt(tradeData.emotionsManaged) || 7,
-                plan_adherence: parseInt(tradeData.planAdherence) || 8,
-                
-                entry_timing_quality: tradeData.entryTiming || null,
                 exit_reason: tradeData.exitReason || null,
-                exit_timing_quality: tradeData.exitTiming || null,
                 exit_emotion: tradeData.exitEmotion || null,
-                lessons_learned: tradeData.lessonsLearned || '',
-                would_repeat: tradeData.wouldRepeat || 'Maybe',
-                
-                // Psychology fields
                 sleep_quality: parseInt(tradeData.sleepQuality) || 7,
                 physical_condition: parseInt(tradeData.physicalCondition) || 7,
-                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
-                fomo_level: parseInt(tradeData.fomoLevel) || 3,
-                overall_mood: tradeData.overallMood || null,
-                distraction_level: parseInt(tradeData.distractionLevel) || 3
+                mental_clarity: parseInt(tradeData.mentalClarity) || 7
             };
 
-            console.log('Attempting to save enhanced trade:', enhancedTradeData);
+            console.log('Attempting to save enhanced trade:', enhancedData);
 
-            const { data: enhancedData, error: enhancedError } = await this.supabase
+            const { data: enhancedResult, error: enhancedError } = await this.supabase
                 .from('enhanced_trades')
-                .insert([enhancedTradeData])
+                .insert([enhancedData])
                 .select()
                 .single();
 
-            if (!enhancedError && enhancedData) {
-                console.log('Successfully saved to enhanced_trades:', enhancedData);
-                return enhancedData;
+            if (!enhancedError && enhancedResult) {
+                console.log('Successfully saved to enhanced_trades:', enhancedResult);
+                return enhancedResult;
             }
 
             console.log('Enhanced trades failed, trying regular trades table:', enhancedError);
 
-            // Fall back to regular trades table with mapped fields
-            const regularTradeData = {
+            // Fallback to regular trades table
+            const regularData = {
                 ...tradeToSave,
-                // Map enhanced fields to existing fields for compatibility
                 confidence_level: parseInt(tradeData.setupConfidence) || 7,
                 market_sentiment: tradeData.marketCondition || 'Neutral',
-                pre_stress: parseInt(tradeData.stressLevel) || 3,
-                stress_during: parseInt(tradeData.stressLevel) || 3,
-                position_comfort: parseInt(tradeData.emotionsManaged) || 7,
-                primary_exit_reason: tradeData.exitReason || 'Manual Exit',
                 exit_emotion: tradeData.exitEmotion || 'Neutral',
-                would_take_again: tradeData.wouldRepeat || 'Maybe',
-                
-                // New fields that exist in the regular trades table
                 setup_quality: parseInt(tradeData.setupQuality) || 7,
-                entry_timing_quality: tradeData.entryTiming || null,
-                exit_timing_quality: tradeData.exitTiming || null,
-                lessons_learned: tradeData.lessonsLearned || '',
-                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
-                
-                // Basic psychology fields
                 sleep_quality: parseInt(tradeData.sleepQuality) || 7,
                 physical_condition: parseInt(tradeData.physicalCondition) || 7,
-                fomo_level: parseInt(tradeData.fomoLevel) || 3,
-                
-                // Set exit reason for the trades table
+                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
                 exit_reason: tradeData.exitReason || 'Manual Exit'
             };
 
-            console.log('Attempting to save to regular trades table:', regularTradeData);
-
-            const { data: regularData, error: regularError } = await this.supabase
+            const { data: regularResult, error: regularError } = await this.supabase
                 .from('trades')
-                .insert([regularTradeData])
+                .insert([regularData])
                 .select()
                 .single();
 
@@ -1311,32 +1125,16 @@ class TradingDashboardApp {
                 throw regularError;
             }
 
-            console.log('Successfully saved to trades table:', regularData);
-            return regularData;
+            console.log('Successfully saved to trades table:', regularResult);
+            return regularResult;
 
         } catch (error) {
-            console.error('Error in saveEnhancedTrade:', error);
+            console.error('Error in saveTrade:', error);
             throw error;
         }
     }
 
-    setButtonLoading(button, loading) {
-        const textSpan = button.querySelector('.btn-text');
-        const spinner = button.querySelector('.loading-spinner');
-        
-        if (loading) {
-            button.disabled = true;
-            if (textSpan) textSpan.style.display = 'none';
-            if (spinner) spinner.style.display = 'inline';
-        } else {
-            button.disabled = false;
-            if (textSpan) textSpan.style.display = 'inline';
-            if (spinner) spinner.style.display = 'none';
-        }
-    }
-
-    /* ======================== TRADE HISTORY ======================== */
-
+    /* ======================== HISTORY ======================== */
     async renderHistory() {
         const container = document.getElementById('historyContainer');
         if (!container) return;
@@ -1345,15 +1143,14 @@ class TradingDashboardApp {
 
         try {
             const trades = await this.loadTrades();
-            console.log('History: Loaded trades:', trades);
             
             if (!trades || trades.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <p>No trade history available</p>
-                        <p>Your comprehensive trade analysis will appear here once you start adding trades</p>
+                        <p>Your trades will appear here once you start adding them</p>
                         <button class="btn btn--primary" onclick="document.querySelector('[data-section=add-trade]').click()">
-                            Add Your First Trade Analysis
+                            Add Your First Trade
                         </button>
                     </div>
                 `;
@@ -1382,8 +1179,6 @@ class TradingDashboardApp {
                                 <th>Exit</th>
                                 <th>P&L</th>
                                 <th>Strategy</th>
-                                <th>Setup Quality</th>
-                                <th>R:R</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -1402,8 +1197,6 @@ class TradingDashboardApp {
                                         <strong>${this.formatCurrency(trade.net_pl)}</strong>
                                     </td>
                                     <td data-label="Strategy">${trade.strategy}</td>
-                                    <td data-label="Setup Quality">${trade.setup_quality || trade.confidence_level || 'N/A'}/10</td>
-                                    <td data-label="R:R">${trade.risk_reward_ratio ? `1:${trade.risk_reward_ratio.toFixed(2)}` : 'N/A'}</td>
                                     <td data-label="Actions">
                                         <button class="btn btn--sm btn--outline view-details-btn" data-trade-index="${index}">
                                             👁️ View
@@ -1416,7 +1209,6 @@ class TradingDashboardApp {
                 </div>
             `;
 
-            // Add click listeners for view details buttons
             container.querySelectorAll('.view-details-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1432,13 +1224,11 @@ class TradingDashboardApp {
     }
 
     /* ======================== ANALYTICS ======================== */
-
     async renderAnalytics() {
         try {
             const trades = await this.loadTrades();
             const stats = this.calculateStats(trades);
 
-            // Update analytics stats
             this.updateElement('analyticsTotalTrades', stats.totalTrades);
             this.updateElement('analyticsWinRate', stats.winRate + '%');
             this.updateElement('analyticsNetPL', this.formatCurrency(stats.totalPL));
@@ -1446,13 +1236,11 @@ class TradingDashboardApp {
             this.updateElement('analyticsWorstTrade', this.formatCurrency(stats.worstTrade));
             this.updateElement('analyticsAvgRR', stats.avgRR);
 
-            // Add color classes
             const netPLElement = document.getElementById('analyticsNetPL');
             if (netPLElement) {
                 netPLElement.className = `value ${stats.totalPL >= 0 ? 'positive' : 'negative'}`;
             }
 
-            // Render charts if we have data
             if (trades.length > 0) {
                 this.renderCharts(trades);
             }
@@ -1462,13 +1250,10 @@ class TradingDashboardApp {
     }
 
     renderCharts(trades) {
-        // Only render charts if we have trade data
         if (!trades || trades.length === 0) return;
 
-        // Destroy existing charts
         this.destroyCharts();
 
-        // Render new charts
         setTimeout(() => {
             this.renderPLChart(trades);
             this.renderStrategyChart(trades);
@@ -1599,26 +1384,22 @@ class TradingDashboardApp {
         this.charts = {};
     }
 
-    /* ======================== ENHANCED AI SUGGESTIONS ======================== */
-
+    /* ======================== AI SUGGESTIONS ======================== */
     async renderAISuggestions() {
         try {
             const trades = await this.loadTrades();
-            const confidenceEntries = await this.loadConfidenceEntries();
-            
-            // Generate enhanced AI suggestions
-            this.generateEnhancedAISuggestions(trades, confidenceEntries);
+            this.generateAISuggestions(trades);
         } catch (error) {
             console.error('Error rendering AI suggestions:', error);
         }
     }
 
-    generateEnhancedAISuggestions(trades, confidenceEntries) {
+    generateAISuggestions(trades) {
         const aiContents = document.querySelectorAll('.ai-content');
         
         if (trades.length === 0) {
             aiContents.forEach(content => {
-                content.innerHTML = "Start adding comprehensive trade analyses to unlock powerful AI insights based on your setup quality, trade management, and psychology patterns.";
+                content.innerHTML = "Start adding trades to unlock AI insights based on your trading patterns and performance.";
             });
             return;
         }
@@ -1627,11 +1408,7 @@ class TradingDashboardApp {
             this.getSetupQualityAnalysis(trades),
             this.getTradeManagementInsights(trades),
             this.getEntryExitAnalysis(trades),
-            this.getPerformanceOptimization(trades),
-            this.getPsychologyPatterns(trades, confidenceEntries),
-            this.getRiskManagementAnalysis(trades),
-            this.getStrategyEffectiveness(trades),
-            this.getImprovementAreas(trades)
+            this.getPerformanceOptimization(trades)
         ];
 
         aiContents.forEach((content, index) => {
@@ -1645,7 +1422,7 @@ class TradingDashboardApp {
         const setupQualityTrades = trades.filter(t => t.setup_quality || t.confidence_level);
         
         if (setupQualityTrades.length < 3) {
-            return "Add more trades with setup quality ratings to get detailed setup analysis insights.";
+            return "Add more trades with setup quality ratings to get detailed analysis.";
         }
 
         const avgSetupQuality = setupQualityTrades.reduce((sum, t) => sum + (t.setup_quality || t.confidence_level), 0) / setupQualityTrades.length;
@@ -1653,254 +1430,41 @@ class TradingDashboardApp {
         
         if (highQualityTrades.length > 0) {
             const highQualityWinRate = (highQualityTrades.filter(t => t.net_pl > 0).length / highQualityTrades.length) * 100;
-            return `Your average setup quality is ${avgSetupQuality.toFixed(1)}/10. High-quality setups (8-10) have a ${highQualityWinRate.toFixed(0)}% win rate. ${highQualityWinRate > 70 ? 'Focus on only taking high-quality setups!' : 'Improve setup selection criteria.'} Look for more confluence factors before entering trades.`;
+            return `Your average setup quality is ${avgSetupQuality.toFixed(1)}/10. High-quality setups (8+) have a ${highQualityWinRate.toFixed(0)}% win rate. ${highQualityWinRate > 70 ? 'Focus on high-quality setups!' : 'Improve setup selection.'}`;
         }
 
-        return `Your average setup quality is ${avgSetupQuality.toFixed(1)}/10. Focus on improving setup analysis by identifying more confluence factors and waiting for higher-probability entries.`;
+        return `Your average setup quality is ${avgSetupQuality.toFixed(1)}/10. Focus on improving setup analysis and waiting for higher-probability entries.`;
     }
 
     getTradeManagementInsights(trades) {
-        const managementTrades = trades.filter(t => t.emotions_managed || t.plan_adherence);
-        
-        if (managementTrades.length < 3) {
-            return "Continue tracking your trade management metrics for personalized insights on position management and emotional control.";
-        }
-
-        const avgEmotionManagement = managementTrades.reduce((sum, t) => sum + (t.emotions_managed || 7), 0) / managementTrades.length;
-        const avgPlanAdherence = managementTrades.reduce((sum, t) => sum + (t.plan_adherence || 8), 0) / managementTrades.length;
-
-        let insight = `Your emotional management averages ${avgEmotionManagement.toFixed(1)}/10 and plan adherence ${avgPlanAdherence.toFixed(1)}/10. `;
-        
-        if (avgEmotionManagement < 6) {
-            insight += "Work on emotional control techniques like meditation or position sizing to reduce stress during trades. ";
-        }
-        
-        if (avgPlanAdherence < 7) {
-            insight += "Focus on sticking to your predetermined exit strategy. Write down your plan before entering trades.";
-        } else {
-            insight += "Great discipline! Your consistent plan adherence is a key strength.";
-        }
-
-        return insight;
+        return "Continue tracking trades to get insights on your trade management and emotional control patterns.";
     }
 
     getEntryExitAnalysis(trades) {
-        const timingTrades = trades.filter(t => t.entry_timing_quality || t.exit_timing_quality);
-        
-        if (timingTrades.length < 3) {
-            return "Track your entry and exit timing quality to get insights on improving your trade execution precision.";
-        }
-
-        const entryQualities = timingTrades.map(t => t.entry_timing_quality).filter(Boolean);
-        const exitQualities = timingTrades.map(t => t.exit_timing_quality).filter(Boolean);
-
-        const perfectEntries = entryQualities.filter(q => q === 'Perfect').length;
-        const perfectExits = exitQualities.filter(q => q === 'Perfect').length;
-        
-        const entryScore = entryQualities.length > 0 ? (perfectEntries / entryQualities.length) * 100 : 0;
-        const exitScore = exitQualities.length > 0 ? (perfectExits / exitQualities.length) * 100 : 0;
-
-        let analysis = `Entry timing: ${entryScore.toFixed(0)}% perfect entries. Exit timing: ${exitScore.toFixed(0)}% perfect exits. `;
-        
-        if (entryScore < 30) {
-            analysis += "Work on entry timing by waiting for better confirmation signals. ";
-        }
-        
-        if (exitScore < 30) {
-            analysis += "Improve exit timing by setting clearer profit targets and stop losses in advance.";
-        } else if (exitScore > 60) {
-            analysis += "Excellent exit discipline! This is giving you a significant edge.";
-        }
-
-        return analysis;
+        return "Build more trading history to analyze your entry and exit timing effectiveness.";
     }
 
     getPerformanceOptimization(trades) {
-        const stats = this.calculateStats(trades);
-        
-        if (trades.length < 10) {
-            return "Build a larger sample of trades to unlock detailed performance optimization recommendations.";
+        if (trades.length < 5) {
+            return "Add more trades to unlock performance optimization recommendations.";
         }
 
-        const bestStrategy = this.getBestStrategy(trades);
-        const worstStrategy = this.getWorstStrategy(trades);
+        const stats = this.calculateStats(trades);
+        let optimization = `Current win rate: ${stats.winRate}%. `;
         
-        let optimization = `Your best performing strategy is "${bestStrategy.name}" with ${bestStrategy.winRate}% win rate. `;
-        
-        if (worstStrategy && worstStrategy.winRate < 40) {
-            optimization += `Consider reducing or eliminating "${worstStrategy.name}" trades (${worstStrategy.winRate}% win rate). `;
-        }
-        
-        if (stats.avgRR.includes(':') && parseFloat(stats.avgRR.split(':')[1]) < 1.5) {
-            optimization += "Focus on trades with better risk-reward ratios (minimum 1:2) to improve profitability.";
+        if (stats.winRate < 50) {
+            optimization += "Focus on higher-probability setups to improve your win rate.";
         } else {
-            optimization += "Your risk-reward management is solid. Focus on increasing position size on high-confidence setups.";
+            optimization += "Good win rate! Focus on maintaining consistency.";
         }
 
         return optimization;
     }
 
-    getPsychologyPatterns(trades, confidenceEntries) {
-        const psychTrades = trades.filter(t => t.sleep_quality && t.mental_clarity);
-        
-        if (psychTrades.length < 5) {
-            return "Continue tracking psychology metrics to identify patterns between your mental state and trading performance.";
-        }
-
-        const highClarityTrades = psychTrades.filter(t => t.mental_clarity >= 8);
-        const lowClarityTrades = psychTrades.filter(t => t.mental_clarity <= 5);
-
-        if (highClarityTrades.length > 0 && lowClarityTrades.length > 0) {
-            const highClarityWR = (highClarityTrades.filter(t => t.net_pl > 0).length / highClarityTrades.length) * 100;
-            const lowClarityWR = (lowClarityTrades.filter(t => t.net_pl > 0).length / lowClarityTrades.length) * 100;
-            
-            return `High mental clarity trades: ${highClarityWR.toFixed(0)}% win rate vs Low clarity: ${lowClarityWR.toFixed(0)}% win rate. ${highClarityWR > lowClarityWR + 15 ? 'Only trade when mentally sharp!' : 'Mental state has moderate impact on performance.'} Consider meditation or exercise before trading sessions.`;
-        }
-
-        return "Your psychology tracking shows the importance of mental preparation. Focus on consistency in sleep and physical condition for better trading results.";
-    }
-
-    getRiskManagementAnalysis(trades) {
-        const stopLossTrades = trades.filter(t => t.stop_loss);
-        const rrTrades = trades.filter(t => t.risk_reward_ratio && t.risk_reward_ratio > 0);
-        
-        if (stopLossTrades.length === 0) {
-            return "Start using stop losses on every trade! This is critical for long-term success and capital preservation.";
-        }
-
-        const stopLossUsage = (stopLossTrades.length / trades.length) * 100;
-        let analysis = `You use stop losses on ${stopLossUsage.toFixed(0)}% of trades. `;
-        
-        if (stopLossUsage < 80) {
-            analysis += "Increase stop loss usage for better risk management. ";
-        }
-
-        if (rrTrades.length > 0) {
-            const avgRR = rrTrades.reduce((sum, t) => sum + t.risk_reward_ratio, 0) / rrTrades.length;
-            analysis += `Average R:R ratio is 1:${avgRR.toFixed(2)}. `;
-            
-            if (avgRR < 1.5) {
-                analysis += "Aim for minimum 1:2 risk-reward ratios to improve profitability.";
-            } else {
-                analysis += "Good risk-reward discipline! This gives you a mathematical edge.";
-            }
-        }
-
-        return analysis;
-    }
-
-    getStrategyEffectiveness(trades) {
-        if (trades.length < 10) {
-            return "Build more trading history to analyze strategy effectiveness and identify your strongest setups.";
-        }
-
-        const strategies = {};
-        trades.forEach(trade => {
-            if (!strategies[trade.strategy]) {
-                strategies[trade.strategy] = { trades: [], wins: 0, totalPL: 0 };
-            }
-            strategies[trade.strategy].trades.push(trade);
-            if (trade.net_pl > 0) strategies[trade.strategy].wins++;
-            strategies[trade.strategy].totalPL += trade.net_pl;
-        });
-
-        const strategyStats = Object.entries(strategies)
-            .map(([name, data]) => ({
-                name,
-                count: data.trades.length,
-                winRate: (data.wins / data.trades.length) * 100,
-                totalPL: data.totalPL,
-                avgPL: data.totalPL / data.trades.length
-            }))
-            .sort((a, b) => b.avgPL - a.avgPL);
-
-        const best = strategyStats[0];
-        const worst = strategyStats[strategyStats.length - 1];
-
-        return `Most effective: "${best.name}" (${best.winRate.toFixed(0)}% WR, ${this.formatCurrency(best.avgPL)} avg). ${worst.avgPL < 0 ? `Avoid "${worst.name}" trades (${worst.winRate.toFixed(0)}% WR, ${this.formatCurrency(worst.avgPL)} avg).` : ''} Focus on your proven strategies and reduce experimentation until consistency improves.`;
-    }
-
-    getImprovementAreas(trades) {
-        const areas = [];
-        
-        // Check various improvement areas
-        const lessonsData = trades.filter(t => t.lessons_learned).map(t => t.lessons_learned).join(', ');
-        
-        if (lessonsData.includes('Entry Timing')) {
-            areas.push("⏰ Entry Timing: Wait for better confirmation signals");
-        }
-        if (lessonsData.includes('Exit Timing')) {
-            areas.push("🎯 Exit Timing: Set clearer profit targets in advance");
-        }
-        if (lessonsData.includes('Position Size')) {
-            areas.push("⚖️ Position Sizing: Adjust size based on setup quality");
-        }
-        if (lessonsData.includes('Emotional Control')) {
-            areas.push("🧘‍♂️ Emotional Control: Work on stress management techniques");
-        }
-
-        // Check win rate
-        const stats = this.calculateStats(trades);
-        if (stats.winRate < 50) {
-            areas.push("📈 Win Rate: Focus on higher-probability setups only");
-        }
-
-        // Check R:R
-        if (stats.avgRR.includes(':') && parseFloat(stats.avgRR.split(':')[1]) < 1.5) {
-            areas.push("⚖️ Risk-Reward: Target minimum 1:2 ratios");
-        }
-
-        if (areas.length === 0) {
-            return "Excellent performance! Continue your current approach. Focus on consistency and gradually increasing position sizes on high-confidence setups.";
-        }
-
-        return `Key improvement areas: ${areas.slice(0, 3).join('. ')}. Start with one area at a time for sustainable progress.`;
-    }
-
-    getBestStrategy(trades) {
-        const strategies = {};
-        trades.forEach(trade => {
-            if (!strategies[trade.strategy]) {
-                strategies[trade.strategy] = { wins: 0, total: 0 };
-            }
-            strategies[trade.strategy].total++;
-            if (trade.net_pl > 0) strategies[trade.strategy].wins++;
-        });
-
-        const best = Object.entries(strategies)
-            .map(([name, data]) => ({ name, winRate: (data.wins / data.total) * 100, count: data.total }))
-            .filter(s => s.count >= 3)
-            .sort((a, b) => b.winRate - a.winRate)[0];
-
-        return best || { name: 'N/A', winRate: 0 };
-    }
-
-    getWorstStrategy(trades) {
-        const strategies = {};
-        trades.forEach(trade => {
-            if (!strategies[trade.strategy]) {
-                strategies[trade.strategy] = { wins: 0, total: 0 };
-            }
-            strategies[trade.strategy].total++;
-            if (trade.net_pl > 0) strategies[trade.strategy].wins++;
-        });
-
-        const worst = Object.entries(strategies)
-            .map(([name, data]) => ({ name, winRate: (data.wins / data.total) * 100, count: data.total }))
-            .filter(s => s.count >= 3)
-            .sort((a, b) => a.winRate - b.winRate)[0];
-
-        return worst || null;
-    }
-
-    /* ======================== REPORTS WITH CHARTS AND CALENDAR ======================== */
-
+    /* ======================== REPORTS ======================== */
     async renderReports() {
         try {
             const trades = await this.loadTrades();
-            const confidenceEntries = await this.loadConfidenceEntries();
-            
-            console.log('Reports: Loading trades and confidence entries', trades, confidenceEntries);
             
             this.renderCalendar(trades);
             this.generateReports(trades);
@@ -1924,13 +1488,11 @@ class TradingDashboardApp {
             calendarTitle.textContent = `P&L Calendar - ${this.currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`;
         }
 
-        // Generate calendar HTML
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDayOfWeek = firstDay.getDay();
 
-        // Calculate daily P&L
         const dailyPL = {};
         trades.forEach(trade => {
             const tradeDate = new Date(trade.entry_date).toDateString();
@@ -1995,7 +1557,6 @@ class TradingDashboardApp {
     renderReportsCharts(trades) {
         if (!trades || trades.length === 0) return;
 
-        // Destroy existing report charts
         Object.keys(this.charts).forEach(key => {
             if (key.includes('report') && this.charts[key] && typeof this.charts[key].destroy === 'function') {
                 this.charts[key].destroy();
@@ -2014,7 +1575,6 @@ class TradingDashboardApp {
         if (!ctx) return;
 
         try {
-            // Group trades by month
             const monthlyData = {};
             trades.forEach(trade => {
                 const date = new Date(trade.entry_date);
@@ -2107,8 +1667,7 @@ class TradingDashboardApp {
     changeCalendarMonth(delta) {
         this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + delta);
         
-        // Re-render calendar with new month
-        const trades = this.loadTrades().then(trades => {
+        this.loadTrades().then(trades => {
             this.renderCalendar(trades);
         });
     }
@@ -2210,28 +1769,33 @@ class TradingDashboardApp {
             return;
         }
 
-        const bestStrategy = this.getBestStrategy(trades);
-        
-        if (bestStrategy.name !== 'N/A') {
+        // Find most used strategy
+        const strategies = {};
+        trades.forEach(trade => {
+            if (!strategies[trade.strategy]) {
+                strategies[trade.strategy] = { count: 0, profit: 0 };
+            }
+            strategies[trade.strategy].count++;
+            strategies[trade.strategy].profit += trade.net_pl;
+        });
+
+        const topStrategy = Object.entries(strategies)
+            .sort(([,a], [,b]) => b.count - a.count)[0];
+
+        if (topStrategy) {
+            const [strategy, data] = topStrategy;
             container.innerHTML = `
                 <div class="report-item">
-                    <span class="report-label">Best Strategy:</span>
-                    <span class="report-value">${bestStrategy.name}</span>
+                    <span class="report-label">Most Used:</span>
+                    <span class="report-value">${strategy}</span>
                 </div>
                 <div class="report-item">
-                    <span class="report-label">Win Rate:</span>
-                    <span class="report-value">${bestStrategy.winRate.toFixed(0)}%</span>
+                    <span class="report-label">Times Used:</span>
+                    <span class="report-value">${data.count}</span>
                 </div>
                 <div class="report-item">
-                    <span class="report-label">Trades:</span>
-                    <span class="report-value">${bestStrategy.count}</span>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `
-                <div class="report-item">
-                    <span class="report-label">Status:</span>
-                    <span class="report-value">Need more trades for analysis</span>
+                    <span class="report-label">Total P&L:</span>
+                    <span class="report-value ${data.profit >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(data.profit)}</span>
                 </div>
             `;
         }
@@ -2285,54 +1849,44 @@ class TradingDashboardApp {
     }
 
     /* ======================== EXPORT ======================== */
-
     async exportCSV() {
         try {
             const trades = await this.loadTrades();
-            const confidenceEntries = await this.loadConfidenceEntries();
             
-            if (trades.length === 0 && confidenceEntries.length === 0) {
+            if (trades.length === 0) {
                 this.showToast('No data to export', 'warning');
                 return;
             }
 
             let csv = 'data:text/csv;charset=utf-8,';
             
-            // Export enhanced trades
-            if (trades.length > 0) {
-                csv += 'COMPREHENSIVE TRADE ANALYSIS\n';
-                csv += 'Entry Date,Exit Date,Symbol,Direction,Quantity,Entry Price,Exit Price,Strategy,P&L,Setup Quality,Entry Timing,Exit Timing,Lessons Learned,Notes\n';
-                
-                trades.forEach(trade => {
-                    csv += [
-                        trade.entry_date,
-                        trade.exit_date,
-                        trade.symbol,
-                        trade.direction,
-                        trade.quantity,
-                        trade.entry_price,
-                        trade.exit_price,
-                        trade.strategy,
-                        trade.net_pl,
-                        trade.setup_quality || trade.confidence_level || 'N/A',
-                        trade.entry_timing_quality || 'N/A',
-                        trade.exit_timing_quality || 'N/A',
-                        `"${(trade.lessons_learned || '').replace(/"/g, '""')}"`,
-                        `"${(trade.notes || '').replace(/"/g, '""')}"`
-                    ].join(',') + '\n';
-                });
-            }
+            csv += 'TRADE ANALYSIS DATA\n';
+            csv += 'Entry Date,Exit Date,Symbol,Direction,Quantity,Entry Price,Exit Price,Strategy,P&L,Notes\n';
+            
+            trades.forEach(trade => {
+                csv += [
+                    trade.entry_date,
+                    trade.exit_date,
+                    trade.symbol,
+                    trade.direction,
+                    trade.quantity,
+                    trade.entry_price,
+                    trade.exit_price,
+                    trade.strategy,
+                    trade.net_pl,
+                    `"${(trade.notes || '').replace(/"/g, '""')}"`
+                ].join(',') + '\n';
+            });
 
-            // Download file
             const encodedUri = encodeURI(csv);
             const link = document.createElement('a');
             link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `comprehensive-trading-journal-${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute('download', `trading-journal-${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            this.showToast('Comprehensive trade analysis exported! 📊', 'success');
+            this.showToast('Trade data exported successfully! 📊', 'success');
         } catch (error) {
             console.error('Export error:', error);
             this.showToast('Error exporting data', 'error');
@@ -2340,7 +1894,6 @@ class TradingDashboardApp {
     }
 
     /* ======================== UTILITY METHODS ======================== */
-
     updateElement(id, content) {
         const element = document.getElementById(id);
         if (element) {
@@ -2349,7 +1902,7 @@ class TradingDashboardApp {
     }
 }
 
-// Initialize the enhanced application when DOM is ready
+// Initialize the application when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         window.app = new TradingDashboardApp();
