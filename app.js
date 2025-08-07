@@ -1,1689 +1,1049 @@
-// Trading Dashboard Application - Fixed Analytics Charts
-class TradingDashboardApp {
-    constructor() {
-        this.supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
-        this.supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
-        
-        this.supabase = supabase.createClient(this.supabaseUrl, this.supabaseAnonKey);
-        
-        this.demoUsers = {
-            'trader1': { username: 'trader1', email: 'trader1@demo.com', password: 'password123' },
-            'trader2': { username: 'trader2', email: 'trader2@demo.com', password: 'password123' }
-        };
+// Trading Journal Application with Supabase Integration
+// Supabase credentials
+const SUPABASE_URL = 'https://brjomrasrmbyxepjlfdq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        this.currentUser = null;
-        this.charts = {};
-        this.selectedCurrency = 'INR';
-        this.tradeCurrency = 'INR';
-        this.exchangeRates = { INR: 1, USD: 0.012 };
-        this.currentCalendarDate = new Date();
-        
-        this.init();
+class TradingJournalApp {
+  constructor() {
+    this.currentUser = null;
+    this.charts = {};
+    this.trades = [];
+    this.confidenceEntries = [];
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.bootstrap());
+    } else {
+      this.bootstrap();
     }
+  }
 
-    async init() {
-        try {
-            console.log('Initializing app...');
-            
-            const { data: { session } } = await this.supabase.auth.getSession();
-            
-            if (session) {
-                this.currentUser = session.user;
-                await this.loadUserProfile();
-                this.showMainApp();
-            } else {
-                this.showAuthScreen();
-            }
-
-            this.setupAuthListeners();
-            
-            this.supabase.auth.onAuthStateChange(async (event, session) => {
-                if (event === 'SIGNED_IN') {
-                    this.currentUser = session.user;
-                    await this.loadUserProfile();
-                    this.showMainApp();
-                } else if (event === 'SIGNED_OUT') {
-                    this.currentUser = null;
-                    this.showAuthScreen();
-                }
-            });
-
-        } catch (error) {
-            console.error('Init error:', error);
-            this.showToast('App initialization failed', 'error');
-        }
+  async bootstrap() {
+    // Check for existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      this.currentUser = session.user;
+      await this.fetchUserProfile();
+      this.showMainApp();
+    } else {
+      this.setupAuthListeners();
+      this.showAuthScreen();
     }
+  }
 
-    /* ======================== CURRENCY ======================== */
-    formatCurrency(value, currency = null) {
-        const targetCurrency = currency || this.selectedCurrency;
-        const convertedValue = this.convertCurrency(value, 'INR', targetCurrency);
-        const symbol = targetCurrency === 'USD' ? '$' : '₹';
-        
-        return symbol + Math.abs(convertedValue).toLocaleString('en-IN', { 
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2 
-        });
+  async fetchUserProfile() {
+    if (!this.currentUser) return;
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('username')
+      .eq('user_id', this.currentUser.id)
+      .single();
+    
+    if (data) {
+      this.currentUser.username = data.username;
     }
-
-    convertCurrency(amount, fromCurrency, toCurrency) {
-        if (fromCurrency === toCurrency) return amount;
-        const inINR = fromCurrency === 'INR' ? amount : amount / this.exchangeRates[fromCurrency];
-        return toCurrency === 'INR' ? inINR : inINR * this.exchangeRates[toCurrency];
-    }
-
-    setupCurrencySelector() {
-        const currencySelector = document.getElementById('currencySelector');
-        if (currencySelector) {
-            currencySelector.value = this.selectedCurrency;
-            currencySelector.addEventListener('change', (e) => {
-                this.selectedCurrency = e.target.value;
-                this.updateAllCurrencyDisplays();
-                this.showToast(`Currency changed to ${this.selectedCurrency}`, 'success');
-            });
-        }
-
-        const tradeCurrencySelector = document.getElementById('tradeCurrencySelector');
-        if (tradeCurrencySelector) {
-            tradeCurrencySelector.value = this.tradeCurrency;
-            tradeCurrencySelector.addEventListener('change', (e) => {
-                this.tradeCurrency = e.target.value;
-                this.updateTradeCurrencyLabels();
-                this.calculateLivePL();
-                this.showToast(`Trade currency changed to ${this.tradeCurrency}`, 'success');
-            });
-        }
-    }
-
-    updateTradeCurrencyLabels() {
-        const symbol = this.tradeCurrency === 'USD' ? '($)' : '(₹)';
-        const elements = ['entryCurrencySymbol', 'exitCurrencySymbol', 'slCurrencySymbol', 'targetCurrencySymbol'];
-        
-        elements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.textContent = symbol;
-        });
-    }
-
-    async updateAllCurrencyDisplays() {
-        const activeSection = document.querySelector('.section.active');
-        if (activeSection) {
-            await this.showSection(activeSection.id);
-        }
-    }
-
-    /* ======================== USER DATA ======================== */
-    async loadUserProfile() {
-        if (!this.currentUser) return;
-        try {
-            const { data, error } = await this.supabase
-                .from('user_profiles')
-                .select('username, full_name')
-                .eq('user_id', this.currentUser.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error loading user profile:', error);
-                return;
-            }
-
-            if (!data) {
-                const username = this.currentUser.email.split('@')[0];
-                await this.supabase
-                    .from('user_profiles')
-                    .insert([{
-                        user_id: this.currentUser.id,
-                        username: username,
-                        full_name: username
-                    }]);
-                this.currentUser.username = username;
-            } else {
-                this.currentUser.username = data.username;
-                this.currentUser.full_name = data.full_name;
-            }
-        } catch (error) {
-            console.error('Error in loadUserProfile:', error);
-        }
-    }
-
-    async loadTrades() {
-        if (!this.currentUser) return [];
-
-        try {
-            const { data, error } = await this.supabase
-                .from('trades')
-                .select('*')
-                .eq('user_id', this.currentUser.id)
-                .order('entry_date', { ascending: false });
-
-            if (error) {
-                console.error('Error loading trades:', error);
-                return [];
-            }
-
-            return data || [];
-        } catch (error) {
-            console.error('Error in loadTrades:', error);
-            return [];
-        }
-    }
-
-    /* ======================== AUTH ======================== */
-    setupAuthListeners() {
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', () => this.switchAuthTab(tab.dataset.tab));
-        });
-
-        const loginForm = document.getElementById('loginFormElement');
-        if (loginForm) {
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleLogin(e);
-            });
-        }
-
-        const signupForm = document.getElementById('signupFormElement');
-        if (signupForm) {
-            signupForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleSignup(e);
-            });
-        }
-
-        document.querySelectorAll('.demo-login').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const username = btn.dataset.username;
-                const demoUser = this.demoUsers[username];
-                if (demoUser) {
-                    this.loginWithCredentials(demoUser.email, demoUser.password);
-                }
-            });
-        });
-    }
-
-    async handleLogin(event) {
-        const formData = new FormData(event.target);
-        const identifier = formData.get('username').trim();
-        const password = formData.get('password').trim();
-        
-        this.clearAuthErrors();
-        
-        if (!identifier || !password) {
-            this.showAuthError('login-username-error', 'Please fill all fields');
-            return;
-        }
-
-        this.setLoadingState('loginBtn', true);
-
-        try {
-            const isEmail = identifier.includes('@');
-            let email = identifier;
-
-            if (!isEmail) {
-                const demoUser = Object.values(this.demoUsers).find(u => u.username === identifier);
-                if (demoUser) {
-                    email = demoUser.email;
-                } else {
-                    this.showAuthError('login-username-error', 'Username not found');
-                    return;
-                }
-            }
-
-            await this.loginWithCredentials(email, password);
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            this.showAuthError('login-password-error', 'Login failed');
-        } finally {
-            this.setLoadingState('loginBtn', false);
-        }
-    }
-
-    async loginWithCredentials(email, password) {
-        try {
-            const { data, error } = await this.supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-            if (error) {
-                if (error.message.includes('Invalid login credentials')) {
-                    this.showAuthError('login-password-error', 'Invalid credentials');
-                } else {
-                    this.showAuthError('login-password-error', error.message);
-                }
-                return;
-            }
-
-            this.showToast('Welcome back!', 'success');
-            
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    }
-
-    async handleSignup(event) {
-        const formData = new FormData(event.target);
-        const username = formData.get('username').trim();
-        const email = formData.get('email').trim();
-        const password = formData.get('password');
-        const confirmPassword = formData.get('confirmPassword');
-
-        this.clearAuthErrors();
-
-        if (!username || !email || !password) {
-            this.showAuthError('signup-username-error', 'Please fill all fields');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            this.showAuthError('signup-confirmPassword-error', 'Passwords do not match');
-            return;
-        }
-
-        if (password.length < 6) {
-            this.showAuthError('signup-password-error', 'Password must be at least 6 characters');
-            return;
-        }
-
-        this.setLoadingState('signupBtn', true);
-
-        try {
-            const { data, error } = await this.supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: { username: username }
-                }
-            });
-
-            if (error) {
-                this.showAuthError('signup-email-error', error.message);
-                return;
-            }
-
-            if (data.user && !data.session) {
-                this.showToast('Check your email to confirm account', 'info');
-                this.switchAuthTab('login');
-                return;
-            }
-
-            if (data.user) {
-                await this.supabase
-                    .from('user_profiles')
-                    .insert([{
-                        user_id: data.user.id,
-                        username: username,
-                        full_name: username
-                    }]);
-            }
-
-            this.showToast('Account created successfully!', 'success');
-
-        } catch (error) {
-            console.error('Signup error:', error);
-            this.showAuthError('signup-email-error', 'Signup failed');
-        } finally {
-            this.setLoadingState('signupBtn', false);
-        }
-    }
-
-    switchAuthTab(tab) {
-        document.querySelectorAll('.auth-tab').forEach(t => 
-            t.classList.toggle('active', t.dataset.tab === tab));
-        document.querySelectorAll('.auth-form').forEach(f => 
-            f.classList.toggle('active', f.id === tab + 'Form'));
-        this.clearAuthErrors();
-    }
-
-    showAuthError(id, message) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = message;
-            element.classList.add('active');
-        }
-    }
-
-    clearAuthErrors() {
-        document.querySelectorAll('.form-error').forEach(e => {
-            e.textContent = '';
-            e.classList.remove('active');
-        });
-    }
-
-    async logout() {
-        try {
-            await this.supabase.auth.signOut();
-            this.currentUser = null;
-            this.destroyCharts();
-            this.showToast('Logged out successfully', 'success');
-        } catch (error) {
-            console.error('Logout error:', error);
-            this.showToast('Error logging out', 'error');
-        }
-    }
-
-    /* ======================== UI ======================== */
-    showAuthScreen() {
-        document.getElementById('authScreen').style.display = 'flex';
-        document.getElementById('mainApp').classList.add('hidden');
-    }
-
-    showMainApp() {
-        document.getElementById('authScreen').style.display = 'none';
-        document.getElementById('mainApp').classList.remove('hidden');
-        
-        if (!this.mainListenersAttached) {
-            this.attachMainListeners();
-            this.mainListenersAttached = true;
-        }
-        
-        this.updateUserInfo();
-        this.setupCurrencySelector();
-        this.showSection('dashboard');
-    }
-
-    attachMainListeners() {
-        // Navigation
-        document.querySelectorAll('.nav-link').forEach(btn => {
-            btn.addEventListener('click', () => this.showSection(btn.dataset.section));
-        });
-
-        // Header actions
-        document.getElementById('logoutBtn')?.addEventListener('click', () => this.logout());
-        document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
-        document.getElementById('quickAddTrade')?.addEventListener('click', () => this.showSection('add-trade'));
-        document.getElementById('exportData')?.addEventListener('click', () => this.exportCSV());
-
-        // Confidence slider
-        const slider = document.getElementById('dailyConfidence');
-        const output = document.getElementById('confidenceValue');
-        if (slider && output) {
-            output.textContent = slider.value;
-            slider.addEventListener('input', () => {
-                output.textContent = slider.value;
-            });
-        }
-
-        document.getElementById('saveConfidenceBtn')?.addEventListener('click', () => this.saveDailyConfidence());
-
-        // Forms
-        this.setupAddTradeForm();
-
-        // Calendar
-        document.getElementById('prevMonth')?.addEventListener('click', () => this.changeCalendarMonth(-1));
-        document.getElementById('nextMonth')?.addEventListener('click', () => this.changeCalendarMonth(1));
-
-        // Mobile menu
-        this.setupMobileMenu();
-    }
-
-    setupMobileMenu() {
-        const toggle = document.querySelector('.mobile-menu-toggle');
-        const menu = document.querySelector('.nav-menu');
-
-        if (toggle && menu) {
-            toggle.addEventListener('click', () => {
-                const isActive = menu.classList.contains('mobile-active');
-                menu.classList.toggle('mobile-active');
-                toggle.innerHTML = isActive ? '☰' : '✕';
-            });
-
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', () => {
-                    menu.classList.remove('mobile-active');
-                    toggle.innerHTML = '☰';
-                });
-            });
-        }
-    }
-
-    updateUserInfo() {
-        const username = this.currentUser?.username || this.currentUser?.email?.split('@')[0] || 'User';
-        const nameElement = document.getElementById('currentUserName');
-        if (nameElement) nameElement.textContent = username;
-    }
-
-    toggleTheme() {
-        const html = document.documentElement;
-        const current = html.getAttribute('data-color-scheme') || 'dark';
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-color-scheme', next);
-        
-        const toggle = document.getElementById('themeToggle');
-        if (toggle) toggle.textContent = next === 'dark' ? '☀️' : '🌙';
-    }
-
-    async showSection(sectionId) {
-        document.querySelectorAll('.nav-link').forEach(btn => 
-            btn.classList.toggle('active', btn.dataset.section === sectionId));
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        
-        const section = document.getElementById(sectionId);
-        if (section) section.classList.add('active');
-
-        switch (sectionId) {
-            case 'dashboard': await this.renderDashboard(); break;
-            case 'add-trade': this.renderAddTrade(); break;
-            case 'history': await this.renderHistory(); break;
-            case 'analytics': await this.renderAnalytics(); break;
-            case 'ai-suggestions': await this.renderAISuggestions(); break;
-            case 'reports': await this.renderReports(); break;
-        }
-    }
-
-    /* ======================== HELPERS ======================== */
-    formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString('en-IN', {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    showToast(message, type = 'info') {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            if (toast.parentNode) toast.remove();
-        }, 3000);
-    }
-
-    setLoadingState(buttonId, loading) {
-        const button = document.getElementById(buttonId);
-        if (!button) return;
-
-        const textSpan = button.querySelector('.btn-text');
-        const spinner = button.querySelector('.loading-spinner');
-        
-        if (loading) {
-            button.disabled = true;
-            if (textSpan) textSpan.style.display = 'none';
-            if (spinner) spinner.style.display = 'inline';
-        } else {
-            button.disabled = false;
-            if (textSpan) textSpan.style.display = 'inline';
-            if (spinner) spinner.style.display = 'none';
-        }
-    }
-
-    updateElement(id, content) {
-        const element = document.getElementById(id);
-        if (element) element.textContent = content;
-    }
-
-    /* ======================== DASHBOARD ======================== */
-    async renderDashboard() {
-        try {
-            const trades = await this.loadTrades();
-            const stats = this.calculateStats(trades);
-            
-            this.updateElement('totalPL', this.formatCurrency(stats.totalPL));
-            this.updateElement('winRate', stats.winRate + '%');
-            this.updateElement('totalTrades', stats.totalTrades);
-            this.updateElement('avgRR', stats.avgRR);
-
-            const totalPLElement = document.getElementById('totalPL');
-            if (totalPLElement) {
-                totalPLElement.className = stats.totalPL >= 0 ? 'positive' : 'negative';
-            }
-
-            this.renderRecentTrades(trades.slice(0, 5));
-            
-        } catch (error) {
-            console.error('Error rendering dashboard:', error);
-        }
-    }
-
-    calculateStats(trades) {
-        if (!trades || trades.length === 0) {
-            return { totalPL: 0, winRate: 0, totalTrades: 0, avgRR: '1:0', bestTrade: 0, worstTrade: 0 };
-        }
-
-        const totalPL = trades.reduce((sum, trade) => sum + (trade.net_pl || 0), 0);
-        const wins = trades.filter(trade => trade.net_pl > 0).length;
-        const winRate = Math.round((wins / trades.length) * 100);
-        const bestTrade = Math.max(...trades.map(trade => trade.net_pl));
-        const worstTrade = Math.min(...trades.map(trade => trade.net_pl));
-        
-        const validRR = trades.filter(trade => trade.risk_reward_ratio && trade.risk_reward_ratio > 0);
-        const avgRRNum = validRR.length > 0 ? 
-            validRR.reduce((sum, trade) => sum + trade.risk_reward_ratio, 0) / validRR.length : 0;
-
-        return { totalPL, winRate, totalTrades: trades.length, avgRR: `1:${avgRRNum.toFixed(2)}`, bestTrade, worstTrade };
-    }
-
-    renderRecentTrades(trades) {
-        const container = document.getElementById('recentTradesList');
-        if (!container) return;
-        
-        if (!trades || trades.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <p>No trades yet. Add your first trade to get started!</p>
-                    <button class="btn btn--primary btn--sm" onclick="document.querySelector('[data-section=add-trade]').click()">
-                        Add First Trade
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = trades.map(trade => `
-            <div class="trade-item" style="cursor: pointer; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-weight: 600;">${trade.symbol}</div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary);">${trade.direction} • ${this.formatDate(trade.entry_date)}</div>
-                </div>
-                <div class="${trade.net_pl >= 0 ? 'positive' : 'negative'}" style="font-weight: 600;">
-                    ${this.formatCurrency(trade.net_pl)}
-                </div>
-            </div>
-        `).join('');
-
-        container.querySelectorAll('.trade-item').forEach((item, index) => {
-            item.addEventListener('click', () => {
-                this.showTradeDetailsPopup(trades[index]);
-            });
-        });
-    }
-
-    async saveDailyConfidence() {
-        const slider = document.getElementById('dailyConfidence');
-        if (!slider) return;
-        
-        const level = slider.value;
-        const today = new Date().toISOString().split('T')[0];
-
-        try {
-            await this.saveConfidence(today, level);
-            this.showToast('Confidence saved!', 'success');
-            
-            const messageContainer = document.getElementById('confidenceMessage');
-            if (messageContainer) {
-                let messageText = '';
-                if (level >= 8) messageText = 'High confidence! Great day for trading. 🚀';
-                else if (level >= 6) messageText = 'Good confidence level. Trade wisely. ✅';
-                else if (level >= 4) messageText = 'Moderate confidence. Consider smaller positions. ⚠️';
-                else messageText = 'Low confidence. Maybe take a break today. 🛑';
-                
-                messageContainer.innerHTML = `<div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border-color);">${messageText}</div>`;
-            }
-            
-        } catch (error) {
-            console.error('Error saving confidence:', error);
-            this.showToast('Error saving confidence', 'error');
-        }
-    }
-
-    async saveConfidence(date, level) {
-        if (!this.currentUser) return;
-
-        try {
-            const { data, error } = await this.supabase
-                .from('confidence_entries')
-                .upsert([{
-                    user_id: this.currentUser.id,
-                    date: date,
-                    level: parseInt(level),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }], { onConflict: 'user_id,date' });
-
-            if (error) throw error;
-            return data;
-        } catch (error) {
-            console.error('Error in saveConfidence:', error);
-            throw error;
-        }
-    }
-
-    /* ======================== ENHANCED ADD TRADE ======================== */
-    setupAddTradeForm() {
-        const form = document.getElementById('addTradeForm');
-        if (!form) return;
-        
-        // Range inputs
-        const ranges = ['setupQuality', 'confidence', 'stressLevel', 'sleepQuality', 'mentalClarity'];
-        ranges.forEach(id => {
-            const input = document.getElementById(id);
-            const output = document.getElementById(id + 'Output');
-            if (input && output) {
-                output.textContent = input.value;
-                input.addEventListener('input', () => {
-                    output.textContent = input.value;
-                });
-            }
-        });
-
-        // Live calculator
-        this.setupLivePLCalculator();
-
-        // Form submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.handleTradeSubmission(e);
-        });
-    }
-
-    setupLivePLCalculator() {
-        const fields = ['quantity', 'entryPrice', 'exitPrice', 'direction', 'stopLoss', 'tradeCurrencySelector'];
-        
-        fields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('input', () => this.calculateLivePL());
-                field.addEventListener('change', () => this.calculateLivePL());
-            }
-        });
-    }
-
-    calculateLivePL() {
-        const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
-        const entryPrice = parseFloat(document.getElementById('entryPrice')?.value) || 0;
-        const exitPrice = parseFloat(document.getElementById('exitPrice')?.value) || 0;
-        const direction = document.getElementById('direction')?.value;
-        const stopLoss = parseFloat(document.getElementById('stopLoss')?.value) || 0;
-
-        if (!quantity || !entryPrice || !exitPrice || !direction) {
-            this.updateElement('calcGrossPL', this.formatCurrency(0, this.tradeCurrency));
-            this.updateElement('calcNetPL', this.formatCurrency(0, this.tradeCurrency));
-            this.updateElement('calcRR', 'N/A');
-            this.updateElement('calcReturn', '0.00%');
-            return;
-        }
-
-        const priceDiff = direction === 'Long' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
-        const grossPL = priceDiff * quantity;
-        const netPL = grossPL - (Math.abs(grossPL) * 0.01);
-        const returnPct = (netPL / (entryPrice * quantity)) * 100;
-
-        let rrRatio = 'N/A';
-        if (stopLoss && stopLoss !== entryPrice) {
-            const risk = Math.abs(entryPrice - stopLoss);
-            const reward = Math.abs(exitPrice - entryPrice);
-            if (risk > 0) rrRatio = `1:${(reward / risk).toFixed(2)}`;
-        }
-
-        this.updateElement('calcGrossPL', this.formatCurrency(grossPL, this.tradeCurrency));
-        this.updateElement('calcNetPL', this.formatCurrency(netPL, this.tradeCurrency));
-        this.updateElement('calcRR', rrRatio);
-        this.updateElement('calcReturn', returnPct.toFixed(2) + '%');
-
-        const netPLElement = document.getElementById('calcNetPL');
-        if (netPLElement) {
-            netPLElement.className = `calc-value ${netPL >= 0 ? 'positive' : 'negative'}`;
-        }
-    }
-
-    renderAddTrade() {
-        const now = new Date();
-        const entryDate = document.getElementById('entryDate');
-        const exitDate = document.getElementById('exitDate');
-        
-        if (entryDate && !entryDate.value) {
-            entryDate.value = now.toISOString().slice(0, 16);
-        }
-        if (exitDate && !exitDate.value) {
-            const exit = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-            exitDate.value = exit.toISOString().slice(0, 16);
-        }
-
-        this.updateTradeCurrencyLabels();
-        setTimeout(() => this.calculateLivePL(), 100);
-    }
-
-    async handleTradeSubmission(event) {
-        const submitButton = event.target.querySelector('button[type="submit"]');
-        if (submitButton) this.setLoadingState(submitButton, true);
-
-        try {
-            const formData = new FormData(event.target);
-            const tradeData = Object.fromEntries(formData.entries());
-
-            // Validation
-            const requiredFields = ['entryDate', 'exitDate', 'symbol', 'direction', 'quantity', 'entryPrice', 'exitPrice', 'strategy'];
-            for (const field of requiredFields) {
-                if (!tradeData[field]) {
-                    this.showToast(`Please fill: ${field}`, 'error');
-                    return;
-                }
-            }
-
-            if (new Date(tradeData.entryDate) >= new Date(tradeData.exitDate)) {
-                this.showToast('Exit date must be after entry date', 'error');
-                return;
-            }
-
-            await this.saveTrade(tradeData);
-            this.showToast('Trade analysis saved successfully! 🎉', 'success');
-            
-            event.target.reset();
-            setTimeout(() => this.showSection('dashboard'), 500);
-
-        } catch (error) {
-            console.error('Error saving trade:', error);
-            this.showToast('Error saving trade', 'error');
-        } finally {
-            if (submitButton) this.setLoadingState(submitButton, false);
-        }
-    }
-
-    async saveTrade(tradeData) {
-        if (!this.currentUser) return null;
-
-        try {
-            const tradeToSave = {
-                user_id: this.currentUser.id,
-                entry_date: tradeData.entryDate,
-                exit_date: tradeData.exitDate,
-                symbol: tradeData.symbol.toUpperCase(),
-                direction: tradeData.direction,
-                quantity: parseInt(tradeData.quantity),
-                entry_price: parseFloat(tradeData.entryPrice),
-                exit_price: parseFloat(tradeData.exitPrice),
-                stop_loss: tradeData.stopLoss ? parseFloat(tradeData.stopLoss) : null,
-                target_price: tradeData.targetPrice ? parseFloat(tradeData.targetPrice) : null,
-                strategy: tradeData.strategy,
-                notes: tradeData.notes || '',
-                setup_quality: parseInt(tradeData.setupQuality) || 7,
-                confidence_level: parseInt(tradeData.confidence) || 7,
-                exit_reason: tradeData.exitReason || 'Manual Exit',
-                exit_emotion: tradeData.exitEmotion || 'Neutral',
-                exit_timing_quality: tradeData.exitTiming || null,
-                market_condition: tradeData.marketCondition || null,
-                entry_trigger: tradeData.entryTrigger || null,
-                stress_level: parseInt(tradeData.stressLevel) || 3,
-                sleep_quality: parseInt(tradeData.sleepQuality) || 7,
-                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
-                overall_mood: tradeData.overallMood || null,
-                lessons_learned: tradeData.lessonsLearned || '',
-                would_take_again: tradeData.wouldRepeat || 'Maybe',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            // Calculate P&L
-            const priceDiff = tradeData.direction === 'Long' ? 
-                (tradeToSave.exit_price - tradeToSave.entry_price) :
-                (tradeToSave.entry_price - tradeToSave.exit_price);
-            
-            let grossPL = priceDiff * tradeToSave.quantity;
-            let netPL = grossPL - (Math.abs(grossPL) * 0.01);
-
-            // Convert to INR if needed
-            if (this.tradeCurrency === 'USD') {
-                grossPL = this.convertCurrency(grossPL, 'USD', 'INR');
-                netPL = this.convertCurrency(netPL, 'USD', 'INR');
-            }
-
-            tradeToSave.gross_pl = grossPL;
-            tradeToSave.net_pl = netPL;
-
-            // Risk-reward ratio
-            if (tradeToSave.stop_loss) {
-                const risk = Math.abs(tradeToSave.entry_price - tradeToSave.stop_loss);
-                const reward = Math.abs(tradeToSave.exit_price - tradeToSave.entry_price);
-                tradeToSave.risk_reward_ratio = risk > 0 ? (reward / risk) : 0;
-            } else {
-                tradeToSave.risk_reward_ratio = 0;
-            }
-
-            const { data, error } = await this.supabase
-                .from('trades')
-                .insert([tradeToSave])
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
-
-        } catch (error) {
-            console.error('Error saving trade:', error);
-            throw error;
-        }
-    }
-
-    /* ======================== TRADE DETAILS POPUP ======================== */
-    showTradeDetailsPopup(trade) {
-        const modal = document.createElement('div');
-        modal.className = 'trade-modal-overlay';
-        modal.innerHTML = `
-            <div class="trade-modal">
-                <div class="trade-modal-header">
-                    <h3>📊 Trade Details</h3>
-                    <button class="trade-modal-close">&times;</button>
-                </div>
-                <div class="trade-detail-grid">
-                    <div class="trade-detail-item">
-                        <label>Symbol:</label>
-                        <span>${trade.symbol}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Direction:</label>
-                        <span>${trade.direction}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Quantity:</label>
-                        <span>${trade.quantity}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Entry Price:</label>
-                        <span>${this.formatCurrency(trade.entry_price)}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Exit Price:</label>
-                        <span>${this.formatCurrency(trade.exit_price)}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>P&L:</label>
-                        <span class="${trade.net_pl >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(trade.net_pl)}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Strategy:</label>
-                        <span>${trade.strategy}</span>
-                    </div>
-                    <div class="trade-detail-item">
-                        <label>Entry Date:</label>
-                        <span>${this.formatDate(trade.entry_date)}</span>
-                    </div>
-                    ${trade.setup_quality ? `
-                    <div class="trade-detail-item">
-                        <label>Setup Quality:</label>
-                        <span>${trade.setup_quality}/10</span>
-                    </div>` : ''}
-                    ${trade.exit_reason ? `
-                    <div class="trade-detail-item">
-                        <label>Exit Reason:</label>
-                        <span>${trade.exit_reason}</span>
-                    </div>` : ''}
-                    ${trade.notes ? `
-                    <div class="trade-detail-item full-width">
-                        <label>Notes:</label>
-                        <span>${trade.notes}</span>
-                    </div>` : ''}
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        const closeBtn = modal.querySelector('.trade-modal-close');
-        closeBtn.addEventListener('click', () => document.body.removeChild(modal));
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) document.body.removeChild(modal);
-        });
-    }
-
-    /* ======================== HISTORY ======================== */
-    async renderHistory() {
-        const container = document.getElementById('historyContainer');
-        if (!container) return;
-        
-        container.innerHTML = '<div class="loading">Loading...</div>';
-
-        try {
-            const trades = await this.loadTrades();
-            
-            if (!trades || trades.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <p>No trades yet</p>
-                        <button class="btn btn--primary" onclick="document.querySelector('[data-section=add-trade]').click()">
-                            Add Your First Trade
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-
-            const stats = this.calculateStats(trades);
-
-            container.innerHTML = `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 2rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
-                    <span>Total: <strong>${trades.length}</strong></span>
-                    <span>Win Rate: <strong>${stats.winRate}%</strong></span>
-                    <span>P&L: <strong class="${stats.totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(stats.totalPL)}</strong></span>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table class="trade-table" style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: var(--bg-secondary);">
-                                <th style="padding: 1rem; text-align: left; border: 1px solid var(--border-color);">Date</th>
-                                <th style="padding: 1rem; text-align: left; border: 1px solid var(--border-color);">Symbol</th>
-                                <th style="padding: 1rem; text-align: left; border: 1px solid var(--border-color);">Direction</th>
-                                <th style="padding: 1rem; text-align: left; border: 1px solid var(--border-color);">P&L</th>
-                                <th style="padding: 1rem; text-align: left; border: 1px solid var(--border-color);">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${trades.map((trade, index) => `
-                                <tr>
-                                    <td style="padding: 1rem; border: 1px solid var(--border-color);">${this.formatDate(trade.entry_date)}</td>
-                                    <td style="padding: 1rem; border: 1px solid var(--border-color);"><strong>${trade.symbol}</strong></td>
-                                    <td style="padding: 1rem; border: 1px solid var(--border-color);">${trade.direction}</td>
-                                    <td style="padding: 1rem; border: 1px solid var(--border-color); font-weight: 600;" class="${trade.net_pl >= 0 ? 'positive' : 'negative'}">
-                                        ${this.formatCurrency(trade.net_pl)}
-                                    </td>
-                                    <td style="padding: 1rem; border: 1px solid var(--border-color);">
-                                        <button class="btn btn--sm btn--outline view-details-btn" data-trade-index="${index}">
-                                            View
-                                        </button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            container.querySelectorAll('.view-details-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const index = parseInt(btn.dataset.tradeIndex);
-                    this.showTradeDetailsPopup(trades[index]);
-                });
-            });
-
-        } catch (error) {
-            console.error('Error rendering history:', error);
-            container.innerHTML = '<div class="loading">Error loading history</div>';
-        }
-    }
-
-    /* ======================== ENHANCED ANALYTICS WITH CHARTS ======================== */
-    async renderAnalytics() {
-        try {
-            const trades = await this.loadTrades();
-            const stats = this.calculateStats(trades);
-
-            // Update summary stats
-            this.updateElement('analyticsTotalTrades', stats.totalTrades);
-            this.updateElement('analyticsWinRate', stats.winRate + '%');
-            this.updateElement('analyticsNetPL', this.formatCurrency(stats.totalPL));
-            this.updateElement('analyticsBestTrade', this.formatCurrency(stats.bestTrade));
-            this.updateElement('analyticsWorstTrade', this.formatCurrency(stats.worstTrade));
-            this.updateElement('analyticsAvgRR', stats.avgRR);
-
-            const netPLElement = document.getElementById('analyticsNetPL');
-            if (netPLElement) {
-                netPLElement.className = `value ${stats.totalPL >= 0 ? 'positive' : 'negative'}`;
-            }
-
-            // Render all analytics charts
-            if (trades.length > 0) {
-                this.renderAnalyticsCharts(trades);
-            } else {
-                this.showNoDataCharts();
-            }
-        } catch (error) {
-            console.error('Error rendering analytics:', error);
-        }
-    }
-
-    renderAnalyticsCharts(trades) {
-        if (!trades || trades.length === 0) return;
-        
-        // Destroy existing charts
-        this.destroyCharts();
-        
-        // Render all charts with a slight delay to ensure DOM is ready
-        setTimeout(() => {
-            this.renderPLChart(trades);
-            this.renderStrategyChart(trades);
-            this.renderWinLossChart(trades);
-            this.renderMonthlyAnalyticsChart(trades);
-            this.renderSetupQualityChart(trades);
-            this.renderPsychologyChart(trades);
-        }, 200);
-    }
-
-    showNoDataCharts() {
-        // Show empty state for all charts
-        const chartIds = ['plChart', 'strategyChart', 'winLossChart', 'monthlyAnalyticsChart', 'setupQualityChart', 'psychologyChart'];
-        
-        chartIds.forEach(id => {
-            const ctx = document.getElementById(id);
-            if (ctx) {
-                const parent = ctx.parentNode;
-                parent.innerHTML = `
-                    <h3>${parent.querySelector('h3')?.textContent || 'Chart'}</h3>
-                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary); flex-direction: column; gap: 1rem;">
-                        <div style="font-size: 3rem; opacity: 0.3;">📊</div>
-                        <div>No data available yet</div>
-                        <button class="btn btn--primary btn--sm" onclick="document.querySelector('[data-section=add-trade]').click()">
-                            Add Trades to See Analytics
-                        </button>
-                    </div>
-                `;
-            }
-        });
-    }
-
-    renderPLChart(trades) {
-        const ctx = document.getElementById('plChart');
-        if (!ctx) return;
-
-        try {
-            let cumulative = 0;
-            const sortedTrades = [...trades].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
-            
-            const data = sortedTrades.map((trade, index) => {
-                cumulative += trade.net_pl;
-                return { x: index + 1, y: cumulative };
-            });
-
-            this.charts.plChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    datasets: [{
-                        label: 'Cumulative P&L',
-                        data: data,
-                        borderColor: '#21808d',
-                        backgroundColor: 'rgba(33, 128, 141, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#21808d',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: '#21808d',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            title: { display: true, text: 'Trade Number', color: 'var(--text-secondary)' },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        },
-                        y: { 
-                            beginAtZero: true,
-                            title: { display: true, text: 'P&L', color: 'var(--text-secondary)' },
-                            ticks: { 
-                                callback: (value) => this.formatCurrency(value),
-                                color: 'var(--text-secondary)'
-                            },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering P&L chart:', error);
-        }
-    }
-
-    renderStrategyChart(trades) {
-        const ctx = document.getElementById('strategyChart');
-        if (!ctx) return;
-
-        try {
-            const strategies = {};
-            trades.forEach(trade => {
-                const strategy = trade.strategy;
-                if (!strategies[strategy]) strategies[strategy] = { total: 0, count: 0 };
-                strategies[strategy].total += trade.net_pl;
-                strategies[strategy].count++;
-            });
-
-            const labels = Object.keys(strategies);
-            const data = Object.values(strategies).map(s => s.total);
-
-            this.charts.strategyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Net P&L by Strategy',
-                        data: data,
-                        backgroundColor: data.map(value => value >= 0 ? 'rgba(33, 128, 141, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                        borderColor: data.map(value => value >= 0 ? '#21808d' : '#ef4444'),
-                        borderWidth: 2,
-                        borderRadius: 4,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: (context) => `P&L: ${this.formatCurrency(context.parsed.y)}`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: 'var(--text-secondary)' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { 
-                                callback: (value) => this.formatCurrency(value),
-                                color: 'var(--text-secondary)'
-                            },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering strategy chart:', error);
-        }
-    }
-
-    renderWinLossChart(trades) {
-        const ctx = document.getElementById('winLossChart');
-        if (!ctx) return;
-
-        try {
-            const wins = trades.filter(t => t.net_pl > 0).length;
-            const losses = trades.filter(t => t.net_pl < 0).length;
-            const breakeven = trades.filter(t => t.net_pl === 0).length;
-
-            this.charts.winLossChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Wins', 'Losses', 'Breakeven'],
-                    datasets: [{
-                        data: [wins, losses, breakeven],
-                        backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
-                        borderColor: ['#059669', '#dc2626', '#4b5563'],
-                        borderWidth: 2,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { 
-                            position: 'bottom',
-                            labels: { color: 'var(--text-primary)' }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: (context) => {
-                                    const total = wins + losses + breakeven;
-                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering win/loss chart:', error);
-        }
-    }
-
-    renderMonthlyAnalyticsChart(trades) {
-        const ctx = document.getElementById('monthlyAnalyticsChart');
-        if (!ctx) return;
-
-        try {
-            const monthlyData = {};
-            trades.forEach(trade => {
-                const date = new Date(trade.entry_date);
-                const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-                if (!monthlyData[monthKey]) monthlyData[monthKey] = 0;
-                monthlyData[monthKey] += trade.net_pl;
-            });
-
-            const sortedMonths = Object.keys(monthlyData).sort();
-            const labels = sortedMonths.map(month => {
-                const [year, monthNum] = month.split('-');
-                return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            });
-            const data = sortedMonths.map(month => monthlyData[month]);
-
-            this.charts.monthlyAnalyticsChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Monthly P&L',
-                        data: data,
-                        backgroundColor: data.map(value => value >= 0 ? 'rgba(33, 128, 141, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                        borderColor: data.map(value => value >= 0 ? '#21808d' : '#ef4444'),
-                        borderWidth: 2,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: (context) => `P&L: ${this.formatCurrency(context.parsed.y)}`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: 'var(--text-secondary)' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { 
-                                callback: (value) => this.formatCurrency(value),
-                                color: 'var(--text-secondary)'
-                            },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering monthly analytics chart:', error);
-        }
-    }
-
-    renderSetupQualityChart(trades) {
-        const ctx = document.getElementById('setupQualityChart');
-        if (!ctx) return;
-
-        try {
-            const setupQualityTrades = trades.filter(t => t.setup_quality);
-            if (setupQualityTrades.length === 0) {
-                const parent = ctx.parentNode;
-                parent.innerHTML = `
-                    <h3>⭐ Setup Quality vs Performance</h3>
-                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary);">
-                        <div>No setup quality data available</div>
-                    </div>
-                `;
-                return;
-            }
-
-            const qualityData = {};
-            setupQualityTrades.forEach(trade => {
-                const quality = trade.setup_quality;
-                if (!qualityData[quality]) qualityData[quality] = { total: 0, count: 0, avgPL: 0 };
-                qualityData[quality].total += trade.net_pl;
-                qualityData[quality].count++;
-                qualityData[quality].avgPL = qualityData[quality].total / qualityData[quality].count;
-            });
-
-            const labels = Object.keys(qualityData).sort((a, b) => a - b);
-            const data = labels.map(quality => qualityData[quality].avgPL);
-
-            this.charts.setupQualityChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels.map(q => `${q}/10`),
-                    datasets: [{
-                        label: 'Avg P&L by Setup Quality',
-                        data: data,
-                        borderColor: '#8b5cf6',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#8b5cf6',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: (context) => `Avg P&L: ${this.formatCurrency(context.parsed.y)}`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            title: { display: true, text: 'Setup Quality Rating', color: 'var(--text-secondary)' },
-                            grid: { color: 'rgba(128,128,128,0.1)' },
-                            ticks: { color: 'var(--text-secondary)' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Average P&L', color: 'var(--text-secondary)' },
-                            ticks: { 
-                                callback: (value) => this.formatCurrency(value),
-                                color: 'var(--text-secondary)'
-                            },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering setup quality chart:', error);
-        }
-    }
-
-    renderPsychologyChart(trades) {
-        const ctx = document.getElementById('psychologyChart');
-        if (!ctx) return;
-
-        try {
-            const psychTrades = trades.filter(t => t.mental_clarity && t.stress_level);
-            if (psychTrades.length === 0) {
-                const parent = ctx.parentNode;
-                parent.innerHTML = `
-                    <h3>🧠 Psychology Impact Analysis</h3>
-                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary);">
-                        <div>No psychology data available</div>
-                    </div>
-                `;
-                return;
-            }
-
-            const highClarityTrades = psychTrades.filter(t => t.mental_clarity >= 7);
-            const lowClarityTrades = psychTrades.filter(t => t.mental_clarity < 7);
-            const lowStressTrades = psychTrades.filter(t => t.stress_level <= 4);
-            const highStressTrades = psychTrades.filter(t => t.stress_level > 4);
-
-            const avgPL = (trades) => trades.length > 0 ? trades.reduce((sum, t) => sum + t.net_pl, 0) / trades.length : 0;
-
-            this.charts.psychologyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['High Clarity', 'Low Clarity', 'Low Stress', 'High Stress'],
-                    datasets: [{
-                        label: 'Average P&L',
-                        data: [
-                            avgPL(highClarityTrades),
-                            avgPL(lowClarityTrades),
-                            avgPL(lowStressTrades),
-                            avgPL(highStressTrades)
-                        ],
-                        backgroundColor: [
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(239, 68, 68, 0.8)'
-                        ],
-                        borderColor: ['#22c55e', '#ef4444', '#22c55e', '#ef4444'],
-                        borderWidth: 2,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            callbacks: {
-                                label: (context) => `Avg P&L: ${this.formatCurrency(context.parsed.y)}`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            grid: { display: false },
-                            ticks: { color: 'var(--text-secondary)' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            ticks: { 
-                                callback: (value) => this.formatCurrency(value),
-                                color: 'var(--text-secondary)'
-                            },
-                            grid: { color: 'rgba(128,128,128,0.1)' }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering psychology chart:', error);
-        }
-    }
-
-    destroyCharts() {
-        Object.values(this.charts).forEach(chart => {
-            if (chart && typeof chart.destroy === 'function') chart.destroy();
-        });
-        this.charts = {};
-    }
-
-    /* ======================== AI SUGGESTIONS ======================== */
-    async renderAISuggestions() {
-        try {
-            const trades = await this.loadTrades();
-            const aiContents = document.querySelectorAll('.ai-content');
-            
-            if (trades.length === 0) {
-                aiContents.forEach(content => {
-                    content.innerHTML = "Start adding trades to unlock AI insights...";
-                });
-                return;
-            }
-
-            const stats = this.calculateStats(trades);
-            const suggestions = [
-                `Your win rate is ${stats.winRate}%. ${stats.winRate < 50 ? 'Focus on higher-probability setups.' : 'Good performance! Maintain consistency.'}`,
-                `Total P&L: ${this.formatCurrency(stats.totalPL)}. ${stats.totalPL > 0 ? 'Keep up the good work!' : 'Review your risk management strategy.'}`
-            ];
-
-            aiContents.forEach((content, index) => {
-                if (suggestions[index]) content.innerHTML = suggestions[index];
-            });
-        } catch (error) {
-            console.error('Error rendering AI suggestions:', error);
-        }
-    }
-
-    /* ======================== REPORTS ======================== */
-    async renderReports() {
-        try {
-            const trades = await this.loadTrades();
-            
-            this.renderCalendar(trades);
-            this.renderMonthlyChart(trades);
-            
-        } catch (error) {
-            console.error('Error rendering reports:', error);
-        }
-    }
-
-    renderCalendar(trades) {
-        const calendarContainer = document.getElementById('calendar');
-        if (!calendarContainer) return;
-
-        const year = this.currentCalendarDate.getFullYear();
-        const month = this.currentCalendarDate.getMonth();
-        
-        document.getElementById('calendarTitle').textContent = 
-            this.currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const startingDayOfWeek = firstDay.getDay();
-
-        const dailyPL = {};
-        trades.forEach(trade => {
-            const tradeDate = new Date(trade.entry_date).toDateString();
-            if (!dailyPL[tradeDate]) dailyPL[tradeDate] = 0;
-            dailyPL[tradeDate] += trade.net_pl;
-        });
-
-        let calendarHTML = `
-            <div class="calendar-grid">
-                <div class="calendar-header">
-                    ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => 
-                        `<div class="day-name">${day}</div>`).join('')}
-                </div>
-                <div class="calendar-body">
-        `;
-
-        // Empty cells
-        for (let i = 0; i < startingDayOfWeek; i++) {
-            calendarHTML += '<div class="calendar-day empty"></div>';
-        }
-
-        // Days
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day);
-            const dateString = date.toDateString();
-            const pl = dailyPL[dateString] || 0;
-            
-            let dayClass = 'calendar-day';
-            if (pl > 1000) dayClass += ' profit-high';
-            else if (pl > 0) dayClass += ' profit-low';
-            else if (pl < -1000) dayClass += ' loss-high';
-            else if (pl < 0) dayClass += ' loss-low';
-            else dayClass += ' no-trades';
-            
-            if (date.toDateString() === new Date().toDateString()) {
-                dayClass += ' today';
-            }
-
-            calendarHTML += `
-                <div class="${dayClass}">
-                    <div class="day-number">${day}</div>
-                    ${pl !== 0 ? `<div class="day-pl">${this.formatCurrency(pl)}</div>` : ''}
-                </div>
-            `;
-        }
-
-        calendarHTML += '</div></div>';
-        calendarContainer.innerHTML = calendarHTML;
-    }
-
-    renderMonthlyChart(trades) {
-        const ctx = document.getElementById('monthlyPLChart');
-        if (!ctx) return;
-
-        try {
-            const monthlyData = {};
-            trades.forEach(trade => {
-                const date = new Date(trade.entry_date);
-                const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-                if (!monthlyData[monthKey]) monthlyData[monthKey] = 0;
-                monthlyData[monthKey] += trade.net_pl;
-            });
-
-            const sortedMonths = Object.keys(monthlyData).sort();
-            const labels = sortedMonths.map(month => {
-                const [year, monthNum] = month.split('-');
-                return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            });
-            const data = sortedMonths.map(month => monthlyData[month]);
-
-            this.charts.monthlyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Monthly P&L',
-                        data: data,
-                        backgroundColor: data.map(value => value >= 0 ? '#21808d' : '#c0152f')
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { callback: (value) => this.formatCurrency(value) }
-                        }
-                    }
-                }
-            });
-        } catch (error) {
-            console.error('Error rendering monthly chart:', error);
-        }
-    }
-
-    changeCalendarMonth(delta) {
-        this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + delta);
-        this.loadTrades().then(trades => this.renderCalendar(trades));
-    }
-
-    /* ======================== EXPORT ======================== */
-    async exportCSV() {
-        try {
-            const trades = await this.loadTrades();
-            
-            if (trades.length === 0) {
-                this.showToast('No data to export', 'warning');
-                return;
-            }
-
-            let csv = 'data:text/csv;charset=utf-8,';
-            csv += 'Entry Date,Exit Date,Symbol,Direction,Quantity,Entry Price,Exit Price,Strategy,P&L,Setup Quality,Notes\n';
-            
-            trades.forEach(trade => {
-                csv += [
-                    trade.entry_date,
-                    trade.exit_date,
-                    trade.symbol,
-                    trade.direction,
-                    trade.quantity,
-                    trade.entry_price,
-                    trade.exit_price,
-                    trade.strategy,
-                    trade.net_pl,
-                    trade.setup_quality || 'N/A',
-                    `"${(trade.notes || '').replace(/"/g, '""')}"`
-                ].join(',') + '\n';
-            });
-
-            const encodedUri = encodeURI(csv);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `trading-journal-${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showToast('Data exported successfully! 📊', 'success');
-        } catch (error) {
-            console.error('Export error:', error);
-            this.showToast('Error exporting data', 'error');
-        }
-    }
-}
-
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        window.app = new TradingDashboardApp();
+  }
+
+  async createUserProfile(username) {
+    if (!this.currentUser) return;
+    
+    await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: this.currentUser.id,
+        username,
+        created_at: new Date().toISOString()
+      });
+  }
+
+  /* ------------------------------- AUTH ---------------------------------- */
+  setupAuthListeners() {
+    // Switch tabs
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', () => this.switchAuthTab(tab.dataset.tab));
     });
-} else {
-    window.app = new TradingDashboardApp();
+
+    // Login form
+    document.getElementById('loginFormElement').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const email = fd.get('email').trim();
+      const password = fd.get('password').trim();
+      this.clearAuthErrors();
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        this.showAuthError('login-password-error', error.message);
+        return;
+      }
+      
+      this.currentUser = data.user;
+      await this.fetchUserProfile();
+      this.showToast('Login successful!', 'success');
+      this.showMainApp();
+    });
+
+    // Signup form
+    document.getElementById('signupFormElement').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const username = fd.get('username').trim();
+      const email = fd.get('email').trim();
+      const password = fd.get('password');
+      const confirm = fd.get('confirmPassword');
+      
+      this.clearAuthErrors();
+      
+      if (password !== confirm) {
+        this.showAuthError('signup-confirmPassword-error', 'Passwords do not match');
+        return;
+      }
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }
+        }
+      });
+      
+      if (error) {
+        this.showAuthError('signup-email-error', error.message);
+        return;
+      }
+      
+      this.currentUser = data.user;
+      await this.createUserProfile(username);
+      this.showToast('Account created! Please check your email to confirm', 'success');
+      this.switchAuthTab('login');
+    });
+
+    // Demo logins
+    document.querySelectorAll('.demo-login').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: btn.dataset.email,
+          password: btn.dataset.password
+        });
+        
+        if (error) {
+          this.showToast('Demo login failed', 'error');
+          return;
+        }
+        
+        this.currentUser = data.user;
+        await this.fetchUserProfile();
+        this.showMainApp();
+      });
+    });
+  }
+
+  switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.toggle('active', f.id === tab + 'Form'));
+    this.clearAuthErrors();
+  }
+
+  showAuthError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('active');
+  }
+
+  clearAuthErrors() {
+    document.querySelectorAll('.form-error').forEach(e => {
+      e.textContent = '';
+      e.classList.remove('active');
+    });
+  }
+
+  logout() {
+    supabase.auth.signOut();
+    this.currentUser = null;
+    Object.values(this.charts).forEach(chart => chart && chart.destroy && chart.destroy());
+    this.charts = {};
+    this.showAuthScreen();
+    this.showToast('Logged out successfully', 'success');
+  }
+
+  /* ------------------------------ VIEW SWITCH --------------------------- */
+  showAuthScreen() {
+    document.getElementById('authScreen').style.display = 'flex';
+    document.getElementById('mainApp').classList.add('hidden');
+  }
+
+  showMainApp() {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('mainApp').classList.remove('hidden');
+
+    if (!this.mainListenersAttached) {
+      this.attachMainListeners();
+      this.mainListenersAttached = true;
+    }
+
+    this.updateUserInfo();
+    this.showSection('dashboard');
+  }
+
+  attachMainListeners() {
+    document.querySelectorAll('.nav-link').forEach(btn => {
+      btn.addEventListener('click', () => this.showSection(btn.dataset.section));
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+    document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+    document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
+
+    // Daily confidence slider
+    const slider = document.getElementById('dailyConfidence');
+    const out = document.getElementById('confidenceValue');
+    slider.addEventListener('input', () => (out.textContent = slider.value));
+    document.getElementById('saveConfidenceBtn').addEventListener('click', () => this.saveDailyConfidence());
+
+    // Add trade form setup
+    this.setupAddTradeForm();
+
+    // Export
+    document.getElementById('exportData').addEventListener('click', () => this.exportCSV());
+
+    // Calendar nav
+    document.getElementById('prevMonth').addEventListener('click', () => this.changeCalendarMonth(-1));
+    document.getElementById('nextMonth').addEventListener('click', () => this.changeCalendarMonth(1));
+
+    // Custom event for confidence update
+    document.addEventListener('confidence-updated', () => {
+      if (document.getElementById('ai-suggestions').classList.contains('active')) {
+        this.renderAISuggestions();
+      }
+      if (document.getElementById('reports').classList.contains('active')) {
+        this.renderReports();
+      }
+    });
+  }
+
+  updateUserInfo() {
+    document.getElementById('currentUserName').textContent = this.currentUser.username;
+  }
+
+  toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-color-scheme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-color-scheme', next);
+    document.getElementById('themeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+  }
+
+  showSection(id) {
+    document.querySelectorAll('.nav-link').forEach(btn => btn.classList.toggle('active', btn.dataset.section === id));
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+
+    switch (id) {
+      case 'dashboard':
+        this.renderDashboard();
+        break;
+      case 'add-trade':
+        this.renderAddTrade();
+        break;
+      case 'history':
+        this.renderHistory();
+        break;
+      case 'analytics':
+        this.renderAnalytics();
+        break;
+      case 'ai-suggestions':
+        this.renderAISuggestions();
+        break;
+      case 'reports':
+        this.renderReports();
+        break;
+    }
+  }
+
+  /* ------------------------------ HELPERS ------------------------------- */
+  formatCurrency(val) {
+    const sign = val < 0 ? '-' : '';
+    return sign + '₹' + Math.abs(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+  }
+
+  formatDate(str) {
+    return new Date(str).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
+  }
+
+  showToast(msg, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const div = document.createElement('div');
+    div.className = 'toast ' + type;
+    div.textContent = msg;
+    container.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+  }
+
+  /* ---------------------- DASHBOARD RENDER ----------------------------- */
+  async loadTrades() {
+    if (!this.currentUser) return [];
+    
+    const { data, error } = await supabase
+      .from('enhanced_trades')
+      .select('*')
+      .eq('user_id', this.currentUser.id)
+      .order('entry_date', { ascending: false });
+    
+    return data || [];
+  }
+
+  async loadConfidenceEntries() {
+    if (!this.currentUser) return [];
+    
+    const { data, error } = await supabase
+      .from('confidence_entries')
+      .select('*')
+      .eq('user_id', this.currentUser.id)
+      .order('date', { ascending: false });
+    
+    return data || [];
+  }
+
+  calculateStats(trades) {
+    if (trades.length === 0) {
+      return { totalPL: 0, winRate: 0, totalTrades: 0, avgRR: '1:0', bestTrade: 0, worstTrade: 0 };
+    }
+    const totalPL = trades.reduce((sum, t) => sum + (t.netPL || 0), 0);
+    const wins = trades.filter(t => t.netPL > 0).length;
+    const winRate = Math.round((wins / trades.length) * 100);
+    const bestTrade = Math.max(...trades.map(t => t.netPL));
+    const worstTrade = Math.min(...trades.map(t => t.netPL));
+    const avgRRNum = (
+      trades.filter(t => t.riskRewardRatio !== undefined).reduce((sum, t, _, arr) => sum + t.riskRewardRatio / arr.length, 0)
+    ).toFixed(2);
+    return { totalPL, winRate, totalTrades: trades.length, avgRR: '1:' + avgRRNum, bestTrade, worstTrade };
+  }
+
+  async renderDashboard() {
+    this.trades = await this.loadTrades();
+    this.confidenceEntries = await this.loadConfidenceEntries();
+    
+    const s = this.calculateStats(this.trades);
+    const totalPLEl = document.getElementById('totalPL');
+    totalPLEl.textContent = this.formatCurrency(s.totalPL);
+    totalPLEl.className = 'stat-value ' + (s.totalPL >= 0 ? 'positive' : 'negative');
+    document.getElementById('winRate').textContent = s.winRate + '%';
+    document.getElementById('totalTrades').textContent = s.totalTrades;
+    document.getElementById('avgRR').textContent = s.avgRR;
+
+    // Recent trades list
+    const list = document.getElementById('recentTradesList');
+    if (this.trades.length === 0) {
+      list.innerHTML = '<div class="empty-state">No trades yet. Click "Add New Trade" to get started!</div>';
+      return;
+    }
+    list.innerHTML = this.trades.slice(0, 5).map(t => `
+      <div class="trade-item" onclick="app.showTradeDetails(${t.id})">
+        <div class="trade-info">
+          <span class="trade-symbol">${t.symbol}</span>
+          <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
+          <span class="trade-date">${this.formatDate(t.entry_date)}</span>
+        </div>
+        <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
+      </div>`).join('');
+  }
+
+  async saveDailyConfidence() {
+    const level = parseInt(document.getElementById('dailyConfidence').value, 10);
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { error } = await supabase
+      .from('confidence_entries')
+      .upsert({
+        user_id: this.currentUser.id,
+        date: today,
+        level
+      });
+    
+    if (error) {
+      this.showToast('Failed to save confidence: ' + error.message, 'error');
+      return;
+    }
+    
+    document.getElementById('confidenceMessage').innerHTML = "<div class='message success'>Daily confidence recorded successfully!</div>";
+    this.showToast('Daily confidence recorded successfully!', 'success');
+    document.dispatchEvent(new CustomEvent('confidence-updated', { detail: { date: today, level } }));
+    
+    // Reload confidence data
+    this.confidenceEntries = await this.loadConfidenceEntries();
+  }
+
+  /* ----------------------- ADD TRADE FORM ------------------------------ */
+  renderAddTrade() {
+    const now = new Date();
+    const entryDateEl = document.querySelector('input[name="entryDate"]');
+    const exitDateEl = document.querySelector('input[name="exitDate"]');
+    if (entryDateEl && !entryDateEl.value) entryDateEl.value = now.toISOString().slice(0, 16);
+    if (exitDateEl && !exitDateEl.value) exitDateEl.value = new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  }
+
+  setupAddTradeForm() {
+    const form = document.getElementById('addTradeForm');
+    
+    // Setup all range inputs with their corresponding value displays
+    const rangeInputs = [
+      { name: 'confidenceLevel', displayId: 'tradeConfidenceValue' },
+      { name: 'sleepQuality', displayClass: 'range-value' },
+      { name: 'physicalCondition', displayClass: 'range-value' },
+      { name: 'fomoLevel', displayClass: 'range-value' },
+      { name: 'preStress', displayClass: 'range-value' },
+      { name: 'positionComfort', displayClass: 'range-value' },
+      { name: 'stressDuring', displayClass: 'range-value' }
+    ];
+
+    rangeInputs.forEach(input => {
+      const slider = form.querySelector(`[name="${input.name}"]`);
+      if (slider) {
+        const display = input.displayId ? 
+          document.getElementById(input.displayId) : 
+          slider.parentElement.querySelector('.range-value');
+        
+        if (display) {
+          slider.addEventListener('input', () => (display.textContent = slider.value));
+        }
+      }
+    });
+
+    const calcFields = ['quantity', 'entryPrice', 'exitPrice', 'stopLoss', 'targetPrice', 'direction'];
+    calcFields.forEach(name => {
+      const field = form.querySelector(`[name="${name}"]`);
+      if (field) {
+        field.addEventListener('input', () => this.updateCalculations());
+        field.addEventListener('change', () => this.updateCalculations());
+      }
+    });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      await this.submitTrade();
+    });
+
+    document.getElementById('resetTradeForm').addEventListener('click', () => {
+      form.reset();
+      this.updateCalculations();
+      this.renderAddTrade();
+      // Reset all range value displays
+      document.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
+      const tradeConfidenceValue = document.getElementById('tradeConfidenceValue');
+      if (tradeConfidenceValue) tradeConfidenceValue.textContent = '5';
+    });
+  }
+
+  updateCalculations() {
+    const fd = new FormData(document.getElementById('addTradeForm'));
+    const qty = parseFloat(fd.get('quantity')) || 0;
+    const entry = parseFloat(fd.get('entryPrice')) || 0;
+    const exit = parseFloat(fd.get('exitPrice')) || 0;
+    const sl = parseFloat(fd.get('stopLoss')) || 0;
+    const target = parseFloat(fd.get('targetPrice')) || 0;
+    const dir = fd.get('direction');
+
+    let gross = 0;
+    if (qty && entry && exit) {
+      gross = dir === 'Long' ? (exit - entry) * qty : (entry - exit) * qty;
+    }
+    const net = gross - 40; // assume brokerage
+
+    let riskReward = 0;
+    if (qty && entry && sl) {
+      const risk = Math.abs(entry - sl) * qty;
+      const reward = target ? Math.abs((dir === 'Long' ? target - entry : entry - target)) * qty : Math.abs(gross);
+      if (risk > 0) riskReward = reward / risk;
+    }
+
+    // Capital risk % (assume capital 100k for demo)
+    const capitalRisk = ((Math.abs(entry - sl) * qty) / 100000) * 100 || 0;
+
+    // Update UI
+    const setVal = (id, val, pos) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = val;
+        if (pos !== undefined) el.className = 'calc-value ' + (pos ? 'positive' : 'negative');
+      }
+    };
+    setVal('calcGrossPL', this.formatCurrency(gross), gross >= 0);
+    setVal('calcNetPL', this.formatCurrency(net), net >= 0);
+    const rrEl = document.getElementById('calcRiskReward');
+    if (rrEl) rrEl.textContent = '1:' + riskReward.toFixed(2);
+    const crEl = document.getElementById('calcCapitalRisk');
+    if (crEl) crEl.textContent = capitalRisk.toFixed(2) + '%';
+  }
+
+  // Helper function to get checkbox values
+  getCheckboxValues(name) {
+    const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+    return Array.from(checkboxes).map(cb => cb.value);
+  }
+
+  // Helper function to get radio value
+  getRadioValue(name) {
+    const radio = document.querySelector(`input[name="${name}"]:checked`);
+    return radio ? radio.value : '';
+  }
+
+  async submitTrade() {
+    const form = document.getElementById('addTradeForm');
+    const fd = new FormData(form);
+    // Clear prev errors
+    form.querySelectorAll('.form-error').forEach(e => {
+      e.textContent = '';
+      e.classList.remove('active');
+    });
+
+    // Validate required fields
+    const required = ['symbol', 'direction', 'quantity', 'entryPrice', 'exitPrice', 'entryDate', 'exitDate'];
+    let hasErr = false;
+    required.forEach(field => {
+      const val = fd.get(field);
+      if (!val || val.toString().trim() === '') {
+        const errEl = document.getElementById(field + '-error');
+        if (errEl) {
+          errEl.textContent = 'Required';
+          errEl.classList.add('active');
+        }
+        hasErr = true;
+      }
+    });
+
+    const qty = parseFloat(fd.get('quantity'));
+    if (isNaN(qty) || qty <= 0) {
+      const errEl = document.getElementById('quantity-error');
+      if (errEl) {
+        errEl.textContent = 'Must be positive';
+        errEl.classList.add('active');
+      }
+      hasErr = true;
+    }
+
+    const entryDate = new Date(fd.get('entryDate'));
+    const exitDate = new Date(fd.get('exitDate'));
+    if (exitDate <= entryDate) {
+      const errEl = document.getElementById('exitDate-error');
+      if (errEl) {
+        errEl.textContent = 'Exit after entry';
+        errEl.classList.add('active');
+      }
+      hasErr = true;
+    }
+
+    if (hasErr) {
+      this.showToast('Please fix errors', 'error');
+      return;
+    }
+
+    // Build comprehensive trade object with all psychology fields
+    const trade = {
+      user_id: this.currentUser.id,
+      // Basic trade details
+      symbol: fd.get('symbol').toUpperCase(),
+      direction: fd.get('direction'),
+      quantity: qty,
+      entry_price: parseFloat(fd.get('entryPrice')),
+      exit_price: parseFloat(fd.get('exitPrice')),
+      stop_loss: parseFloat(fd.get('stopLoss')) || null,
+      target_price: parseFloat(fd.get('targetPrice')) || null,
+      strategy: fd.get('strategy') || 'N/A',
+      exit_reason: fd.get('exitReason') || 'N/A',
+      confidence_level: parseInt(fd.get('confidenceLevel')),
+      entry_date: fd.get('entryDate'),
+      exit_date: fd.get('exitDate'),
+      pre_emotion: fd.get('preEmotion') || '',
+      post_emotion: fd.get('postEmotion') || '',
+      notes: fd.get('notes') || '',
+
+      // Pre-Trade Psychology
+      sleep_quality: parseInt(fd.get('sleepQuality')) || 5,
+      physical_condition: parseInt(fd.get('physicalCondition')) || 5,
+      market_sentiment: fd.get('marketSentiment') || '',
+      news_awareness: fd.get('newsAwareness') || '',
+      market_environment: fd.get('marketEnvironment') || '',
+      fomo_level: parseInt(fd.get('fomoLevel')) || 1,
+      pre_stress: parseInt(fd.get('preStress')) || 1,
+
+      // Trade Setup Analysis
+      multi_timeframes: this.getCheckboxValues('multiTimeframes').join(', '),
+      volume_analysis: fd.get('volumeAnalysis') || '',
+      technical_confluence: this.getCheckboxValues('technicalConfluence').join(', '),
+      market_session: fd.get('marketSession') || '',
+      trade_catalyst: fd.get('tradeCatalyst') || '',
+
+      // During Trade Management
+      waited_for_setup: this.getRadioValue('waitedForSetup'),
+      position_comfort: parseInt(fd.get('positionComfort')) || 5,
+      plan_deviation: fd.get('planDeviation') || '',
+      stress_during: parseInt(fd.get('stressDuring')) || 1,
+
+      // Exit Analysis
+      primary_exit_reason: fd.get('primaryExitReason') || '',
+      exit_emotion: fd.get('exitEmotion') || '',
+      would_take_again: this.getRadioValue('wouldTakeAgain'),
+      lesson: fd.get('lesson') || '',
+
+      // Market Context
+      volatility_today: fd.get('volatilityToday') || '',
+      sector_performance: fd.get('sectorPerformance') || '',
+      economic_events: this.getCheckboxValues('economicEvents').join(', '),
+      personal_distractions: this.getCheckboxValues('personalDistractions').join(', ')
+    };
+
+    // Calculate P&L and RR
+    trade.gross_pl = trade.direction === 'Long' ? 
+      (trade.exit_price - trade.entry_price) * trade.quantity : 
+      (trade.entry_price - trade.exit_price) * trade.quantity;
+    
+    trade.net_pl = trade.gross_pl - 40; // assume brokerage
+    
+    if (trade.stop_loss) {
+      const risk = Math.abs(trade.entry_price - trade.stop_loss) * trade.quantity;
+      const reward = trade.target_price ? 
+        Math.abs((trade.direction === 'Long' ? trade.target_price - trade.entry_price : trade.entry_price - trade.target_price)) * trade.quantity : 
+        Math.abs(trade.gross_pl);
+      
+      trade.risk_reward_ratio = risk ? reward / risk : 0;
+    } else {
+      trade.risk_reward_ratio = 0;
+    }
+
+    // Save to Supabase
+    const { data, error } = await supabase
+      .from('enhanced_trades')
+      .insert([trade]);
+    
+    if (error) {
+      this.showToast('Failed to save trade: ' + error.message, 'error');
+      return;
+    }
+
+    this.showToast('Trade saved with enhanced psychology data!', 'success');
+    form.reset();
+    this.updateCalculations();
+    this.renderAddTrade();
+    // Reset all range value displays
+    document.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
+    const tradeConfidenceValue = document.getElementById('tradeConfidenceValue');
+    if (tradeConfidenceValue) tradeConfidenceValue.textContent = '5';
+    
+    // Reload trades
+    this.trades = await this.loadTrades();
+    this.showSection('dashboard');
+  }
+
+  /* ---------------------------- HISTORY ------------------------------- */
+  async renderHistory() {
+    const container = document.getElementById('historyContent');
+    this.trades = await this.loadTrades();
+    
+    if (this.trades.length === 0) {
+      container.innerHTML = '<div class="empty-state">No trades recorded yet.</div>';
+      return;
+    }
+
+    // Populate filters
+    const symbols = [...new Set(this.trades.map(t => t.symbol))];
+    const symbolFilter = document.getElementById('symbolFilter');
+    symbolFilter.innerHTML = '<option value="">All Symbols</option>' + symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    const strategies = [...new Set(this.trades.map(t => t.strategy))];
+    const strategyFilter = document.getElementById('strategyFilter');
+    strategyFilter.innerHTML = '<option value="">All Strategies</option>' + strategies.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    const applyFilters = () => {
+      const symVal = symbolFilter.value;
+      const stratVal = strategyFilter.value;
+      const filtered = this.trades.filter(t => (!symVal || t.symbol === symVal) && (!stratVal || t.strategy === stratVal));
+      renderTable(filtered);
+    };
+
+    symbolFilter.onchange = strategyFilter.onchange = applyFilters;
+
+    const renderTable = rows => {
+      if (rows.length === 0) {
+        container.innerHTML = '<div class="empty-state">No trades match filter.</div>';
+        return;
+      }
+      container.innerHTML = `
+        <div class="card"><table class="trade-table"><thead>
+          <tr><th>Date</th><th>Symbol</th><th>Dir</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Strategy</th></tr>
+        </thead><tbody>
+          ${rows.map(t => `
+            <tr onclick="app.showTradeDetails(${t.id})">
+              <td data-label="Date">${this.formatDate(t.entry_date)}</td>
+              <td data-label="Symbol">${t.symbol}</td>
+              <td data-label="Direction"><span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span></td>
+              <td data-label="Qty">${t.quantity}</td>
+              <td data-label="Entry">₹${t.entry_price}</td>
+              <td data-label="Exit">₹${t.exit_price}</td>
+              <td data-label="P&L" class="${t.net_pl>=0?'positive':'negative'}">${this.formatCurrency(t.net_pl)}</td>
+              <td data-label="Strategy">${t.strategy}</td>
+            </tr>`).join('')}
+        </tbody></table></div>`;
+    };
+
+    applyFilters();
+  }
+
+  /* -------------------------- ANALYTICS ------------------------------ */
+  async renderAnalytics() {
+    this.trades = await this.loadTrades();
+    const s = this.calculateStats(this.trades);
+    
+    document.getElementById('analyticsTotalTrades').textContent = s.totalTrades;
+    document.getElementById('analyticsWinRate').textContent = s.winRate + '%';
+    const netEl = document.getElementById('analyticsNetPL');
+    netEl.textContent = this.formatCurrency(s.totalPL);
+    netEl.className = 'value ' + (s.totalPL >= 0 ? 'positive' : 'negative');
+    document.getElementById('analyticsBestTrade').textContent = this.formatCurrency(s.bestTrade);
+    document.getElementById('analyticsWorstTrade').textContent = this.formatCurrency(s.worstTrade);
+    document.getElementById('analyticsAvgRR').textContent = s.avgRR;
+
+    if (typeof Chart === 'undefined') return;
+
+    setTimeout(() => {
+      this.drawPLChart();
+      this.drawRRChart();
+      this.drawStrategyChart();
+      this.renderTimeTables();
+    }, 30);
+  }
+
+  drawPLChart() {
+    const ctx = document.getElementById('plChart');
+    if (!ctx) return;
+    this.charts.pl && this.charts.pl.destroy();
+    if (this.trades.length === 0) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
+
+    const sorted = [...this.trades].sort((a,b) => new Date(a.entry_date) - new Date(b.entry_date));
+    const labels = [];
+    const cum = [];
+    let run = 0;
+    sorted.forEach(t => { run += t.net_pl; labels.push(this.formatDate(t.entry_date)); cum.push(run); });
+
+    this.charts.pl = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets:[{ label:'Cumulative P&L', data:cum, borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.4, fill:true }] },
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'₹'+v.toLocaleString('en-IN') } } } }
+    });
+  }
+
+  drawRRChart() {
+    const ctx = document.getElementById('rrChart');
+    if (!ctx) return;
+    this.charts.rr && this.charts.rr.destroy();
+    if (this.trades.length === 0) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
+
+    const buckets = { '<1:1':0, '1:1-1:2':0, '1:2-1:3':0, '>1:3':0 };
+    this.trades.forEach(t => {
+      const rr = t.risk_reward_ratio || 0;
+      if (rr < 1) buckets['<1:1']++; else if (rr < 2) buckets['1:1-1:2']++; else if (rr < 3) buckets['1:2-1:3']++; else buckets['>1:3']++;
+    });
+
+    this.charts.rr = new Chart(ctx, {
+      type: 'bar',
+      data: { labels:Object.keys(buckets), datasets:[{ data:Object.values(buckets), backgroundColor:['#FFC185','#B4413C','#5D878F','#1FB8CD'] }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+
+  drawStrategyChart() {
+    const ctx = document.getElementById('strategyChart');
+    if (!ctx) return;
+    this.charts.strategy && this.charts.strategy.destroy();
+    if (this.trades.length===0){ ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
+
+    const map = {};
+    this.trades.forEach(t => {
+      if(!map[t.strategy]) map[t.strategy]={ total:0, wins:0 };
+      map[t.strategy].total++;
+      if(t.net_pl>0) map[t.strategy].wins++;
+    });
+    const labels = Object.keys(map);
+    const data = labels.map(l => Math.round((map[l].wins / map[l].total) * 100));
+
+    this.charts.strategy = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor:'#1FB8CD' }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+'%' }}}}
+    });
+  }
+
+  renderTimeTables() {
+    const container = document.getElementById('timeChart').parentElement;
+    container.querySelectorAll('.time-table').forEach(n=>n.remove());
+    if (this.trades.length===0) return;
+
+    const monthMap = {};
+    const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dowMap = Object.fromEntries(dowNames.map(d=>[d,{total:0,wins:0,net:0}]));
+
+    this.trades.forEach(t => {
+      const d = new Date(t.entry_date);
+      const mKey = `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}`;
+      if(!monthMap[mKey]) monthMap[mKey]={total:0,wins:0,net:0};
+      monthMap[mKey].total++;
+      if(t.net_pl>0) monthMap[mKey].wins++;
+      monthMap[mKey].net+=t.net_pl;
+
+      const dow = dowNames[d.getDay()];
+      dowMap[dow].total++;
+      if(t.net_pl>0) dowMap[dow].wins++;
+      dowMap[dow].net+=t.net_pl;
+    });
+
+    const makeTable = (title, rows) => {
+      const div = document.createElement('div');
+      div.className='time-table';
+      div.innerHTML=`<h4>${title}</h4><table class="trade-table"><thead><tr><th>Period</th><th>Trades</th><th>Win %</th><th>Net P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
+      container.appendChild(div);
+    };
+
+    const monthRows = Object.keys(monthMap).sort().map(k => {
+      const o=monthMap[k];
+      const win=Math.round((o.wins/o.total)*100);
+      return `<tr><td>${k}</td><td>${o.total}</td><td>${win}%</td><td class="${o.net>=0?'positive':'negative'}">${this.formatCurrency(o.net)}</td></tr>`;
+    }).join('');
+    makeTable('Monthly Performance', monthRows);
+
+    const dowRows = dowNames.filter(d=>dowMap[d].total>0).map(d=>{
+      const o=dowMap[d];
+      const win=Math.round((o.wins/o.total)*100);
+      return `<tr><td>${d}</td><td>${o.total}</td><td>${win}%</td><td class="${o.net>=0?'positive':'negative'}">${this.formatCurrency(o.net)}</td></tr>`;
+    }).join('');
+    makeTable('Day-of-Week Analysis', dowRows);
+  }
+
+  /* ----------------------- AI SUGGESTIONS ----------------------------- */
+  async renderAISuggestions() {
+    this.trades = await this.loadTrades();
+    this.confidenceEntries = await this.loadConfidenceEntries();
+    
+    const s = this.calculateStats(this.trades);
+    document.getElementById('smartInsight').textContent = s.totalPL>=0 ?
+      `Great job! You're net positive ${this.formatCurrency(s.totalPL)} with a ${s.winRate}% win rate.` :
+      `You're net negative ${this.formatCurrency(s.totalPL)}. Focus on risk management and psychology.`;
+
+    // Enhanced AI feedback with psychology analysis
+    const fb = document.getElementById('aiFeedback');
+    let psychologyInsight = '';
+    if (this.trades.length > 0) {
+      const avgStress = this.trades.reduce((sum, t) => sum + (t.pre_stress || 0), 0) / this.trades.length;
+      const avgFomo = this.trades.reduce((sum, t) => sum + (t.fomo_level || 0), 0) / this.trades.length;
+      const avgSleep = this.trades.reduce((sum, t) => sum + (t.sleep_quality || 0), 0) / this.trades.length;
+      
+      if (avgStress > 6) psychologyInsight += ' High stress levels detected.';
+      if (avgFomo > 6) psychologyInsight += ' FOMO affecting decisions.';
+      if (avgSleep < 6) psychologyInsight += ' Poor sleep impacting performance.';
+    }
+
+    fb.innerHTML = `<div class="suggestion-item ${s.winRate>=60?'suggestion-success':s.winRate>=40?'suggestion-info':'suggestion-warning'}">
+      <div class="suggestion-title">${s.winRate>=60?'Excellent Execution':s.winRate>=40?'Moderate Execution':'Poor Execution'}</div>
+      <div class="suggestion-desc">Win rate ${s.winRate}% over ${s.totalTrades} trades.${psychologyInsight}</div></div>`;
+
+    const bestStrat = this.bestStrategy();
+    document.getElementById('edgeAnalyzer').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Best Strategy</div><div class="suggestion-desc">${bestStrat}</div></div>`;
+
+    const confEl = document.getElementById('confidenceAnalysis');
+    if (this.confidenceEntries.length===0) {
+      confEl.innerHTML = '<div class="suggestion-item suggestion-info"><div class="suggestion-title">No Confidence Data</div><div class="suggestion-desc">Record daily confidence.</div></div>';
+    } else {
+      const avg = (this.confidenceEntries.reduce((sum,c)=>sum+c.level,0)/this.confidenceEntries.length).toFixed(1);
+      confEl.innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Avg Confidence</div><div class="suggestion-desc">${avg}/10 over ${this.confidenceEntries.length} days</div></div>`;
+      this.drawConfidenceChart();
+    }
+
+    document.getElementById('repeatTrades').innerHTML = this.repeatTradeHTML();
+    
+    // Enhanced entry analysis with new psychology data
+    const entryAnalysis = this.analyzeEntryPatterns();
+    document.getElementById('entryAnalysis').innerHTML = entryAnalysis;
+    
+    // Enhanced emotional bias analysis
+    const emotionalBias = this.analyzeEmotionalBias();
+    document.getElementById('emotionalBias').innerHTML = emotionalBias;
+    
+    document.getElementById('setupQuality').innerHTML = '<div class="suggestion-item suggestion-info">Setup quality scoring coming soon.</div>';
+    document.getElementById('timeConfidence').innerHTML = '<div class="suggestion-item suggestion-info">Time-based confidence insights coming soon.</div>';
+  }
+
+  analyzeEntryPatterns() {
+    if (this.trades.length < 3) return '<div class="suggestion-item suggestion-info">Need more trades for entry pattern analysis.</div>';
+    
+    const waitedTrades = this.trades.filter(t => t.waited_for_setup === 'Yes, completely');
+    const waitedWinRate = waitedTrades.length ? Math.round((waitedTrades.filter(t => t.net_pl > 0).length / waitedTrades.length) * 100) : 0;
+    const rushed = this.trades.filter(t => t.waited_for_setup === 'No, entered early').length;
+    
+    return `<div class="suggestion-item ${waitedWinRate > 60 ? 'suggestion-success' : 'suggestion-warning'}">
+      <div class="suggestion-title">Entry Discipline Analysis</div>
+      <div class="suggestion-desc">When you wait for setup: ${waitedWinRate}% win rate. Rushed entries: ${rushed} trades.</div>
+    </div>`;
+  }
+
+  analyzeEmotionalBias() {
+    if (this.trades.length < 3) return '<div class="suggestion-item suggestion-info">Need more trades for emotional analysis.</div>';
+    
+    const highFomoTrades = this.trades.filter(t => (t.fomo_level || 0) > 6);
+    const highStressTrades = this.trades.filter(t => (t.pre_stress || 0) > 6);
+    
+    let analysis = '';
+    if (highFomoTrades.length > 0) {
+      const fomoWinRate = Math.round((highFomoTrades.filter(t => t.net_pl > 0).length / highFomoTrades.length) * 100);
+      analysis += `High FOMO trades: ${fomoWinRate}% win rate. `;
+    }
+    if (highStressTrades.length > 0) {
+      const stressWinRate = Math.round((highStressTrades.filter(t => t.net_pl > 0).length / highStressTrades.length) * 100);
+      analysis += `High stress trades: ${stressWinRate}% win rate.`;
+    }
+    
+    if (!analysis) analysis = 'Good emotional control detected in your trades.';
+    
+    return `<div class="suggestion-item suggestion-info">
+      <div class="suggestion-title">Emotional Impact</div>
+      <div class="suggestion-desc">${analysis}</div>
+    </div>`;
+  }
+
+  repeatTradeHTML() {
+    if (this.trades.length<3) return '<div class="suggestion-item suggestion-info">Need more trades for pattern detection.</div>';
+    const freq = {};
+    this.trades.forEach(t=>freq[t.symbol]=(freq[t.symbol]||0)+1);
+    const [sym,count] = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+    return `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Most Traded Symbol</div><div class="suggestion-desc">${sym} (${count} trades)</div></div>`;
+  }
+
+  drawConfidenceChart() {
+    const ctx = document.getElementById('confidenceChart');
+    if (!ctx) return;
+    this.charts.conf && this.charts.conf.destroy();
+
+    const sorted = [...this.confidenceEntries].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    this.charts.conf = new Chart(ctx,{ type:'line', data:{ labels:sorted.map(c=>c.date), datasets:[{ data:sorted.map(c=>c.level), borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.3, fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ min:1, max:10 } } } });
+  }
+
+  /* ------------------------ REPORTS & CALENDAR ------------------------ */
+  async renderReports() {
+    this.trades = await this.loadTrades();
+    this.confidenceEntries = await this.loadConfidenceEntries();
+    
+    // Basic summaries
+    const s = this.calculateStats(this.trades);
+    document.getElementById('weeklyReport').innerHTML = `<div class="report-item"><span class="report-label">Total Trades</span><span class="report-value">${s.totalTrades}</span></div><div class="report-item"><span class="report-label">Win Rate</span><span class="report-value">${s.winRate}%</span></div>`;
+    document.getElementById('monthlyReport').innerHTML = `<div class="report-item"><span class="report-label">Net P&L</span><span class="report-value ${s.totalPL>=0?'positive':'negative'}">${this.formatCurrency(s.totalPL)}</span></div>`;
+    document.getElementById('strategyReport').innerHTML = `<div class="report-item"><span class="report-label">Best Strategy</span><span class="report-value">${this.bestStrategy()}</span></div>`;
+    const avgConf = this.confidenceEntries.length ? (this.confidenceEntries.reduce((sum,c)=>sum+c.level,0)/this.confidenceEntries.length).toFixed(1) : 'N/A';
+    document.getElementById('emotionalReport').innerHTML = `<div class="report-item"><span class="report-label">Avg Confidence</span><span class="report-value">${avgConf}/10</span></div>`;
+
+    // Calendar
+    this.currentCalendarDate = this.currentCalendarDate || new Date();
+    this.buildCalendar();
+  }
+
+  changeCalendarMonth(offset) {
+    this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth()+offset);
+    this.buildCalendar();
+  }
+
+  buildCalendar() {
+    const date = this.currentCalendarDate;
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth()+1, 0);
+    const daysInMonth = monthEnd.getDate();
+
+    document.getElementById('currentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+    const cal = document.getElementById('plCalendar');
+    cal.innerHTML='';
+
+    const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    dowNames.forEach(d=>{
+      const div=document.createElement('div');
+      div.className='calendar-day header';
+      div.textContent=d;
+      cal.appendChild(div);
+    });
+
+    // Empty days before start
+    for(let i=0;i<monthStart.getDay();i++){
+      const div=document.createElement('div');
+      div.className='calendar-day no-trades';
+      cal.appendChild(div);
+    }
+
+    for(let d=1;d<=daysInMonth;d++){
+      const current = new Date(date.getFullYear(), date.getMonth(), d);
+      const key = current.toISOString().split('T')[0];
+      const trades = this.trades.filter(t => t.entry_date.startsWith(key));
+      let cls = 'no-trades';
+      let content = d;
+      if (trades.length) {
+        const pl = trades.reduce((sum,t)=>sum+t.net_pl,0);
+        if (pl>1000) cls='profit-high'; else if (pl>0) cls='profit-low'; else if (pl<-1000) cls='loss-high'; else cls='loss-low';
+        content = d;
+      }
+      const div=document.createElement('div');
+      div.className='calendar-day '+cls;
+      div.textContent=content;
+      div.title = trades.length ? `${trades.length} trades, P&L: ${this.formatCurrency(trades.reduce((s,t)=>s+t.net_pl,0))}` : 'No trades';
+      if(trades.length){ div.onclick=()=>alert('Trades for '+key+' will be detailed in future update.'); }
+      cal.appendChild(div);
+    }
+  }
+
+  /* ------------------------ UTIL ------------------------------------- */
+  bestStrategy() {
+    if (this.trades.length===0) return 'N/A';
+    const map={};
+    this.trades.forEach(t=>map[t.strategy]=(map[t.strategy]||0)+t.net_pl);
+    return Object.entries(map).sort((a,b)=>b[1]-a[1])[0][0];
+  }
+
+  exportCSV() {
+    if (this.trades.length===0) { this.showToast('No trades to export','warning'); return; }
+    const header=['Date','Symbol','Direction','Qty','Entry','Exit','Stop','Target','Net P&L','Strategy','Sleep','Stress','FOMO','Notes'];
+    const rows=this.trades.map(t=>[
+      this.formatDate(t.entry_date),t.symbol,t.direction,t.quantity,t.entry_price,t.exit_price,t.stop_loss||'',t.target_price||'',t.net_pl,t.strategy,t.sleep_quality||'',t.pre_stress||'',t.fomo_level||'',t.notes.replace(/"/g,'""')
+    ]);
+    const csv=[header].concat(rows).map(r=>r.map(f=>typeof f==='string' && f.includes(',')?`"${f}"`:f).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='trading_data_enhanced.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  showTradeDetails(id) {
+    const t = this.trades.find(tr=>tr.id===id);
+    if(!t) return;
+    const rrText = t.risk_reward_ratio? t.risk_reward_ratio.toFixed(2):'0.00';
+    const body=document.getElementById('tradeModalBody');
+    body.innerHTML=`<div class="trade-detail-grid">
+      <div class="trade-detail-item"><div class="trade-detail-label">Symbol</div><div class="trade-detail-value">${t.symbol}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Direction</div><div class="trade-detail-value"><span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span></div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Quantity</div><div class="trade-detail-value">${t.quantity}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Entry Price</div><div class="trade-detail-value">₹${t.entry_price}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Exit Price</div><div class="trade-detail-value">₹${t.exit_price}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Gross P&L</div><div class="trade-detail-value ${t.gross_pl>=0?'positive':'negative'}">${this.formatCurrency(t.gross_pl)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Net P&L</div><div class="trade-detail-value ${t.net_pl>=0?'positive':'negative'}">${this.formatCurrency(t.net_pl)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Risk:Reward</div><div class="trade-detail-value">1:${rrText}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Strategy</div><div class="trade-detail-value">${t.strategy}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Sleep Quality</div><div class="trade-detail-value">${t.sleep_quality||'N/A'}/10</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Pre-Stress</div><div class="trade-detail-value">${t.pre_stress||'N/A'}/10</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">FOMO Level</div><div class="trade-detail-value">${t.fomo_level||'N/A'}/10</div></div>
+    </div>
+    ${t.notes?`<div style="margin-top:16px;">Notes:<br>${t.notes}</div>`:''}
+    ${t.lesson?`<div style="margin-top:16px;">Lesson Learned:<br>${t.lesson}</div>`:''}`;
+    document.getElementById('tradeModal').classList.remove('hidden');
+  }
+
+  hideTradeModal(){ document.getElementById('tradeModal').classList.add('hidden'); }
 }
+
+window.app = new TradingJournalApp();
