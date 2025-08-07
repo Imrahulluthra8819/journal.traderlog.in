@@ -1,4 +1,4 @@
-// Trading Dashboard Application - Fixed and Optimized
+// Trading Dashboard Application - Fixed Analytics Charts
 class TradingDashboardApp {
     constructor() {
         this.supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
@@ -647,13 +647,13 @@ class TradingDashboardApp {
         }
     }
 
-    /* ======================== ADD TRADE ======================== */
+    /* ======================== ENHANCED ADD TRADE ======================== */
     setupAddTradeForm() {
         const form = document.getElementById('addTradeForm');
         if (!form) return;
         
         // Range inputs
-        const ranges = ['setupQuality', 'confidence'];
+        const ranges = ['setupQuality', 'confidence', 'stressLevel', 'sleepQuality', 'mentalClarity'];
         ranges.forEach(id => {
             const input = document.getElementById(id);
             const output = document.getElementById(id + 'Output');
@@ -704,7 +704,7 @@ class TradingDashboardApp {
 
         const priceDiff = direction === 'Long' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
         const grossPL = priceDiff * quantity;
-        const netPL = grossPL - (Math.abs(grossPL) * 0.01); // 1% fees
+        const netPL = grossPL - (Math.abs(grossPL) * 0.01);
         const returnPct = (netPL / (entryPrice * quantity)) * 100;
 
         let rrRatio = 'N/A';
@@ -765,7 +765,7 @@ class TradingDashboardApp {
             }
 
             await this.saveTrade(tradeData);
-            this.showToast('Trade saved successfully! 🎉', 'success');
+            this.showToast('Trade analysis saved successfully! 🎉', 'success');
             
             event.target.reset();
             setTimeout(() => this.showSection('dashboard'), 500);
@@ -799,6 +799,15 @@ class TradingDashboardApp {
                 confidence_level: parseInt(tradeData.confidence) || 7,
                 exit_reason: tradeData.exitReason || 'Manual Exit',
                 exit_emotion: tradeData.exitEmotion || 'Neutral',
+                exit_timing_quality: tradeData.exitTiming || null,
+                market_condition: tradeData.marketCondition || null,
+                entry_trigger: tradeData.entryTrigger || null,
+                stress_level: parseInt(tradeData.stressLevel) || 3,
+                sleep_quality: parseInt(tradeData.sleepQuality) || 7,
+                mental_clarity: parseInt(tradeData.mentalClarity) || 7,
+                overall_mood: tradeData.overallMood || null,
+                lessons_learned: tradeData.lessonsLearned || '',
+                would_take_again: tradeData.wouldRepeat || 'Maybe',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -887,6 +896,16 @@ class TradingDashboardApp {
                         <label>Entry Date:</label>
                         <span>${this.formatDate(trade.entry_date)}</span>
                     </div>
+                    ${trade.setup_quality ? `
+                    <div class="trade-detail-item">
+                        <label>Setup Quality:</label>
+                        <span>${trade.setup_quality}/10</span>
+                    </div>` : ''}
+                    ${trade.exit_reason ? `
+                    <div class="trade-detail-item">
+                        <label>Exit Reason:</label>
+                        <span>${trade.exit_reason}</span>
+                    </div>` : ''}
                     ${trade.notes ? `
                     <div class="trade-detail-item full-width">
                         <label>Notes:</label>
@@ -980,36 +999,73 @@ class TradingDashboardApp {
         }
     }
 
-    /* ======================== ANALYTICS ======================== */
+    /* ======================== ENHANCED ANALYTICS WITH CHARTS ======================== */
     async renderAnalytics() {
         try {
             const trades = await this.loadTrades();
             const stats = this.calculateStats(trades);
 
+            // Update summary stats
             this.updateElement('analyticsTotalTrades', stats.totalTrades);
             this.updateElement('analyticsWinRate', stats.winRate + '%');
             this.updateElement('analyticsNetPL', this.formatCurrency(stats.totalPL));
+            this.updateElement('analyticsBestTrade', this.formatCurrency(stats.bestTrade));
+            this.updateElement('analyticsWorstTrade', this.formatCurrency(stats.worstTrade));
+            this.updateElement('analyticsAvgRR', stats.avgRR);
 
             const netPLElement = document.getElementById('analyticsNetPL');
             if (netPLElement) {
                 netPLElement.className = `value ${stats.totalPL >= 0 ? 'positive' : 'negative'}`;
             }
 
+            // Render all analytics charts
             if (trades.length > 0) {
-                this.renderCharts(trades);
+                this.renderAnalyticsCharts(trades);
+            } else {
+                this.showNoDataCharts();
             }
         } catch (error) {
             console.error('Error rendering analytics:', error);
         }
     }
 
-    renderCharts(trades) {
+    renderAnalyticsCharts(trades) {
         if (!trades || trades.length === 0) return;
+        
+        // Destroy existing charts
         this.destroyCharts();
+        
+        // Render all charts with a slight delay to ensure DOM is ready
         setTimeout(() => {
             this.renderPLChart(trades);
             this.renderStrategyChart(trades);
-        }, 100);
+            this.renderWinLossChart(trades);
+            this.renderMonthlyAnalyticsChart(trades);
+            this.renderSetupQualityChart(trades);
+            this.renderPsychologyChart(trades);
+        }, 200);
+    }
+
+    showNoDataCharts() {
+        // Show empty state for all charts
+        const chartIds = ['plChart', 'strategyChart', 'winLossChart', 'monthlyAnalyticsChart', 'setupQualityChart', 'psychologyChart'];
+        
+        chartIds.forEach(id => {
+            const ctx = document.getElementById(id);
+            if (ctx) {
+                const parent = ctx.parentNode;
+                parent.innerHTML = `
+                    <h3>${parent.querySelector('h3')?.textContent || 'Chart'}</h3>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary); flex-direction: column; gap: 1rem;">
+                        <div style="font-size: 3rem; opacity: 0.3;">📊</div>
+                        <div>No data available yet</div>
+                        <button class="btn btn--primary btn--sm" onclick="document.querySelector('[data-section=add-trade]').click()">
+                            Add Trades to See Analytics
+                        </button>
+                    </div>
+                `;
+            }
+        });
     }
 
     renderPLChart(trades) {
@@ -1034,18 +1090,40 @@ class TradingDashboardApp {
                         borderColor: '#21808d',
                         backgroundColor: 'rgba(33, 128, 141, 0.1)',
                         fill: true,
-                        tension: 0.1
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#21808d',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#21808d',
+                            borderWidth: 1
+                        }
+                    },
                     scales: {
-                        x: { title: { display: true, text: 'Trades' } },
+                        x: { 
+                            title: { display: true, text: 'Trade Number', color: 'var(--text-secondary)' },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        },
                         y: { 
                             beginAtZero: true,
-                            ticks: { callback: (value) => this.formatCurrency(value) }
+                            title: { display: true, text: 'P&L', color: 'var(--text-secondary)' },
+                            ticks: { 
+                                callback: (value) => this.formatCurrency(value),
+                                color: 'var(--text-secondary)'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
                         }
                     }
                 }
@@ -1076,25 +1154,319 @@ class TradingDashboardApp {
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Net P&L',
+                        label: 'Net P&L by Strategy',
                         data: data,
-                        backgroundColor: data.map(value => value >= 0 ? '#21808d' : '#c0152f')
+                        backgroundColor: data.map(value => value >= 0 ? 'rgba(33, 128, 141, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+                        borderColor: data.map(value => value >= 0 ? '#21808d' : '#ef4444'),
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            callbacks: {
+                                label: (context) => `P&L: ${this.formatCurrency(context.parsed.y)}`
+                            }
+                        }
+                    },
                     scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-secondary)' }
+                        },
                         y: {
                             beginAtZero: true,
-                            ticks: { callback: (value) => this.formatCurrency(value) }
+                            ticks: { 
+                                callback: (value) => this.formatCurrency(value),
+                                color: 'var(--text-secondary)'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
                         }
                     }
                 }
             });
         } catch (error) {
             console.error('Error rendering strategy chart:', error);
+        }
+    }
+
+    renderWinLossChart(trades) {
+        const ctx = document.getElementById('winLossChart');
+        if (!ctx) return;
+
+        try {
+            const wins = trades.filter(t => t.net_pl > 0).length;
+            const losses = trades.filter(t => t.net_pl < 0).length;
+            const breakeven = trades.filter(t => t.net_pl === 0).length;
+
+            this.charts.winLossChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wins', 'Losses', 'Breakeven'],
+                    datasets: [{
+                        data: [wins, losses, breakeven],
+                        backgroundColor: ['#10b981', '#ef4444', '#6b7280'],
+                        borderColor: ['#059669', '#dc2626', '#4b5563'],
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { color: 'var(--text-primary)' }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            callbacks: {
+                                label: (context) => {
+                                    const total = wins + losses + breakeven;
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering win/loss chart:', error);
+        }
+    }
+
+    renderMonthlyAnalyticsChart(trades) {
+        const ctx = document.getElementById('monthlyAnalyticsChart');
+        if (!ctx) return;
+
+        try {
+            const monthlyData = {};
+            trades.forEach(trade => {
+                const date = new Date(trade.entry_date);
+                const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                if (!monthlyData[monthKey]) monthlyData[monthKey] = 0;
+                monthlyData[monthKey] += trade.net_pl;
+            });
+
+            const sortedMonths = Object.keys(monthlyData).sort();
+            const labels = sortedMonths.map(month => {
+                const [year, monthNum] = month.split('-');
+                return new Date(year, monthNum - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            });
+            const data = sortedMonths.map(month => monthlyData[month]);
+
+            this.charts.monthlyAnalyticsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Monthly P&L',
+                        data: data,
+                        backgroundColor: data.map(value => value >= 0 ? 'rgba(33, 128, 141, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+                        borderColor: data.map(value => value >= 0 ? '#21808d' : '#ef4444'),
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            callbacks: {
+                                label: (context) => `P&L: ${this.formatCurrency(context.parsed.y)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-secondary)' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: (value) => this.formatCurrency(value),
+                                color: 'var(--text-secondary)'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering monthly analytics chart:', error);
+        }
+    }
+
+    renderSetupQualityChart(trades) {
+        const ctx = document.getElementById('setupQualityChart');
+        if (!ctx) return;
+
+        try {
+            const setupQualityTrades = trades.filter(t => t.setup_quality);
+            if (setupQualityTrades.length === 0) {
+                const parent = ctx.parentNode;
+                parent.innerHTML = `
+                    <h3>⭐ Setup Quality vs Performance</h3>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary);">
+                        <div>No setup quality data available</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const qualityData = {};
+            setupQualityTrades.forEach(trade => {
+                const quality = trade.setup_quality;
+                if (!qualityData[quality]) qualityData[quality] = { total: 0, count: 0, avgPL: 0 };
+                qualityData[quality].total += trade.net_pl;
+                qualityData[quality].count++;
+                qualityData[quality].avgPL = qualityData[quality].total / qualityData[quality].count;
+            });
+
+            const labels = Object.keys(qualityData).sort((a, b) => a - b);
+            const data = labels.map(quality => qualityData[quality].avgPL);
+
+            this.charts.setupQualityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels.map(q => `${q}/10`),
+                    datasets: [{
+                        label: 'Avg P&L by Setup Quality',
+                        data: data,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#8b5cf6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            callbacks: {
+                                label: (context) => `Avg P&L: ${this.formatCurrency(context.parsed.y)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Setup Quality Rating', color: 'var(--text-secondary)' },
+                            grid: { color: 'rgba(128,128,128,0.1)' },
+                            ticks: { color: 'var(--text-secondary)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Average P&L', color: 'var(--text-secondary)' },
+                            ticks: { 
+                                callback: (value) => this.formatCurrency(value),
+                                color: 'var(--text-secondary)'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering setup quality chart:', error);
+        }
+    }
+
+    renderPsychologyChart(trades) {
+        const ctx = document.getElementById('psychologyChart');
+        if (!ctx) return;
+
+        try {
+            const psychTrades = trades.filter(t => t.mental_clarity && t.stress_level);
+            if (psychTrades.length === 0) {
+                const parent = ctx.parentNode;
+                parent.innerHTML = `
+                    <h3>🧠 Psychology Impact Analysis</h3>
+                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: var(--text-secondary);">
+                        <div>No psychology data available</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const highClarityTrades = psychTrades.filter(t => t.mental_clarity >= 7);
+            const lowClarityTrades = psychTrades.filter(t => t.mental_clarity < 7);
+            const lowStressTrades = psychTrades.filter(t => t.stress_level <= 4);
+            const highStressTrades = psychTrades.filter(t => t.stress_level > 4);
+
+            const avgPL = (trades) => trades.length > 0 ? trades.reduce((sum, t) => sum + t.net_pl, 0) / trades.length : 0;
+
+            this.charts.psychologyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['High Clarity', 'Low Clarity', 'Low Stress', 'High Stress'],
+                    datasets: [{
+                        label: 'Average P&L',
+                        data: [
+                            avgPL(highClarityTrades),
+                            avgPL(lowClarityTrades),
+                            avgPL(lowStressTrades),
+                            avgPL(highStressTrades)
+                        ],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: ['#22c55e', '#ef4444', '#22c55e', '#ef4444'],
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            callbacks: {
+                                label: (context) => `Avg P&L: ${this.formatCurrency(context.parsed.y)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: 'var(--text-secondary)' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { 
+                                callback: (value) => this.formatCurrency(value),
+                                color: 'var(--text-secondary)'
+                            },
+                            grid: { color: 'rgba(128,128,128,0.1)' }
+                        }
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering psychology chart:', error);
         }
     }
 
@@ -1273,7 +1645,7 @@ class TradingDashboardApp {
             }
 
             let csv = 'data:text/csv;charset=utf-8,';
-            csv += 'Entry Date,Exit Date,Symbol,Direction,Quantity,Entry Price,Exit Price,Strategy,P&L,Notes\n';
+            csv += 'Entry Date,Exit Date,Symbol,Direction,Quantity,Entry Price,Exit Price,Strategy,P&L,Setup Quality,Notes\n';
             
             trades.forEach(trade => {
                 csv += [
@@ -1286,6 +1658,7 @@ class TradingDashboardApp {
                     trade.exit_price,
                     trade.strategy,
                     trade.net_pl,
+                    trade.setup_quality || 'N/A',
                     `"${(trade.notes || '').replace(/"/g, '""')}"`
                 ].join(',') + '\n';
             });
