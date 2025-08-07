@@ -5,18 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trading Dashboard</title>
     
-    <!-- Chart.js for visualizations -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
     
-    <!-- Custom CSS -->
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
     
     <style>
-        /* Mobile Optimizations */
+        /* Critical CSS Fixes */
+        .mobile-menu-toggle {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .mobile-menu-toggle {
                 display: block !important;
@@ -39,52 +43,90 @@
                 flex-direction: column;
                 padding: 0;
                 z-index: 1000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             }
             
             .nav-menu.mobile-active {
                 display: flex;
             }
-            
-            .nav-item {
-                margin: 0;
-                width: 100%;
-            }
-            
-            .nav-link {
-                width: 100%;
-                padding: 1rem;
-                text-align: left;
-                border-bottom: 1px solid var(--border-color);
-            }
         }
 
-        /* Currency Selector Styles */
+        /* Confidence Slider */
+        .confidence-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .confidence-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .range-input {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .range-input::-webkit-slider-thumb {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .range-input::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .confidence-display {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .range-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Currency Selector */
         .currency-selector-nav {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-
-        .currency-selector-nav label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .currency-selector-nav select {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            color: var(--text-primary);
+            margin-right: 1rem;
         }
 
         .trade-currency-selector {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
+            gap: 1rem;
+            margin-bottom: 2rem;
             padding: 1rem;
             background: var(--bg-secondary);
             border-radius: 8px;
@@ -94,75 +136,71 @@
         .trade-currency-selector label {
             font-weight: 600;
             color: var(--text-primary);
+            font-size: 1rem;
         }
 
         .trade-currency-selector select {
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 0.5rem;
+            padding: 0.75rem;
             color: var(--text-primary);
-            min-width: 150px;
+            min-width: 180px;
+            font-size: 0.9rem;
         }
 
-        /* Confidence Tracker Fixes */
-        .confidence-controls {
-            display: flex;
-            flex-direction: column;
+        /* Live Calculator */
+        .calculated-fields {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .confidence-slider-container {
+        .calc-item {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
         }
 
-        .range-label {
-            font-size: 0.875rem;
+        .calc-label {
+            font-weight: 500;
             color: var(--text-secondary);
         }
 
-        .range-input {
-            flex: 1;
-            height: 6px;
-            background: var(--bg-tertiary);
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .range-input::-webkit-slider-thumb {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-        }
-
-        .confidence-display {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .range-value {
-            min-width: 30px;
-            text-align: center;
-            font-weight: bold;
+        .calc-value {
+            font-weight: 600;
             font-size: 1.1rem;
-            color: var(--primary-color);
         }
 
-        /* Trade Modal Styles */
+        .calc-value.positive {
+            color: #10b981;
+        }
+
+        .calc-value.negative {
+            color: #ef4444;
+        }
+
+        /* Trade Modal */
         .trade-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.75);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -173,11 +211,11 @@
         .trade-modal {
             background: var(--bg-primary);
             border-radius: 12px;
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--border-color);
         }
 
@@ -189,12 +227,6 @@
             border-bottom: 1px solid var(--border-color);
             background: var(--bg-secondary);
             border-radius: 12px 12px 0 0;
-        }
-
-        .trade-modal-header h3 {
-            margin: 0;
-            font-size: 1.25rem;
-            color: var(--text-primary);
         }
 
         .trade-modal-close {
@@ -210,28 +242,22 @@
         }
 
         .trade-modal-close:hover {
-            color: var(--text-primary);
             background: var(--primary-color);
             color: white;
-        }
-
-        .trade-modal-body {
-            padding: 1.5rem;
+            border-color: var(--primary-color);
         }
 
         .trade-detail-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
+            padding: 1.5rem;
         }
 
         .trade-detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            padding: 0.75rem;
+            padding: 1rem;
             background: var(--bg-secondary);
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
         }
 
@@ -240,20 +266,29 @@
         }
 
         .trade-detail-item label {
+            display: block;
             font-size: 0.75rem;
             color: var(--text-secondary);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
         }
 
         .trade-detail-item span {
             font-weight: 600;
             color: var(--text-primary);
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
 
-        /* Calendar Styles */
+        /* Calendar */
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
         .calendar-grid {
             background: var(--bg-secondary);
             border-radius: 12px;
@@ -268,11 +303,11 @@
         }
 
         .day-name {
-            padding: 0.75rem 0.5rem;
+            padding: 1rem;
             text-align: center;
             color: white;
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
         }
 
         .calendar-body {
@@ -282,18 +317,21 @@
 
         .calendar-day {
             background: var(--bg-primary);
-            min-height: 80px;
-            padding: 0.5rem;
+            min-height: 100px;
+            padding: 0.75rem;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             border: 1px solid var(--border-color);
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            position: relative;
         }
 
         .calendar-day:hover:not(.empty) {
             background: var(--bg-tertiary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .calendar-day.empty {
@@ -308,16 +346,16 @@
 
         .day-number {
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 1rem;
             color: var(--text-primary);
         }
 
         .day-pl {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
             text-align: center;
-            padding: 0.25rem;
-            border-radius: 4px;
+            padding: 0.5rem;
+            border-radius: 6px;
             margin-top: auto;
         }
 
@@ -344,8 +382,8 @@
         .calendar-legend {
             display: flex;
             justify-content: center;
-            gap: 1rem;
-            padding: 1rem;
+            gap: 1.5rem;
+            padding: 1.5rem;
             background: var(--bg-primary);
             flex-wrap: wrap;
         }
@@ -354,13 +392,13 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
         }
 
         .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
         }
 
         .legend-color.profit-high { background: rgba(34, 197, 94, 0.8); }
@@ -369,106 +407,87 @@
         .legend-color.loss-low { background: rgba(239, 68, 68, 0.5); }
         .legend-color.loss-high { background: rgba(239, 68, 68, 0.8); }
 
-        /* Chart Containers */
+        /* Chart Container */
         .chart-container {
             background: var(--bg-secondary);
             border-radius: 12px;
-            padding: 1.5rem;
+            padding: 2rem;
             margin-bottom: 2rem;
             border: 1px solid var(--border-color);
         }
 
         .chart-container h3 {
-            margin: 0 0 1rem 0;
-            font-size: 1.125rem;
+            margin: 0 0 1.5rem 0;
+            font-size: 1.2rem;
             color: var(--text-primary);
+            text-align: center;
         }
 
         .chart-container canvas {
             width: 100% !important;
-            height: 300px !important;
+            max-height: 400px !important;
         }
 
-        /* History Controls */
-        .history-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10001;
         }
 
-        .history-stats {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .history-table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-        }
-
-        /* Toast Styles */
         .toast {
-            padding: 0.75rem 1rem;
-            margin: 0.5rem;
-            border-radius: 6px;
-            color: white;
-            font-weight: 500;
+            background: white;
+            color: #333;
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid #10b981;
             opacity: 0;
-            animation: slideIn 0.3s ease forwards;
+            transform: translateX(100%);
+            animation: slideInToast 0.3s ease forwards;
+            max-width: 300px;
         }
 
-        .toast.success { background-color: #10b981; }
-        .toast.error { background-color: #ef4444; }
-        .toast.warning { background-color: #f59e0b; }
-        .toast.info { background-color: #3b82f6; }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.warning { border-left-color: #f59e0b; }
+        .toast.info { border-left-color: #3b82f6; }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(100%);
-            }
+        @keyframes slideInToast {
             to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
 
-        /* Mobile Responsive */
+        /* Mobile Fixes */
         @media (max-width: 640px) {
             .trade-detail-grid {
                 grid-template-columns: 1fr;
             }
             
             .calendar-day {
-                min-height: 60px;
-                padding: 0.25rem;
+                min-height: 80px;
+                padding: 0.5rem;
             }
             
-            .history-controls {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+            .day-name {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            
+            .calc-grid {
+                grid-template-columns: 1fr;
             }
             
             .confidence-controls {
                 align-items: stretch;
             }
             
-            .confidence-slider-container {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            
             .confidence-display {
-                justify-content: center;
+                margin-top: 1rem;
             }
         }
     </style>
@@ -560,12 +579,12 @@
         </div>
     </div>
 
-    <!-- Main Application -->
+    <!-- Main App -->
     <div id="mainApp" class="main-app hidden">
         <!-- Navigation -->
         <nav class="navbar">
             <div class="nav-container">
-                <button class="mobile-menu-toggle" style="display: none;">☰</button>
+                <button class="mobile-menu-toggle">☰</button>
                 
                 <div class="nav-brand">
                     <h2>📊 Trading Dashboard</h2>
@@ -601,7 +620,7 @@
                         </select>
                     </div>
                     <div class="user-info">
-                        <span class="user-name" id="currentUserName">User</span>
+                        <span id="currentUserName">User</span>
                     </div>
                     <button id="themeToggle" class="theme-toggle">🌙</button>
                     <button id="exportData" class="btn btn--secondary btn--sm">Export</button>
@@ -613,16 +632,14 @@
         <!-- Main Content -->
         <main class="main-content">
             <div class="container">
-                <!-- Dashboard Section -->
+                <!-- Dashboard -->
                 <section id="dashboard" class="section active">
                     <div class="section-header">
                         <h1>Trading Dashboard</h1>
-                        <div class="filter-controls">
-                            <button id="quickAddTrade" class="btn btn--primary">➕ Quick Add</button>
-                        </div>
+                        <button id="quickAddTrade" class="btn btn--primary">➕ Quick Add</button>
                     </div>
                     
-                    <!-- Stats Grid -->
+                    <!-- Stats -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon">💰</div>
@@ -654,32 +671,32 @@
                         </div>
                     </div>
 
-                    <!-- Daily Confidence Tracker -->
+                    <!-- Confidence Tracker -->
                     <div class="card confidence-tracker">
                         <div class="card__header">
-                            <h3>How are you feeling about trading today?</h3>
+                            <h3>Daily Confidence Level</h3>
                         </div>
                         <div class="card__body">
                             <div class="confidence-controls">
                                 <div class="confidence-slider-container">
-                                    <span class="range-label">Low</span>
+                                    <span>Low</span>
                                     <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
-                                    <span class="range-label">High</span>
+                                    <span>High</span>
                                 </div>
                                 <div class="confidence-display">
                                     <div id="confidenceValue" class="range-value">5</div>
                                     <button id="saveConfidenceBtn" class="btn btn--primary btn--sm">Save</button>
                                 </div>
                             </div>
-                            <div id="confidenceMessage" class="confidence-message"></div>
+                            <div id="confidenceMessage"></div>
                         </div>
                     </div>
 
                     <!-- Recent Trades -->
-                    <div class="card recent-trades">
+                    <div class="card">
                         <div class="card__header">
                             <h3>Recent Trades</h3>
-                            <button class="view-all-link" onclick="document.querySelector('[data-section=history]').click()">View All</button>
+                            <button class="btn btn--outline btn--sm" onclick="document.querySelector('[data-section=history]').click()">View All</button>
                         </div>
                         <div class="card__body">
                             <div id="recentTradesList">
@@ -689,243 +706,172 @@
                     </div>
                 </section>
 
-                <!-- Enhanced Add Trade Section -->
+                <!-- Add Trade -->
                 <section id="add-trade" class="section">
                     <div class="section-header">
                         <h1>📝 Add New Trade</h1>
-                        <p>Comprehensive trade analysis with psychology tracking for maximum insights</p>
                     </div>
 
-                    <div class="add-trade-container">
-                        <div class="card add-trade-card">
-                            <div class="card__body">
-                                <form id="addTradeForm">
-                                    <!-- Currency Selector for Add Trade -->
-                                    <div class="trade-currency-selector">
-                                        <label for="tradeCurrencySelector">💱 Trading Currency:</label>
-                                        <select id="tradeCurrencySelector">
-                                            <option value="INR">Indian Rupee (₹)</option>
-                                            <option value="USD">US Dollar ($)</option>
+                    <div class="card">
+                        <div class="card__body">
+                            <form id="addTradeForm">
+                                <!-- Currency Selector -->
+                                <div class="trade-currency-selector">
+                                    <label for="tradeCurrencySelector">💱 Trading Currency:</label>
+                                    <select id="tradeCurrencySelector">
+                                        <option value="INR">Indian Rupee (₹)</option>
+                                        <option value="USD">US Dollar ($)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Basic Info -->
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="entryDate" class="form-label">Entry Date & Time</label>
+                                        <input type="datetime-local" id="entryDate" name="entryDate" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="exitDate" class="form-label">Exit Date & Time</label>
+                                        <input type="datetime-local" id="exitDate" name="exitDate" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="symbol" class="form-label">Symbol</label>
+                                        <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g., NIFTY, AAPL" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="direction" class="form-label">Direction</label>
+                                        <select id="direction" name="direction" class="form-control" required>
+                                            <option value="">Select Direction</option>
+                                            <option value="Long">Long</option>
+                                            <option value="Short">Short</option>
                                         </select>
                                     </div>
+                                    <div class="form-group">
+                                        <label for="quantity" class="form-label">Quantity</label>
+                                        <input type="number" id="quantity" name="quantity" class="form-control" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="strategy" class="form-label">Strategy</label>
+                                        <select id="strategy" name="strategy" class="form-control" required>
+                                            <option value="">Select Strategy</option>
+                                            <option value="Breakout">Breakout</option>
+                                            <option value="Pullback">Pullback</option>
+                                            <option value="Support/Resistance">Support/Resistance</option>
+                                            <option value="Scalping">Scalping</option>
+                                            <option value="Swing Trading">Swing Trading</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="entryPrice" class="form-label">Entry Price <span id="entryCurrencySymbol">(₹)</span></label>
+                                        <input type="number" id="entryPrice" name="entryPrice" class="form-control" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="exitPrice" class="form-label">Exit Price <span id="exitCurrencySymbol">(₹)</span></label>
+                                        <input type="number" id="exitPrice" name="exitPrice" class="form-control" step="0.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="stopLoss" class="form-label">Stop Loss <span id="slCurrencySymbol">(₹)</span></label>
+                                        <input type="number" id="stopLoss" name="stopLoss" class="form-control" step="0.01">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="targetPrice" class="form-label">Target Price <span id="targetCurrencySymbol">(₹)</span></label>
+                                        <input type="number" id="targetPrice" name="targetPrice" class="form-control" step="0.01">
+                                    </div>
+                                </div>
 
-                                    <!-- Basic Trade Information -->
+                                <!-- Live Calculator -->
+                                <div class="calculated-fields">
+                                    <h4>📊 Trade Calculations</h4>
+                                    <div class="calc-grid">
+                                        <div class="calc-item">
+                                            <span class="calc-label">Gross P&L:</span>
+                                            <span id="calcGrossPL" class="calc-value">₹0.00</span>
+                                        </div>
+                                        <div class="calc-item">
+                                            <span class="calc-label">Net P&L:</span>
+                                            <span id="calcNetPL" class="calc-value">₹0.00</span>
+                                        </div>
+                                        <div class="calc-item">
+                                            <span class="calc-label">Risk:Reward:</span>
+                                            <span id="calcRR" class="calc-value">N/A</span>
+                                        </div>
+                                        <div class="calc-item">
+                                            <span class="calc-label">% Return:</span>
+                                            <span id="calcReturn" class="calc-value">0.00%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Additional Fields -->
+                                <details class="collapse-card" open>
+                                    <summary>📊 Additional Analysis</summary>
                                     <div class="form-grid">
                                         <div class="form-group">
-                                            <label for="entryDate" class="form-label">Entry Date & Time</label>
-                                            <input type="datetime-local" id="entryDate" name="entryDate" class="form-control" required>
+                                            <label for="setupQuality" class="form-label">Setup Quality (1-10): <span id="setupQualityOutput">7</span></label>
+                                            <input type="range" id="setupQuality" name="setupQuality" class="range-input" min="1" max="10" value="7">
                                         </div>
                                         <div class="form-group">
-                                            <label for="exitDate" class="form-label">Exit Date & Time</label>
-                                            <input type="datetime-local" id="exitDate" name="exitDate" class="form-control" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="symbol" class="form-label">Symbol</label>
-                                            <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g., NIFTY, AAPL" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="direction" class="form-label">Direction</label>
-                                            <select id="direction" name="direction" class="form-control" required>
-                                                <option value="">Select Direction</option>
-                                                <option value="Long">Long</option>
-                                                <option value="Short">Short</option>
+                                            <label for="exitReason" class="form-label">Exit Reason</label>
+                                            <select id="exitReason" name="exitReason" class="form-control">
+                                                <option value="">Select Reason</option>
+                                                <option value="Target Hit">Target Hit</option>
+                                                <option value="Stop Loss">Stop Loss Hit</option>
+                                                <option value="Manual Exit">Manual Exit</option>
+                                                <option value="Time Exit">Time Exit</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="quantity" class="form-label">Quantity</label>
-                                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="strategy" class="form-label">Primary Strategy</label>
-                                            <select id="strategy" name="strategy" class="form-control" required>
-                                                <option value="">Select Strategy</option>
-                                                <option value="Breakout">Breakout</option>
-                                                <option value="Pullback">Pullback</option>
-                                                <option value="Support/Resistance">Support/Resistance</option>
-                                                <option value="Trendline">Trendline</option>
-                                                <option value="Gap Trading">Gap Trading</option>
-                                                <option value="Scalping">Scalping</option>
-                                                <option value="Swing Trading">Swing Trading</option>
-                                                <option value="Momentum">Momentum</option>
-                                                <option value="Mean Reversion">Mean Reversion</option>
-                                                <option value="Other">Other</option>
+                                            <label for="exitEmotion" class="form-label">Exit Emotion</label>
+                                            <select id="exitEmotion" name="exitEmotion" class="form-control">
+                                                <option value="">Select Emotion</option>
+                                                <option value="Satisfied">Satisfied</option>
+                                                <option value="Relieved">Relieved</option>
+                                                <option value="Frustrated">Frustrated</option>
+                                                <option value="Excited">Excited</option>
+                                                <option value="Neutral">Neutral</option>
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <label for="entryPrice" class="form-label">Entry Price <span id="entryCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="entryPrice" name="entryPrice" class="form-control" step="0.01" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exitPrice" class="form-label">Exit Price <span id="exitCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="exitPrice" name="exitPrice" class="form-control" step="0.01" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="stopLoss" class="form-label">Stop Loss <span id="slCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="stopLoss" name="stopLoss" class="form-control" step="0.01">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="targetPrice" class="form-label">Target Price <span id="targetCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="targetPrice" name="targetPrice" class="form-control" step="0.01">
+                                            <label for="confidence" class="form-label">Confidence (1-10): <span id="confidenceOutput">7</span></label>
+                                            <input type="range" id="confidence" name="confidence" class="range-input" min="1" max="10" value="7">
                                         </div>
                                     </div>
+                                </details>
 
-                                    <!-- Live P&L Calculator -->
-                                    <div class="calculated-fields">
-                                        <h4>📊 Trade Calculations</h4>
-                                        <div class="calc-grid">
-                                            <div class="calc-item">
-                                                <span class="calc-label">Gross P&L:</span>
-                                                <span id="calcGrossPL" class="calc-value">₹0.00</span>
-                                            </div>
-                                            <div class="calc-item">
-                                                <span class="calc-label">Net P&L:</span>
-                                                <span id="calcNetPL" class="calc-value">₹0.00</span>
-                                            </div>
-                                            <div class="calc-item">
-                                                <span class="calc-label">Risk:Reward:</span>
-                                                <span id="calcRR" class="calc-value">1:0</span>
-                                            </div>
-                                            <div class="calc-item">
-                                                <span class="calc-label">% Return:</span>
-                                                <span id="calcReturn" class="calc-value">0.00%</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <!-- Notes -->
+                                <div class="form-group">
+                                    <label for="notes" class="form-label">📝 Notes</label>
+                                    <textarea id="notes" name="notes" class="form-control" rows="4" placeholder="Add your trade notes..."></textarea>
+                                </div>
 
-                                    <!-- 1. Trade Setup Analysis -->
-                                    <details class="collapse-card" open>
-                                        <summary>📊 Trade Setup Analysis</summary>
-                                        <div class="collapse-content">
-                                            <div class="form-grid">
-                                                <div class="form-group">
-                                                    <label for="setupQuality" class="form-label">Setup Quality (1-10): <span id="setupQualityOutput">7</span></label>
-                                                    <input type="range" id="setupQuality" name="setupQuality" class="range-input" min="1" max="10" value="7">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="marketCondition" class="form-label">Market Condition</label>
-                                                    <select id="marketCondition" name="marketCondition" class="form-control">
-                                                        <option value="">Select Condition</option>
-                                                        <option value="Trending Strong">Trending Strong</option>
-                                                        <option value="Trending Weak">Trending Weak</option>
-                                                        <option value="Sideways/Range">Sideways/Range</option>
-                                                        <option value="Volatile/Choppy">Volatile/Choppy</option>
-                                                        <option value="Low Volume">Low Volume</option>
-                                                        <option value="High Volume">High Volume</option>
-                                                    </select>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="setupConfidence" class="form-label">Pre-Entry Confidence (1-10): <span id="setupConfidenceOutput">7</span></label>
-                                                    <input type="range" id="setupConfidence" name="setupConfidence" class="range-input" min="1" max="10" value="7">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="entryTrigger" class="form-label">Entry Trigger</label>
-                                                    <select id="entryTrigger" name="entryTrigger" class="form-control">
-                                                        <option value="">Select Trigger</option>
-                                                        <option value="Breakout">Price Breakout</option>
-                                                        <option value="Pullback">Pullback to Support</option>
-                                                        <option value="Signal">Technical Signal</option>
-                                                        <option value="Pattern">Chart Pattern</option>
-                                                        <option value="Volume">Volume Spike</option>
-                                                        <option value="News">News/Event</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </details>
-
-                                    <!-- Psychology & Mental State -->
-                                    <details class="collapse-card">
-                                        <summary>🧠 Psychology & Mental State</summary>
-                                        <div class="collapse-content">
-                                            <div class="form-grid">
-                                                <div class="form-group">
-                                                    <label for="sleepQuality" class="form-label">Sleep Quality (1-10): <span id="sleepQualityOutput">7</span></label>
-                                                    <input type="range" id="sleepQuality" name="sleepQuality" class="range-input" min="1" max="10" value="7">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="physicalCondition" class="form-label">Physical Condition (1-10): <span id="physicalConditionOutput">7</span></label>
-                                                    <input type="range" id="physicalCondition" name="physicalCondition" class="range-input" min="1" max="10" value="7">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="mentalClarity" class="form-label">Mental Clarity (1-10): <span id="mentalClarityOutput">7</span></label>
-                                                    <input type="range" id="mentalClarity" name="mentalClarity" class="range-input" min="1" max="10" value="7">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="stressLevel" class="form-label">Stress Level (1-10): <span id="stressLevelOutput">3</span></label>
-                                                    <input type="range" id="stressLevel" name="stressLevel" class="range-input" min="1" max="10" value="3">
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="exitReason" class="form-label">Exit Reason</label>
-                                                    <select id="exitReason" name="exitReason" class="form-control">
-                                                        <option value="">Select Exit Reason</option>
-                                                        <option value="Target Hit">Target Hit</option>
-                                                        <option value="Stop Loss Hit">Stop Loss Hit</option>
-                                                        <option value="Time Exit">Time-based Exit</option>
-                                                        <option value="Manual Profit">Manual Profit Taking</option>
-                                                        <option value="Fear Exit">Fear-based Exit</option>
-                                                        <option value="News Event">News/Event Exit</option>
-                                                        <option value="Technical Signal">Technical Signal</option>
-                                                        <option value="Risk Management">Risk Management</option>
-                                                    </select>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="exitEmotion" class="form-label">Exit Emotion</label>
-                                                    <select id="exitEmotion" name="exitEmotion" class="form-control">
-                                                        <option value="">Select Emotion</option>
-                                                        <option value="Satisfied">Satisfied</option>
-                                                        <option value="Relieved">Relieved</option>
-                                                        <option value="Excited">Excited</option>
-                                                        <option value="Frustrated">Frustrated</option>
-                                                        <option value="Angry">Angry</option>
-                                                        <option value="Disappointed">Disappointed</option>
-                                                        <option value="Regretful">Regretful</option>
-                                                        <option value="Neutral">Neutral</option>
-                                                        <option value="Confident">Confident</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </details>
-
-                                    <!-- Notes -->
-                                    <div class="form-group full-width">
-                                        <label for="notes" class="form-label">📝 Trade Notes</label>
-                                        <textarea id="notes" name="notes" class="form-control" rows="4" placeholder="Add any additional notes about this trade..."></textarea>
-                                    </div>
-
-                                    <!-- Submit Button -->
-                                    <div class="add-trade-footer">
-                                        <button type="submit" class="btn btn--primary btn--lg">
-                                            <span class="btn-text">💾 Save Trade Analysis</span>
-                                            <span class="loading-spinner" style="display: none;">Saving...</span>
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                <!-- Submit -->
+                                <button type="submit" class="btn btn--primary btn--lg btn--full-width">
+                                    <span class="btn-text">💾 Save Trade</span>
+                                    <span class="loading-spinner" style="display: none;">Saving...</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </section>
 
-                <!-- Trade History Section -->
+                <!-- History -->
                 <section id="history" class="section">
                     <div class="section-header">
                         <h1>Trade History</h1>
                     </div>
-                    
                     <div id="historyContainer">
                         <div class="loading">Loading trade history...</div>
                     </div>
                 </section>
 
-                <!-- Analytics Section -->
+                <!-- Analytics -->
                 <section id="analytics" class="section">
                     <div class="section-header">
-                        <h1>Analytics & Performance</h1>
+                        <h1>Analytics</h1>
                     </div>
 
-                    <!-- Performance Summary -->
-                    <div class="card analytics-summary">
+                    <div class="card">
                         <div class="card__header">
                             <h3>Performance Summary</h3>
                         </div>
@@ -943,121 +889,73 @@
                                     <span class="label">Net P&L:</span>
                                     <span class="value" id="analyticsNetPL">₹0</span>
                                 </div>
-                                <div class="summary-item">
-                                    <span class="label">Best Trade:</span>
-                                    <span class="value" id="analyticsBestTrade">₹0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Worst Trade:</span>
-                                    <span class="value" id="analyticsWorstTrade">₹0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Avg Risk:Reward:</span>
-                                    <span class="value" id="analyticsAvgRR">1:0</span>
-                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Charts -->
                     <div class="charts-grid">
                         <div class="chart-container">
-                            <h3>P&L Curve Over Time</h3>
-                            <canvas id="plChart" width="400" height="300"></canvas>
+                            <h3>P&L Over Time</h3>
+                            <canvas id="plChart"></canvas>
                         </div>
-
                         <div class="chart-container">
                             <h3>Strategy Performance</h3>
-                            <canvas id="strategyChart" width="400" height="300"></canvas>
+                            <canvas id="strategyChart"></canvas>
                         </div>
                     </div>
                 </section>
 
-                <!-- AI Suggestions Section -->
+                <!-- AI Suggestions -->
                 <section id="ai-suggestions" class="section">
                     <div class="section-header">
                         <h1>🧠 AI Insights</h1>
-                        <p>Advanced insights based on your comprehensive trade analysis</p>
                     </div>
 
-                    <!-- AI Suggestions Grid -->
                     <div class="suggestions-grid">
-                        <div class="suggestion-card card">
+                        <div class="card">
                             <div class="card__header">
-                                <h3>💡 Setup Quality Analysis</h3>
+                                <h3>💡 Setup Analysis</h3>
                             </div>
                             <div class="card__body">
-                                <div class="suggestion-content ai-content">
-                                    Analyzing your trade setup patterns...
+                                <div class="ai-content">
+                                    Start adding trades to unlock AI insights...
                                 </div>
                             </div>
                         </div>
-
-                        <div class="suggestion-card card">
+                        <div class="card">
                             <div class="card__header">
-                                <h3>⚡ Trade Management Insights</h3>
+                                <h3>📊 Performance Tips</h3>
                             </div>
                             <div class="card__body">
-                                <div class="suggestion-content ai-content">
-                                    Evaluating your trade management skills...
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="suggestion-card card">
-                            <div class="card__header">
-                                <h3>🎯 Entry & Exit Analysis</h3>
-                            </div>
-                            <div class="card__body">
-                                <div class="suggestion-content ai-content">
-                                    Analyzing your entry and exit timing...
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="suggestion-card card">
-                            <div class="card__header">
-                                <h3>📊 Performance Optimization</h3>
-                            </div>
-                            <div class="card__body">
-                                <div class="suggestion-content ai-content">
-                                    Finding optimization opportunities...
+                                <div class="ai-content">
+                                    Build your trading history for personalized insights...
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Reports Section -->
+                <!-- Reports -->
                 <section id="reports" class="section">
                     <div class="section-header">
                         <h1>Reports & Calendar</h1>
                     </div>
 
-                    <!-- Performance Charts -->
                     <div class="chart-container">
-                        <h3>Monthly P&L Performance</h3>
-                        <canvas id="monthlyPLChart" width="400" height="300"></canvas>
+                        <h3>Monthly P&L</h3>
+                        <canvas id="monthlyPLChart"></canvas>
                     </div>
 
-                    <div class="chart-container">
-                        <h3>Win/Loss Distribution</h3>
-                        <canvas id="winLossChart" width="400" height="300"></canvas>
-                    </div>
-
-                    <!-- P&L Calendar -->
-                    <div class="card calendar-section">
+                    <div class="card">
                         <div class="card__header">
                             <div class="calendar-nav">
                                 <button id="prevMonth" class="btn btn--secondary">‹</button>
-                                <h3 id="calendarTitle">P&L Calendar - August 2025</h3>
+                                <h3 id="calendarTitle">August 2025</h3>
                                 <button id="nextMonth" class="btn btn--secondary">›</button>
                             </div>
                         </div>
                         <div class="card__body">
-                            <div id="calendar" class="pl-calendar">
-                                <!-- Calendar will be populated by JavaScript -->
-                            </div>
+                            <div id="calendar"></div>
                             <div class="calendar-legend">
                                 <div class="legend-item">
                                     <div class="legend-color profit-high"></div>
@@ -1082,53 +980,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Report Cards -->
-                    <div class="reports-grid">
-                        <div class="report-card card">
-                            <div class="card__header">
-                                <h3>Weekly Summary</h3>
-                            </div>
-                            <div class="card__body">
-                                <div id="weeklyReport">
-                                    <div class="loading">Generating weekly report...</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="report-card card">
-                            <div class="card__header">
-                                <h3>Monthly Analysis</h3>
-                            </div>
-                            <div class="card__body">
-                                <div id="monthlyReport">
-                                    <div class="loading">Generating monthly report...</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="report-card card">
-                            <div class="card__header">
-                                <h3>Strategy Performance</h3>
-                            </div>
-                            <div class="card__body">
-                                <div id="strategyReport">
-                                    <div class="loading">Analyzing strategies...</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="report-card card">
-                            <div class="card__header">
-                                <h3>Emotional Patterns</h3>
-                            </div>
-                            <div class="card__body">
-                                <div id="emotionalReport">
-                                    <div class="loading">Analyzing emotional patterns...</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </section>
             </div>
         </main>
@@ -1137,7 +988,7 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Main Application Script -->
+    <!-- Script -->
     <script src="app.js"></script>
 </body>
 </html>
