@@ -1,1344 +1,352 @@
 <!DOCTYPE html>
-<html lang="en" data-color-scheme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Dashboard</title>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
-    
-    <!-- CSS -->
+    <title>Trading Journal - Professional Trading Tracker</title>
     <link rel="stylesheet" href="style.css">
-    
-    <style>
-        /* Critical CSS Fixes */
-        .mobile-menu-toggle {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .mobile-menu-toggle {
-                display: block !important;
-                background: none;
-                border: none;
-                font-size: 1.5rem;
-                color: var(--text-primary);
-                cursor: pointer;
-                padding: 0.5rem;
-            }
-            
-            .nav-menu {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--bg-primary);
-                border-top: 1px solid var(--border-color);
-                flex-direction: column;
-                padding: 0;
-                z-index: 1000;
-            }
-            
-            .nav-menu.mobile-active {
-                display: flex;
-            }
-        }
-
-        /* Confidence Slider */
-        .confidence-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .confidence-slider-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .range-input {
-            flex: 1;
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            outline: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-        }
-
-        .range-input::-webkit-slider-thumb {
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-
-        .range-input::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-
-        .confidence-display {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        .range-value {
-            min-width: 40px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            padding: 0.5rem;
-            background: var(--bg-secondary);
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-
-        /* Currency Selector */
-        .currency-selector-nav {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-right: 1rem;
-        }
-
-        .trade-currency-selector {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .trade-currency-selector label {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .trade-currency-selector select {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            color: var(--text-primary);
-            min-width: 180px;
-            font-size: 0.9rem;
-        }
-
-        /* Enhanced Add Trade Form Styling */
-        .add-trade-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .trade-form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .trade-form-section {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .trade-form-section h3 {
-            margin: 0 0 1.5rem 0;
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .form-row.single {
-            grid-template-columns: 1fr;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(33, 128, 141, 0.1);
-        }
-
-        /* Live Calculator */
-        .calculated-fields {
-            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
-            border-radius: 12px;
-            padding: 2rem;
-            margin: 2rem 0;
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 4px 20px rgba(33, 128, 141, 0.1);
-        }
-
-        .calculated-fields h4 {
-            margin: 0 0 1.5rem 0;
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .calc-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .calc-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s;
-        }
-
-        .calc-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .calc-label {
-            font-weight: 500;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .calc-value {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .calc-value.positive {
-            color: #10b981;
-        }
-
-        .calc-value.negative {
-            color: #ef4444;
-        }
-
-        /* Range Inputs for Analysis */
-        .analysis-slider {
-            width: 100%;
-            margin: 0.5rem 0;
-        }
-
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .slider-label {
-            min-width: 120px;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-        }
-
-        .slider-output {
-            min-width: 30px;
-            text-align: center;
-            font-weight: 600;
-            color: var(--primary-color);
-            background: var(--bg-primary);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-
-        /* Submit Button */
-        .trade-submit-section {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        .btn--submit {
-            background: linear-gradient(135deg, var(--primary-color), #1a6b75);
-            color: white;
-            border: none;
-            padding: 1rem 3rem;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(33, 128, 141, 0.3);
-        }
-
-        .btn--submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(33, 128, 141, 0.4);
-        }
-
-        .btn--submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Trade Modal */
-        .trade-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.75);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            padding: 1rem;
-        }
-
-        .trade-modal {
-            background: var(--bg-primary);
-            border-radius: 12px;
-            max-width: 700px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--border-color);
-        }
-
-        .trade-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            border-radius: 12px 12px 0 0;
-        }
-
-        .trade-modal-close {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-secondary);
-            padding: 0.5rem 0.75rem;
-            line-height: 1;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .trade-modal-close:hover {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .trade-detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            padding: 1.5rem;
-        }
-
-        .trade-detail-item {
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .trade-detail-item.full-width {
-            grid-column: 1 / -1;
-        }
-
-        .trade-detail-item label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5rem;
-        }
-
-        .trade-detail-item span {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        /* Charts */
-        .chart-container {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .chart-container h3 {
-            margin: 0 0 1.5rem 0;
-            font-size: 1.2rem;
-            color: var(--text-primary);
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .chart-container canvas {
-            width: 100% !important;
-            max-height: 400px !important;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        /* Calendar */
-        .calendar-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .calendar-grid {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .calendar-header {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            background: var(--primary-color);
-        }
-
-        .day-name {
-            padding: 1rem;
-            text-align: center;
-            color: white;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .calendar-body {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-        }
-
-        .calendar-day {
-            background: var(--bg-primary);
-            min-height: 100px;
-            padding: 0.75rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .calendar-day:hover:not(.empty) {
-            background: var(--bg-tertiary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .calendar-day.empty {
-            opacity: 0.3;
-            cursor: default;
-        }
-
-        .calendar-day.today {
-            background: rgba(33, 128, 141, 0.1);
-            border: 2px solid var(--primary-color);
-        }
-
-        .day-number {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text-primary);
-        }
-
-        .day-pl {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-align: center;
-            padding: 0.5rem;
-            border-radius: 6px;
-            margin-top: auto;
-        }
-
-        .calendar-day.profit-high .day-pl {
-            background: rgba(34, 197, 94, 0.2);
-            color: rgb(34, 197, 94);
-        }
-
-        .calendar-day.profit-low .day-pl {
-            background: rgba(34, 197, 94, 0.1);
-            color: rgb(34, 197, 94);
-        }
-
-        .calendar-day.loss-high .day-pl {
-            background: rgba(239, 68, 68, 0.2);
-            color: rgb(239, 68, 68);
-        }
-
-        .calendar-day.loss-low .day-pl {
-            background: rgba(239, 68, 68, 0.1);
-            color: rgb(239, 68, 68);
-        }
-
-        .calendar-legend {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            padding: 1.5rem;
-            background: var(--bg-primary);
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-        }
-
-        .legend-color {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-        }
-
-        .legend-color.profit-high { background: rgba(34, 197, 94, 0.8); }
-        .legend-color.profit-low { background: rgba(34, 197, 94, 0.5); }
-        .legend-color.no-trades { background: rgba(156, 163, 175, 0.5); }
-        .legend-color.loss-low { background: rgba(239, 68, 68, 0.5); }
-        .legend-color.loss-high { background: rgba(239, 68, 68, 0.8); }
-
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10001;
-        }
-
-        .toast {
-            background: white;
-            color: #333;
-            padding: 1rem 1.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-left: 4px solid #10b981;
-            opacity: 0;
-            transform: translateX(100%);
-            animation: slideInToast 0.3s ease forwards;
-            max-width: 300px;
-        }
-
-        .toast.success { border-left-color: #10b981; }
-        .toast.error { border-left-color: #ef4444; }
-        .toast.warning { border-left-color: #f59e0b; }
-        .toast.info { border-left-color: #3b82f6; }
-
-        @keyframes slideInToast {
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .trade-form-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .charts-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .calc-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .trade-detail-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .calendar-day {
-                min-height: 80px;
-                padding: 0.5rem;
-            }
-            
-            .day-name {
-                padding: 0.75rem 0.5rem;
-                font-size: 0.8rem;
-            }
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Add Supabase client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Auth Screen -->
+    <!-- Authentication Screen -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
-                <h1>🚀 Trading Dashboard</h1>
-                <p>Advanced Trading Psychology & Performance Analytics</p>
+                <h1>📊 Trading Journal</h1>
+                <p>Professional Trading Tracker & Analytics</p>
             </div>
-            
             <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="login">Sign In</button>
+                <button class="auth-tab active" data-tab="login">Login</button>
                 <button class="auth-tab" data-tab="signup">Sign Up</button>
             </div>
-            
-            <div class="auth-forms">
-                <!-- Login Form -->
-                <div id="loginForm" class="auth-form active">
-                    <form id="loginFormElement">
-                        <div class="form-group">
-                            <label for="login-username" class="form-label">Username or Email</label>
-                            <input type="text" id="login-username" name="username" class="form-control" required>
-                            <div id="login-username-error" class="form-error"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="login-password" class="form-label">Password</label>
-                            <input type="password" id="login-password" name="password" class="form-control" required>
-                            <div id="login-password-error" class="form-error"></div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn--primary btn--full-width" id="loginBtn">
-                            <span class="btn-text">Sign In</span>
-                            <span class="loading-spinner" style="display: none;">Loading...</span>
-                        </button>
-                    </form>
-                </div>
-                
-                <!-- Signup Form -->
-                <div id="signupForm" class="auth-form">
-                    <form id="signupFormElement">
-                        <div class="form-group">
-                            <label for="signup-username" class="form-label">Username</label>
-                            <input type="text" id="signup-username" name="username" class="form-control" required>
-                            <div id="signup-username-error" class="form-error"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="signup-email" class="form-label">Email</label>
-                            <input type="email" id="signup-email" name="email" class="form-control" required>
-                            <div id="signup-email-error" class="form-error"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="signup-password" class="form-label">Password</label>
-                            <input type="password" id="signup-password" name="password" class="form-control" required>
-                            <div id="signup-password-error" class="form-error"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="signup-confirm" class="form-label">Confirm Password</label>
-                            <input type="password" id="signup-confirm" name="confirmPassword" class="form-control" required>
-                            <div id="signup-confirmPassword-error" class="form-error"></div>
-                        </div>
-                        
-                        <button type="submit" class="btn btn--primary btn--full-width" id="signupBtn">
-                            <span class="btn-text">Sign Up</span>
-                            <span class="loading-spinner" style="display: none;">Loading...</span>
-                        </button>
-                    </form>
-                </div>
-                
-                <!-- Demo Section -->
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form active">
+                <h2>Welcome Back</h2>
+                <form id="loginFormElement" novalidate>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required placeholder="Enter your email">
+                        <div class="form-error" id="login-email-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required placeholder="Enter password">
+                        <div class="form-error" id="login-password-error"></div>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Login</button>
+                </form>
                 <div class="auth-demo">
-                    <p class="form-help">Try Demo Account</p>
+                    <p>Demo Accounts:</p>
                     <div class="demo-accounts">
-                        <button class="btn btn--secondary demo-login" data-username="trader1">
-                            Demo User 1
-                        </button>
-                        <button class="btn btn--secondary demo-login" data-username="trader2">
-                            Demo User 2
-                        </button>
+                        <button class="btn btn--outline btn--sm demo-login" data-email="trader1@demo.com" data-password="password123">Demo: trader1</button>
+                        <button class="btn btn--outline btn--sm demo-login" data-email="trader2@demo.com" data-password="password123">Demo: trader2</button>
                     </div>
                 </div>
+            </div>
+            <!-- Signup Form -->
+            <div id="signupForm" class="auth-form">
+                <h2>Create Account</h2>
+                <form id="signupFormElement" novalidate>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required placeholder="Choose a username" minlength="3">
+                        <div class="form-error" id="signup-username-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required placeholder="Enter your email">
+                        <div class="form-error" id="signup-email-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required placeholder="Create a password" minlength="8">
+                        <div class="form-error" id="signup-password-error"></div>
+                        <small class="form-help">Minimum 8 characters</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" name="confirmPassword" class="form-control" required placeholder="Confirm your password">
+                        <div class="form-error" id="signup-confirmPassword-error"></div>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Create Account</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Main App -->
+    <!-- Main Application -->
     <div id="mainApp" class="main-app hidden">
-        <!-- Navigation -->
+        <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-container">
-                <button class="mobile-menu-toggle">☰</button>
-                
                 <div class="nav-brand">
-                    <h2>📊 Trading Dashboard</h2>
+                    <h2>📊 Trading Journal</h2>
                 </div>
-                
                 <ul class="nav-menu">
-                    <li class="nav-item">
-                        <button class="nav-link active" data-section="dashboard">Dashboard</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-section="add-trade">Add Trade</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-section="history">History</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-section="analytics">Analytics</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-section="ai-suggestions">AI Insights</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-section="reports">Reports</button>
-                    </li>
+                    <li class="nav-item"><button class="nav-link active" data-section="dashboard">Dashboard</button></li>
+                    <li class="nav-item"><button class="nav-link" data-section="add-trade">Add Trade</button></li>
+                    <li class="nav-item"><button class="nav-link" data-section="history">Trade History</button></li>
+                    <li class="nav-item"><button class="nav-link" data-section="analytics">Analytics</button></li>
+                    <li class="nav-item"><button class="nav-link" data-section="ai-suggestions">AI Suggestions</button></li>
+                    <li class="nav-item"><button class="nav-link" data-section="reports">Reports</button></li>
                 </ul>
-                
                 <div class="nav-user">
-                    <div class="currency-selector-nav">
-                        <label for="currencySelector">Currency:</label>
-                        <select id="currencySelector">
-                            <option value="INR">INR (₹)</option>
-                            <option value="USD">USD ($)</option>
-                        </select>
-                    </div>
                     <div class="user-info">
-                        <span id="currentUserName">User</span>
+                        <span class="user-name" id="currentUserName">User</span>
+                        <button class="theme-toggle" id="themeToggle">🌙</button>
+                        <button class="btn btn--outline btn--sm" id="logoutBtn">Logout</button>
                     </div>
-                    <button id="themeToggle" class="theme-toggle">🌙</button>
-                    <button id="exportData" class="btn btn--secondary btn--sm">Export</button>
-                    <button id="logoutBtn" class="btn btn--outline btn--sm">Logout</button>
                 </div>
             </div>
         </nav>
 
-        <!-- Main Content -->
+        <!-- Main Content Area -->
         <main class="main-content">
-            <div class="container">
-                <!-- Dashboard -->
-                <section id="dashboard" class="section active">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="container">
                     <div class="section-header">
                         <h1>Trading Dashboard</h1>
-                        <button id="quickAddTrade" class="btn btn--primary">➕ Quick Add</button>
+                        <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
                     </div>
-                    
-                    <!-- Stats -->
+                    <!-- Key Performance Metrics -->
                     <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon">💰</div>
-                            <div class="stat-content">
-                                <h3 id="totalPL">₹0</h3>
-                                <p>Total P&L</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">📊</div>
-                            <div class="stat-content">
-                                <h3 id="winRate">0%</h3>
-                                <p>Win Rate</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">🎯</div>
-                            <div class="stat-content">
-                                <h3 id="totalTrades">0</h3>
-                                <p>Total Trades</p>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">⚖️</div>
-                            <div class="stat-content">
-                                <h3 id="avgRR">1:0</h3>
-                                <p>Avg Risk:Reward</p>
-                            </div>
-                        </div>
+                        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-content"><h3 id="totalPL" class="stat-value">₹0</h3><p>Total P&L</p></div></div>
+                        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-content"><h3 id="winRate" class="stat-value">0%</h3><p>Win Rate</p></div></div>
+                        <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-content"><h3 id="totalTrades" class="stat-value">0</h3><p>Total Trades</p></div></div>
+                        <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-content"><h3 id="avgRR" class="stat-value">1:0</h3><p>Avg Risk:Reward</p></div></div>
                     </div>
-
-                    <!-- Confidence Tracker -->
-                    <div class="card confidence-tracker">
-                        <div class="card__header">
-                            <h3>Daily Confidence Level</h3>
-                        </div>
+                    <!-- Daily Confidence Tracker -->
+                    <div class="confidence-tracker card">
                         <div class="card__body">
+                            <h3>How are you feeling about trading today?</h3>
                             <div class="confidence-controls">
                                 <div class="confidence-slider-container">
-                                    <span>Low</span>
+                                    <label for="dailyConfidence" class="form-label">Confidence Level (1-10)</label>
                                     <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
-                                    <span>High</span>
+                                    <div class="range-value" id="confidenceValue">5</div>
                                 </div>
-                                <div class="confidence-display">
-                                    <div id="confidenceValue" class="range-value">5</div>
-                                    <button id="saveConfidenceBtn" class="btn btn--primary btn--sm">Save</button>
-                                </div>
+                                <button class="btn btn--primary" id="saveConfidenceBtn">Submit</button>
                             </div>
-                            <div id="confidenceMessage"></div>
+                            <div id="confidenceMessage" class="confidence-message"></div>
                         </div>
                     </div>
-
-                    <!-- Recent Trades -->
-                    <div class="card">
-                        <div class="card__header">
-                            <h3>Recent Trades</h3>
-                            <button class="btn btn--outline btn--sm" onclick="document.querySelector('[data-section=history]').click()">View All</button>
-                        </div>
-                        <div class="card__body">
-                            <div id="recentTradesList">
-                                <div class="loading">Loading recent trades...</div>
-                            </div>
-                        </div>
+                    <!-- Recent Trades Overview -->
+                    <div class="recent-trades card">
+                        <div class="card__header"><h3>Recent Trades</h3><button class="view-all-link" data-section="history">View All Trades</button></div>
+                        <div class="card__body"><div id="recentTradesList"><div class="loading">Loading recent trades...</div></div></div>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <!-- Enhanced Add Trade Section -->
-                <section id="add-trade" class="section">
-                    <div class="section-header">
-                        <h1>📝 Add New Trade Analysis</h1>
-                        <p>Comprehensive trade tracking with psychology and performance metrics</p>
-                    </div>
-
+            <!-- Add Trade Section -->
+            <section id="add-trade" class="section">
+                <div class="container">
+                    <div class="section-header"><h1>Add New Trade</h1><p>Record all details of your trade for complete analysis</p></div>
                     <div class="add-trade-container">
-                        <form id="addTradeForm">
-                            <!-- Currency Selector -->
-                            <div class="trade-currency-selector">
-                                <label for="tradeCurrencySelector">💱 Trading Currency:</label>
-                                <select id="tradeCurrencySelector">
-                                    <option value="INR">Indian Rupee (₹)</option>
-                                    <option value="USD">US Dollar ($)</option>
-                                </select>
+                        <div class="card add-trade-card">
+                            <div class="card__header"><h3>Trade Information</h3></div>
+                            <div class="card__body">
+                                <form id="addTradeForm" novalidate>
+                                    <!-- Basic Trade Details -->
+                                    <div class="form-grid">
+                                        <div class="form-group"><label class="form-label">Symbol *</label><input type="text" name="symbol" class="form-control" required placeholder="e.g., NIFTY, BANKNIFTY"><div class="form-error" id="symbol-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Direction *</label><select name="direction" class="form-control" required><option value="">Select Direction</option><option value="Long">Long</option><option value="Short">Short</option></select><div class="form-error" id="direction-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Quantity *</label><input type="number" name="quantity" class="form-control" required placeholder="Number of shares/lots" min="1"><div class="form-error" id="quantity-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Entry Price *</label><input type="number" name="entryPrice" class="form-control" required placeholder="Entry price" step="0.01" min="0"><div class="form-error" id="entryPrice-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Exit Price *</label><input type="number" name="exitPrice" class="form-control" required placeholder="Exit price" step="0.01" min="0"><div class="form-error" id="exitPrice-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Stop Loss</label><input type="number" name="stopLoss" class="form-control" placeholder="Stop loss price" step="0.01" min="0"></div>
+                                        <div class="form-group"><label class="form-label">Target Price</label><input type="number" name="targetPrice" class="form-control" placeholder="Target price" step="0.01" min="0"></div>
+                                        <div class="form-group"><label class="form-label">Strategy</label><select name="strategy" class="form-control"><option value="">Select Strategy</option><option value="Breakout + VWAP">Breakout + VWAP</option><option value="Support Resistance">Support Resistance</option><option value="Trendline Bounce">Trendline Bounce</option><option value="Breakout Failure">Breakout Failure</option><option value="Scalping">Scalping</option><option value="Swing Trading">Swing Trading</option><option value="Other">Other</option></select></div>
+                                        <div class="form-group"><label class="form-label">Exit Reason</label><select name="exitReason" class="form-control"><option value="">Select Exit Reason</option><option value="Target Hit">Target Hit</option><option value="SL Hit">Stop Loss Hit</option><option value="Manual Exit">Manual Exit</option><option value="Time Based Exit">Time Based Exit</option><option value="Breakeven">Breakeven</option><option value="Trailing Stop">Trailing Stop</option></select></div>
+                                        <div class="form-group"><label class="form-label">Confidence Level (1-10)</label><input type="range" name="confidenceLevel" class="range-input" min="1" max="10" value="5"><div class="range-value">5</div></div>
+                                        <div class="form-group"><label class="form-label">Entry Date *</label><input type="datetime-local" name="entryDate" class="form-control" required><div class="form-error" id="entryDate-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Exit Date *</label><input type="datetime-local" name="exitDate" class="form-control" required><div class="form-error" id="exitDate-error"></div></div>
+                                        <div class="form-group"><label class="form-label">Pre-Trade Emotion</label><select name="preEmotion" class="form-control"><option value="">Select Emotion</option><option value="Confident">Confident</option><option value="Excited">Excited</option><option value="Nervous">Nervous</option><option value="Fearful">Fearful</option><option value="Neutral">Neutral</option><option value="Greedy">Greedy</option><option value="Impatient">Impatient</option></select></div>
+                                        <div class="form-group"><label class="form-label">Post-Trade Emotion</label><select name="postEmotion" class="form-control"><option value="">Select Emotion</option><option value="Satisfied">Satisfied</option><option value="Relieved">Relieved</option><option value="Disappointed">Disappointed</option><option value="Frustrated">Frustrated</option><option value="Regretful">Regretful</option><option value="Elated">Elated</option><option value="Neutral">Neutral</option></select></div>
+                                        <div class="form-group full-width"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="3" placeholder="What went well, what went wrong, improvements needed..."></textarea></div>
+                                    </div>
+
+                                    <!-- ====================== New Psychology-Focused Sections ====================== -->
+                                    <!-- Pre-Trade Psychology -->
+                                    <details class="collapse-card">
+                                        <summary>Pre-Trade Psychology</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-grid">
+                                                <div class="form-group"><label class="form-label" title="How well did you sleep last night?">Sleep Quality (1-10)</label><input type="range" name="sleepQuality" class="range-input" min="1" max="10" value="5"><div class="range-value">5</div></div>
+                                                <div class="form-group"><label class="form-label" title="How is your physical energy today?">Physical Condition (1-10)</label><input type="range" name="physicalCondition" class="range-input" min="1" max="10" value="5"><div class="range-value">5</div></div>
+                                                <div class="form-group"><label class="form-label">Market Sentiment Assessment</label><select name="marketSentiment" class="form-control"><option value="">Select</option><option>Bullish</option><option>Bearish</option><option>Neutral</option><option>Uncertain</option></select></div>
+                                                <div class="form-group"><label class="form-label">News / Events Awareness</label><select name="newsAwareness" class="form-control"><option value="">Select</option><option>Major news expected</option><option>Minor news</option><option>No significant news</option><option>Unaware</option></select></div>
+                                                <div class="form-group"><label class="form-label">Overall Market Environment</label><select name="marketEnvironment" class="form-control"><option value="">Select</option><option>Strong Trend Up</option><option>Weak Trend Up</option><option>Sideways / Range</option><option>Weak Trend Down</option><option>Strong Trend Down</option></select></div>
+                                                <div class="form-group"><label class="form-label" title="Are you feeling Fear of Missing Out on this trade?">FOMO Level (1-10)</label><input type="range" name="fomoLevel" class="range-input" min="1" max="10" value="1"><div class="range-value">1</div></div>
+                                                <div class="form-group"><label class="form-label">Stress Level Before Trade (1-10)</label><input type="range" name="preStress" class="range-input" min="1" max="10" value="1"><div class="range-value">1</div></div>
+                                            </div>
+                                        </div>
+                                    </details>
+
+                                    <!-- Trade Setup Analysis -->
+                                    <details class="collapse-card">
+                                        <summary>Trade Setup Analysis</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-grid">
+                                                <div class="form-group full-width"><label class="form-label">Multiple Time-Frame Confirmation</label>
+                                                    <div class="checkbox-group">
+                                                        <label><input type="checkbox" name="multiTimeframes" value="Daily aligned"> Daily aligned</label><br>
+                                                        <label><input type="checkbox" name="multiTimeframes" value="4H aligned"> 4H aligned</label><br>
+                                                        <label><input type="checkbox" name="multiTimeframes" value="1H aligned"> 1H aligned</label><br>
+                                                        <label><input type="checkbox" name="multiTimeframes" value="15min aligned"> 15min aligned</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Volume Analysis</label><select name="volumeAnalysis" class="form-control"><option value="">Select</option><option>High volume</option><option>Average volume</option><option>Low volume</option><option>Volume spike</option><option>Volume dry-up</option></select></div>
+                                                <div class="form-group full-width"><label class="form-label">Technical Confluence Factors</label>
+                                                    <div class="checkbox-group">
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Support / Resistance"> Support / Resistance</label><br>
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Moving Average"> Moving Average</label><br>
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Trendline"> Trendline</label><br>
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Fibonacci"> Fibonacci</label><br>
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Indicator signal"> Indicator signal</label><br>
+                                                        <label><input type="checkbox" name="technicalConfluence" value="Pattern completion"> Pattern completion</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Market Session</label><select name="marketSession" class="form-control"><option value="">Select</option><option>Pre-market</option><option>Market Open (9:30-10:30)</option><option>Mid-morning (10:30-12:00)</option><option>Lunch (12:00-14:00)</option><option>Afternoon (14:00-15:30)</option><option>Market Close (15:30-16:00)</option><option>After-hours</option></select></div>
+                                                <div class="form-group"><label class="form-label">Trade Catalyst</label><select name="tradeCatalyst" class="form-control"><option value="">Select</option><option>Technical breakout</option><option>Earnings</option><option>News event</option><option>Sector rotation</option><option>Market reversal</option><option>Momentum follow-through</option><option>Other</option></select></div>
+                                            </div>
+                                        </div>
+                                    </details>
+
+                                    <!-- During Trade Management -->
+                                    <details class="collapse-card">
+                                        <summary>During Trade Management</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-grid">
+                                                <div class="form-group full-width"><label class="form-label">Did You Wait for Setup?</label>
+                                                    <div class="radio-group">
+                                                        <label><input type="radio" name="waitedForSetup" value="Yes, completely"> Yes, completely</label><br>
+                                                        <label><input type="radio" name="waitedForSetup" value="Partially"> Partially</label><br>
+                                                        <label><input type="radio" name="waitedForSetup" value="No, entered early"> No, entered early</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group"><label class="form-label">Position Sizing Comfort (1-10)</label><input type="range" name="positionComfort" class="range-input" min="1" max="10" value="5"><div class="range-value">5</div></div>
+                                                <div class="form-group"><label class="form-label">Plan Deviation</label><select name="planDeviation" class="form-control"><option value="">Select</option><option>Stuck to plan completely</option><option>Minor deviation</option><option>Major deviation</option><option>Completely changed plan</option></select></div>
+                                                <div class="form-group"><label class="form-label">Stress During Trade (1-10)</label><input type="range" name="stressDuring" class="range-input" min="1" max="10" value="1"><div class="range-value">1</div></div>
+                                            </div>
+                                        </div>
+                                    </details>
+
+                                    <!-- Exit Analysis -->
+                                    <details class="collapse-card">
+                                        <summary>Exit Analysis</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-grid">
+                                                <div class="form-group"><label class="form-label">Primary Exit Reason</label><select name="primaryExitReason" class="form-control"><option value="">Select</option><option>Target hit</option><option>Stop loss hit</option><option>Time-based exit</option><option>Manual profit taking</option><option>Fear-based exit</option><option>Greed-based hold too long</option><option>News/event exit</option><option>Technical signal change</option></select></div>
+                                                <div class="form-group"><label class="form-label">Exit Emotion</label><select name="exitEmotion" class="form-control"><option value="">Select</option><option>Satisfied</option><option>Regretful</option><option>Frustrated</option><option>Elated</option><option>Neutral</option><option>Disappointed</option><option>Relieved</option></select></div>
+                                                <div class="form-group full-width"><label class="form-label">Would Take Again?</label>
+                                                    <div class="radio-group">
+                                                        <label><input type="radio" name="wouldTakeAgain" value="Definitely yes"> Definitely yes</label><br>
+                                                        <label><input type="radio" name="wouldTakeAgain" value="Probably yes"> Probably yes</label><br>
+                                                        <label><input type="radio" name="wouldTakeAgain" value="Maybe"> Maybe</label><br>
+                                                        <label><input type="radio" name="wouldTakeAgain" value="Probably no"> Probably no</label><br>
+                                                        <label><input type="radio" name="wouldTakeAgain" value="Definitely no"> Definitely no</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group full-width"><label class="form-label">Key Lesson Learned</label><textarea name="lesson" class="form-control" rows="3" placeholder="What's the main lesson from this trade?"></textarea></div>
+                                            </div>
+                                        </div>
+                                    </details>
+
+                                    <!-- Market Context -->
+                                    <details class="collapse-card">
+                                        <summary>Market Context</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-grid">
+                                                <div class="form-group"><label class="form-label">Market Volatility Today</label><select name="volatilityToday" class="form-control"><option value="">Select</option><option>Very high (VIX >30)</option><option>High (VIX 20-30)</option><option>Normal (VIX 15-20)</option><option>Low (VIX <15)</option></select></div>
+                                                <div class="form-group"><label class="form-label">Sector Performance</label><select name="sectorPerformance" class="form-control"><option value="">Select</option><option>Sector leading market</option><option>Sector in-line with market</option><option>Sector lagging market</option><option>Sector against market trend</option></select></div>
+                                                <div class="form-group full-width"><label class="form-label">Economic Events Today</label>
+                                                    <div class="checkbox-group">
+                                                        <label><input type="checkbox" name="economicEvents" value="Fed announcement"> Fed announcement</label><br>
+                                                        <label><input type="checkbox" name="economicEvents" value="Earnings"> Earnings</label><br>
+                                                        <label><input type="checkbox" name="economicEvents" value="Economic data"> Economic data</label><br>
+                                                        <label><input type="checkbox" name="economicEvents" value="Geopolitical news"> Geopolitical news</label><br>
+                                                        <label><input type="checkbox" name="economicEvents" value="None"> None</label>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group full-width"><label class="form-label">Personal Distractions</label>
+                                                    <div class="checkbox-group">
+                                                        <label><input type="checkbox" name="personalDistractions" value="Work stress"> Work stress</label><br>
+                                                        <label><input type="checkbox" name="personalDistractions" value="Personal issues"> Personal issues</label><br>
+                                                        <label><input type="checkbox" name="personalDistractions" value="Health concerns"> Health concerns</label><br>
+                                                        <label><input type="checkbox" name="personalDistractions" value="Time pressure"> Time pressure</label><br>
+                                                        <label><input type="checkbox" name="personalDistractions" value="None"> None</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
+                                    <!-- ====================== End Psychology Sections ====================== -->
+
+                                    <!-- Auto-calculated fields display -->
+                                    <div class="calculated-fields">
+                                        <h4>Calculated Values</h4>
+                                        <div class="calc-grid">
+                                            <div class="calc-item"><span class="calc-label">Gross P&L:</span><span class="calc-value" id="calcGrossPL">₹0</span></div>
+                                            <div class="calc-item"><span class="calc-label">Net P&L:</span><span class="calc-value" id="calcNetPL">₹0</span></div>
+                                            <div class="calc-item"><span class="calc-label">Risk:Reward:</span><span class="calc-value" id="calcRiskReward">1:0</span></div>
+                                            <div class="calc-item"><span class="calc-label">Capital Risk %:</span><span class="calc-value" id="calcCapitalRisk">0%</span></div>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
-
-                            <!-- Main Trade Form Grid -->
-                            <div class="trade-form-grid">
-                                <!-- Basic Trade Information -->
-                                <div class="trade-form-section">
-                                    <h3>📊 Basic Trade Information</h3>
-                                    
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="entryDate" class="form-label">Entry Date & Time</label>
-                                            <input type="datetime-local" id="entryDate" name="entryDate" class="form-control" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exitDate" class="form-label">Exit Date & Time</label>
-                                            <input type="datetime-local" id="exitDate" name="exitDate" class="form-control" required>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="symbol" class="form-label">Symbol</label>
-                                            <input type="text" id="symbol" name="symbol" class="form-control" placeholder="e.g., NIFTY, AAPL, BANKNIFTY" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="direction" class="form-label">Direction</label>
-                                            <select id="direction" name="direction" class="form-control" required>
-                                                <option value="">Select Direction</option>
-                                                <option value="Long">Long (Buy)</option>
-                                                <option value="Short">Short (Sell)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="quantity" class="form-label">Quantity</label>
-                                            <input type="number" id="quantity" name="quantity" class="form-control" min="1" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="strategy" class="form-label">Primary Strategy</label>
-                                            <select id="strategy" name="strategy" class="form-control" required>
-                                                <option value="">Select Strategy</option>
-                                                <option value="Breakout">Breakout</option>
-                                                <option value="Pullback">Pullback</option>
-                                                <option value="Support/Resistance">Support/Resistance</option>
-                                                <option value="Trendline">Trendline</option>
-                                                <option value="Gap Trading">Gap Trading</option>
-                                                <option value="Scalping">Scalping</option>
-                                                <option value="Swing Trading">Swing Trading</option>
-                                                <option value="Momentum">Momentum</option>
-                                                <option value="Mean Reversion">Mean Reversion</option>
-                                                <option value="Options">Options Strategy</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Price Information -->
-                                <div class="trade-form-section">
-                                    <h3>💰 Price Information</h3>
-                                    
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="entryPrice" class="form-label">Entry Price <span id="entryCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="entryPrice" name="entryPrice" class="form-control" step="0.01" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="exitPrice" class="form-label">Exit Price <span id="exitCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="exitPrice" name="exitPrice" class="form-control" step="0.01" required>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="stopLoss" class="form-label">Stop Loss <span id="slCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="stopLoss" name="stopLoss" class="form-control" step="0.01">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="targetPrice" class="form-label">Target Price <span id="targetCurrencySymbol">(₹)</span></label>
-                                            <input type="number" id="targetPrice" name="targetPrice" class="form-control" step="0.01">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Live P&L Calculator -->
-                            <div class="calculated-fields">
-                                <h4>📊 Live Trade Calculations</h4>
-                                <div class="calc-grid">
-                                    <div class="calc-item">
-                                        <span class="calc-label">Gross P&L:</span>
-                                        <span id="calcGrossPL" class="calc-value">₹0.00</span>
-                                    </div>
-                                    <div class="calc-item">
-                                        <span class="calc-label">Net P&L:</span>
-                                        <span id="calcNetPL" class="calc-value">₹0.00</span>
-                                    </div>
-                                    <div class="calc-item">
-                                        <span class="calc-label">Risk:Reward:</span>
-                                        <span id="calcRR" class="calc-value">N/A</span>
-                                    </div>
-                                    <div class="calc-item">
-                                        <span class="calc-label">% Return:</span>
-                                        <span id="calcReturn" class="calc-value">0.00%</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Analysis Grid -->
-                            <div class="trade-form-grid">
-                                <!-- Setup Analysis -->
-                                <div class="trade-form-section">
-                                    <h3>🔍 Setup Analysis</h3>
-                                    
-                                    <div class="slider-container">
-                                        <span class="slider-label">Setup Quality:</span>
-                                        <input type="range" id="setupQuality" name="setupQuality" class="analysis-slider range-input" min="1" max="10" value="7">
-                                        <span id="setupQualityOutput" class="slider-output">7</span>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="marketCondition" class="form-label">Market Condition</label>
-                                        <select id="marketCondition" name="marketCondition" class="form-control">
-                                            <option value="">Select Condition</option>
-                                            <option value="Trending Strong">Trending Strong</option>
-                                            <option value="Trending Weak">Trending Weak</option>
-                                            <option value="Sideways/Range">Sideways/Range</option>
-                                            <option value="Volatile/Choppy">Volatile/Choppy</option>
-                                            <option value="Low Volume">Low Volume</option>
-                                            <option value="High Volume">High Volume</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="slider-container">
-                                        <span class="slider-label">Pre-Entry Confidence:</span>
-                                        <input type="range" id="confidence" name="confidence" class="analysis-slider range-input" min="1" max="10" value="7">
-                                        <span id="confidenceOutput" class="slider-output">7</span>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="entryTrigger" class="form-label">Entry Trigger</label>
-                                        <select id="entryTrigger" name="entryTrigger" class="form-control">
-                                            <option value="">Select Trigger</option>
-                                            <option value="Breakout">Price Breakout</option>
-                                            <option value="Pullback">Pullback to Support</option>
-                                            <option value="Signal">Technical Signal</option>
-                                            <option value="Pattern">Chart Pattern</option>
-                                            <option value="Volume">Volume Spike</option>
-                                            <option value="News">News/Event</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Exit Analysis -->
-                                <div class="trade-form-section">
-                                    <h3>🎯 Exit Analysis</h3>
-                                    
-                                    <div class="form-group">
-                                        <label for="exitReason" class="form-label">Exit Reason</label>
-                                        <select id="exitReason" name="exitReason" class="form-control">
-                                            <option value="">Select Exit Reason</option>
-                                            <option value="Target Hit">Target Hit</option>
-                                            <option value="Stop Loss Hit">Stop Loss Hit</option>
-                                            <option value="Time Exit">Time-based Exit</option>
-                                            <option value="Manual Profit">Manual Profit Taking</option>
-                                            <option value="Fear Exit">Fear-based Exit</option>
-                                            <option value="News Event">News/Event Exit</option>
-                                            <option value="Technical Signal">Technical Signal</option>
-                                            <option value="Risk Management">Risk Management</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="exitTiming" class="form-label">Exit Timing Quality</label>
-                                        <select id="exitTiming" name="exitTiming" class="form-control">
-                                            <option value="">Rate Exit Timing</option>
-                                            <option value="Perfect">Perfect</option>
-                                            <option value="Good">Good</option>
-                                            <option value="Average">Average</option>
-                                            <option value="Poor">Poor</option>
-                                            <option value="Terrible">Terrible</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="exitEmotion" class="form-label">Exit Emotion</label>
-                                        <select id="exitEmotion" name="exitEmotion" class="form-control">
-                                            <option value="">Select Emotion</option>
-                                            <option value="Satisfied">Satisfied</option>
-                                            <option value="Relieved">Relieved</option>
-                                            <option value="Excited">Excited</option>
-                                            <option value="Frustrated">Frustrated</option>
-                                            <option value="Angry">Angry</option>
-                                            <option value="Disappointed">Disappointed</option>
-                                            <option value="Regretful">Regretful</option>
-                                            <option value="Neutral">Neutral</option>
-                                            <option value="Confident">Confident</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="slider-container">
-                                        <span class="slider-label">Stress Level:</span>
-                                        <input type="range" id="stressLevel" name="stressLevel" class="analysis-slider range-input" min="1" max="10" value="3">
-                                        <span id="stressLevelOutput" class="slider-output">3</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Psychology Section -->
-                            <div class="trade-form-section">
-                                <h3>🧠 Psychology & State Analysis</h3>
-                                
-                                <div class="form-row">
-                                    <div class="slider-container">
-                                        <span class="slider-label">Sleep Quality:</span>
-                                        <input type="range" id="sleepQuality" name="sleepQuality" class="analysis-slider range-input" min="1" max="10" value="7">
-                                        <span id="sleepQualityOutput" class="slider-output">7</span>
-                                    </div>
-                                    
-                                    <div class="slider-container">
-                                        <span class="slider-label">Mental Clarity:</span>
-                                        <input type="range" id="mentalClarity" name="mentalClarity" class="analysis-slider range-input" min="1" max="10" value="7">
-                                        <span id="mentalClarityOutput" class="slider-output">7</span>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="overallMood" class="form-label">Overall Mood</label>
-                                    <select id="overallMood" name="overallMood" class="form-control">
-                                        <option value="">Select Mood</option>
-                                        <option value="Very Positive">Very Positive</option>
-                                        <option value="Positive">Positive</option>
-                                        <option value="Neutral">Neutral</option>
-                                        <option value="Negative">Negative</option>
-                                        <option value="Very Negative">Very Negative</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Notes Section -->
-                            <div class="trade-form-section">
-                                <h3>📝 Trade Notes & Lessons</h3>
-                                
-                                <div class="form-group">
-                                    <label for="notes" class="form-label">Trade Notes</label>
-                                    <textarea id="notes" name="notes" class="form-control" rows="4" placeholder="What happened in this trade? Market conditions, your thoughts, etc."></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="lessonsLearned" class="form-label">Key Lessons Learned</label>
-                                    <textarea id="lessonsLearned" name="lessonsLearned" class="form-control" rows="3" placeholder="What did you learn from this trade? What would you do differently?"></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="wouldRepeat" class="form-label">Would you take this trade again?</label>
-                                    <select id="wouldRepeat" name="wouldRepeat" class="form-control">
-                                        <option value="">Select Answer</option>
-                                        <option value="Definitely Yes">Definitely Yes</option>
-                                        <option value="Probably Yes">Probably Yes</option>
-                                        <option value="Maybe">Maybe</option>
-                                        <option value="Probably No">Probably No</option>
-                                        <option value="Definitely No">Definitely No</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Submit Section -->
-                            <div class="trade-submit-section">
-                                <button type="submit" class="btn--submit">
-                                    <span class="btn-text">💾 Save Comprehensive Trade Analysis</span>
-                                    <span class="loading-spinner" style="display: none;">Saving Analysis...</span>
-                                </button>
-                                <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                                    Your detailed trade analysis will be saved with all psychology and performance metrics
-                                </p>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- History -->
-                <section id="history" class="section">
-                    <div class="section-header">
-                        <h1>Trade History</h1>
-                    </div>
-                    <div id="historyContainer">
-                        <div class="loading">Loading trade history...</div>
-                    </div>
-                </section>
-
-                <!-- Enhanced Analytics -->
-                <section id="analytics" class="section">
-                    <div class="section-header">
-                        <h1>📊 Advanced Analytics</h1>
-                        <p>Comprehensive performance analysis with interactive charts</p>
-                    </div>
-
-                    <!-- Performance Summary -->
-                    <div class="card">
-                        <div class="card__header">
-                            <h3>Performance Overview</h3>
-                        </div>
-                        <div class="card__body">
-                            <div class="summary-stats">
-                                <div class="summary-item">
-                                    <span class="label">Total Trades:</span>
-                                    <span class="value" id="analyticsTotalTrades">0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Win Rate:</span>
-                                    <span class="value" id="analyticsWinRate">0%</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Net P&L:</span>
-                                    <span class="value" id="analyticsNetPL">₹0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Best Trade:</span>
-                                    <span class="value positive" id="analyticsBestTrade">₹0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Worst Trade:</span>
-                                    <span class="value negative" id="analyticsWorstTrade">₹0</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="label">Avg Risk:Reward:</span>
-                                    <span class="value" id="analyticsAvgRR">1:0</span>
-                                </div>
-                            </div>
+                            <div class="card__footer add-trade-footer"><button type="button" class="btn btn--outline" id="resetTradeForm">Reset</button><button type="submit" form="addTradeForm" class="btn btn--primary">Save Trade</button></div>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    <!-- Interactive Charts Grid -->
+            <!-- Trade History Section -->
+            <section id="history" class="section"><div class="container"><div class="section-header"><h1>Trade History</h1><div class="filter-controls"><select id="symbolFilter" class="form-control" style="width: 150px;"><option value="">All Symbols</option></select><select id="strategyFilter" class="form-control" style="width: 150px;"><option value="">All Strategies</option></select></div></div><div id="historyContent"><div class="loading">Loading trade history...</div></div></div></section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="section">
+                <div class="container">
+                    <div class="section-header"><h1>Analytics & Performance</h1></div>
+                    <div class="analytics-summary"><div class="summary-card card"><div class="card__body"><h3>Performance Summary</h3><div class="summary-stats"><div class="summary-item"><span class="label">Total Trades:</span><span class="value" id="analyticsTotalTrades">0</span></div><div class="summary-item"><span class="label">Win Rate:</span><span class="value" id="analyticsWinRate">0%</span></div><div class="summary-item"><span class="label">Net P&L:</span><span class="value" id="analyticsNetPL">₹0</span></div><div class="summary-item"><span class="label">Best Trade:</span><span class="value" id="analyticsBestTrade">₹0</span></div><div class="summary-item"><span class="label">Worst Trade:</span><span class="value" id="analyticsWorstTrade">₹0</span></div><div class="summary-item"><span class="label">Avg Risk:Reward:</span><span class="value" id="analyticsAvgRR">1:0</span></div></div></div></div></div>
+                    <!-- Interactive Charts -->
                     <div class="charts-grid">
-                        <div class="chart-container">
-                            <h3>📈 Cumulative P&L Over Time</h3>
-                            <canvas id="plChart"></canvas>
-                        </div>
-                        
-                        <div class="chart-container">
-                            <h3>📊 Strategy Performance</h3>
-                            <canvas id="strategyChart"></canvas>
-                        </div>
-                        
-                        <div class="chart-container">
-                            <h3>🎯 Win/Loss Distribution</h3>
-                            <canvas id="winLossChart"></canvas>
-                        </div>
-                        
-                        <div class="chart-container">
-                            <h3>📅 Monthly Performance</h3>
-                            <canvas id="monthlyAnalyticsChart"></canvas>
-                        </div>
+                        <div class="chart-container" style="position: relative; height: 400px;"><h3>P&L Curve Over Time</h3><canvas id="plChart"></canvas></div>
+                        <div class="chart-container" style="position: relative; height: 400px;"><h3>Risk-Reward Distribution</h3><canvas id="rrChart"></canvas></div>
+                        <div class="chart-container" style="position: relative; height: 400px;"><h3>Strategy Performance</h3><canvas id="strategyChart"></canvas></div>
+                        <div class="chart-container" style="position: relative; height: 400px;"><h3>Time-Based Analysis</h3><canvas id="timeChart"></canvas></div>
                     </div>
+                </div>
+            </section>
 
-                    <!-- Additional Analytics -->
-                    <div class="chart-container">
-                        <h3>⭐ Setup Quality vs Performance</h3>
-                        <canvas id="setupQualityChart"></canvas>
-                    </div>
+            <!-- AI Suggestions Section -->
+            <section id="ai-suggestions" class="section">
+                <div class="container">
+                    <div class="section-header"><h1>🧠 AI Suggestions</h1><p>Personalized insights and recommendations based on your trading data</p></div>
+                    <div class="smart-suggestion-banner card"><div class="card__body"><div class="smart-suggestion-content"><h3>💡 Smart Trading Insight</h3><div id="smartInsight" class="smart-suggestion-text">Analyzing your trading patterns...</div></div></div></div>
+                    <div class="suggestions-grid"><div class="suggestion-card card"><div class="card__header"><h3>🧠 AI-Based Trade Feedback</h3></div><div class="card__body"><div id="aiFeedback" class="suggestion-content">Loading feedback analysis...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>📊 Personal Trading Edge Analyzer</h3></div><div class="card__body"><div id="edgeAnalyzer" class="suggestion-content">Calculating your trading edge...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>📊 Daily Confidence Analysis</h3></div><div class="card__body"><div id="confidenceAnalysis" class="suggestion-content">Analyzing confidence patterns...</div><div class="chart-container" style="position: relative; height: 300px; margin-top: 16px;"><canvas id="confidenceChart"></canvas></div></div></div><div class="suggestion-card card"><div class="card__header"><h3>🔄 Repeat Trade Detection</h3></div><div class="card__body"><div id="repeatTrades" class="suggestion-content">Analyzing for recurring patterns...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>🎯 Smart Entry Suggestions</h3></div><div class="card__body"><div id="entryAnalysis" class="suggestion-content">Analyzing entry patterns...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>🧘‍♂️ Emotional Bias Tracker</h3></div><div class="card__body"><div id="emotionalBias" class="suggestion-content">Tracking emotional patterns...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>⭐ Setup Quality Score</h3></div><div class="card__body"><div id="setupQuality" class="suggestion-content">Evaluating setup quality...</div></div></div><div class="suggestion-card card"><div class="card__header"><h3>⏰ Time-Based Confidence Score</h3></div><div class="card__body"><div id="timeConfidence" class="suggestion-content">Analyzing time-based performance...</div></div></div></div>
+                </div>
+            </section>
 
-                    <div class="chart-container">
-                        <h3>🧠 Psychology Impact Analysis</h3>
-                        <canvas id="psychologyChart"></canvas>
-                    </div>
-                </section>
-
-                <!-- AI Suggestions -->
-                <section id="ai-suggestions" class="section">
-                    <div class="section-header">
-                        <h1>🧠 AI Insights</h1>
-                    </div>
-
-                    <div class="suggestions-grid">
-                        <div class="card">
-                            <div class="card__header">
-                                <h3>💡 Setup Analysis</h3>
-                            </div>
-                            <div class="card__body">
-                                <div class="ai-content">
-                                    Start adding trades to unlock AI insights...
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card__header">
-                                <h3>📊 Performance Tips</h3>
-                            </div>
-                            <div class="card__body">
-                                <div class="ai-content">
-                                    Build your trading history for personalized insights...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Reports -->
-                <section id="reports" class="section">
-                    <div class="section-header">
-                        <h1>Reports & Calendar</h1>
-                    </div>
-
-                    <div class="chart-container">
-                        <h3>Monthly P&L Overview</h3>
-                        <canvas id="monthlyPLChart"></canvas>
-                    </div>
-
-                    <div class="card">
-                        <div class="card__header">
-                            <div class="calendar-nav">
-                                <button id="prevMonth" class="btn btn--secondary">‹</button>
-                                <h3 id="calendarTitle">August 2025</h3>
-                                <button id="nextMonth" class="btn btn--secondary">›</button>
-                            </div>
-                        </div>
-                        <div class="card__body">
-                            <div id="calendar"></div>
-                            <div class="calendar-legend">
-                                <div class="legend-item">
-                                    <div class="legend-color profit-high"></div>
-                                    <span>High Profit</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color profit-low"></div>
-                                    <span>Profit</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color no-trades"></div>
-                                    <span>No Trades</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color loss-low"></div>
-                                    <span>Loss</span>
-                                </div>
-                                <div class="legend-item">
-                                    <div class="legend-color loss-high"></div>
-                                    <span>High Loss</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
+            <!-- Reports Section -->
+            <section id="reports" class="section">
+                <div class="container">
+                    <div class="section-header"><h1>Reports & Calendar</h1><button class="btn btn--primary" id="exportData">Export to CSV</button></div>
+                    <div class="calendar-section card"><div class="card__header"><h3>P&L Calendar</h3><div class="calendar-nav"><button class="btn btn--outline btn--sm" id="prevMonth">‹</button><span id="currentMonth">July 2025</span><button class="btn btn--outline btn--sm" id="nextMonth">›</button></div></div><div class="card__body"><div id="plCalendar" class="pl-calendar"></div><div class="calendar-legend"><div class="legend-item"><div class="legend-color profit-high"></div><span>High Profit (>₹1000)</span></div><div class="legend-item"><div class="legend-color profit-low"></div><span>Profit</span></div><div class="legend-item"><div class="legend-color no-trades"></div><span>No Trades</span></div><div class="legend-item"><div class="legend-color loss-low"></div><span>Loss</span></div><div class="legend-item"><div class="legend-color loss-high"></div><span>High Loss (<-₹1000)</span></div></div></div></div>
+                    <div class="reports-grid"><div class="report-card card"><div class="card__body"><h3>Weekly Summary</h3><div id="weeklyReport"><div class="loading">Generating weekly report...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Monthly Analysis</h3><div id="monthlyReport"><div class="loading">Generating monthly report...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Strategy Performance</h3><div id="strategyReport"><div class="loading">Analyzing strategies...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Emotional Patterns</h3><div id="emotionalReport"><div class="loading">Analyzing emotional patterns...</div></div></div></div></div>
+                </div>
+            </section>
         </main>
+        <!-- Trade Detail Modal -->
+        <div id="tradeModal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h2>Trade Details</h2><button class="modal-close" onclick="app.hideTradeModal()">&times;</button></div><div class="modal-body" id="tradeModalBody"></div><div class="modal-footer"><button class="btn btn--outline" onclick="app.hideTradeModal()">Close</button><button class="btn btn--primary" id="editTradeBtn">Edit Trade</button></div></div></div>
     </div>
 
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Script -->
     <script src="app.js"></script>
 </body>
 </html>
