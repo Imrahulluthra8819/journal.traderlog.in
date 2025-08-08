@@ -1639,3 +1639,56 @@ select.form-control {
         align-items: flex-start;
     }
 }
+/* ==========================================================================
+   NEW DASHBOARD REDESIGN STYLES
+   ========================================================================== */
+
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-24);
+  margin-top: var(--space-32);
+}
+
+.dashboard-col-1,
+.dashboard-col-2 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.dashboard-glimpse-card .card__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-glimpse-card h4 {
+  margin-bottom: var(--space-12);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dashboard-chart-container {
+  position: relative;
+  height: 250px; /* Or adjust as needed */
+  flex-grow: 1;
+}
+
+#dashboardAiFeedback .suggestion-item {
+    font-size: var(--font-size-sm);
+    padding: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+
+#dashboardAiFeedback .suggestion-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments for the new dashboard grid */
+@media (max-width: 1024px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
