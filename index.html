@@ -95,37 +95,81 @@
 
         <main class="main-content">
             <section id="dashboard" class="section active">
-                <div class="container">
-                    <div class="section-header">
-                        <h1>Trading Dashboard</h1>
-                        <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
-                    </div>
-                    <div class="stats-grid">
-                        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-content"><h3 id="totalPL" class="stat-value">₹0</h3><p>Total P&L</p></div></div>
-                        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-content"><h3 id="winRate" class="stat-value">0%</h3><p>Win Rate</p></div></div>
-                        <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-content"><h3 id="totalTrades" class="stat-value">0</h3><p>Total Trades</p></div></div>
-                        <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-content"><h3 id="avgRR" class="stat-value">1:0</h3><p>Avg Risk:Reward</p></div></div>
-                    </div>
-                    <div class="confidence-tracker card">
-                        <div class="card__body">
-                            <h3>How are you feeling about trading today?</h3>
-                            <div class="confidence-controls">
-                                <div class="confidence-slider-container">
-                                    <label for="dailyConfidence" class="form-label">Confidence Level (1-10)</label>
-                                    <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
-                                    <div class="range-value" id="confidenceValue">5</div>
-                                </div>
-                                <button class="btn btn--primary" id="saveConfidenceBtn">Submit</button>
+    <div class="container">
+        <div class="section-header">
+            <h1>Trading Dashboard</h1>
+            <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
+        </div>
+
+        <!-- The top stats grid remains the same -->
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-content"><h3 id="totalPL" class="stat-value">₹0</h3><p>Total P&L</p></div></div>
+            <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-content"><h3 id="winRate" class="stat-value">0%</h3><p>Win Rate</p></div></div>
+            <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-content"><h3 id="totalTrades" class="stat-value">0</h3><p>Total Trades</p></div></div>
+            <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-content"><h3 id="avgRR" class="stat-value">1:0</h3><p>Avg Risk:Reward</p></div></div>
+        </div>
+
+        <!-- This is the new main grid for the rest of the dashboard content -->
+        <div class="dashboard-main-grid">
+            <!-- Column 1: Existing Components -->
+            <div class="dashboard-col-1">
+                <div class="confidence-tracker card">
+                    <div class="card__body">
+                        <h3>How are you feeling about trading today?</h3>
+                        <div class="confidence-controls">
+                            <div class="confidence-slider-container">
+                                <label for="dailyConfidence" class="form-label">Confidence Level (1-10)</label>
+                                <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
+                                <div class="range-value" id="confidenceValue">5</div>
                             </div>
-                            <div id="confidenceMessage" class="confidence-message"></div>
+                            <button class="btn btn--primary" id="saveConfidenceBtn">Submit</button>
                         </div>
-                    </div>
-                    <div class="recent-trades card">
-                        <div class="card__header"><h3>Recent Trades</h3><button class="view-all-link" data-section="history">View All Trades</button></div>
-                        <div class="card__body"><div id="recentTradesList"><div class="loading">Loading recent trades...</div></div></div>
+                        <div id="confidenceMessage" class="confidence-message"></div>
                     </div>
                 </div>
-            </section>
+                <div class="recent-trades card">
+                    <div class="card__header">
+                        <h3>Recent Trades</h3>
+                        <button class="view-all-link" data-section="history">View All</button>
+                    </div>
+                    <div class="card__body">
+                        <div id="recentTradesList">
+                            <div class="loading">Loading recent trades...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: New Analytics and AI Glimpses -->
+            <div class="dashboard-col-2">
+                <div class="card dashboard-glimpse-card">
+                    <div class="card__header">
+                        <h3>Analytics Snapshot</h3>
+                        <button class="view-all-link" data-section="analytics">View Details</button>
+                    </div>
+                    <div class="card__body">
+                        <h4>P&L Curve</h4>
+                        <div class="dashboard-chart-container">
+                            <canvas id="dashboardPlChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card dashboard-glimpse-card">
+                    <div class="card__header">
+                        <h3>AI Suggestions</h3>
+                        <button class="view-all-link" data-section="ai-suggestions">Get More Insights</button>
+                    </div>
+                    <div class="card__body">
+                        <h4>AI-Based Trade Feedback</h4>
+                        <div id="dashboardAiFeedback" class="suggestion-content">
+                            <div class="loading">Loading AI feedback...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
             <section id="add-trade" class="section">
                 <div class="container">
@@ -320,6 +364,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
