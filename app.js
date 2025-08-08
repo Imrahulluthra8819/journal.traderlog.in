@@ -246,10 +246,6 @@ class TradingJournalApp {
     document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
-
-    const slider = document.getElementById('dailyConfidence');
-    const out = document.getElementById('confidenceValue');
-    slider.addEventListener('input', () => (out.textContent = slider.value));
     document.getElementById('saveConfidenceBtn').addEventListener('click', () => this.saveDailyConfidence());
 
     this.setupAddTradeForm();
@@ -346,12 +342,28 @@ class TradingJournalApp {
     document.getElementById('totalTrades').textContent = s.totalTrades;
     document.getElementById('avgRR').textContent = s.avgRR;
 
+    // --- START: Added Confidence Slider Listeners ---
+    // This ensures the listeners are attached every time the dashboard is rendered.
+    const slider = document.getElementById('dailyConfidence');
+    const out = document.getElementById('confidenceValue');
+    if (slider && out) {
+        // Update the display value when the slider is moved
+        const updateConfidenceValue = () => (out.textContent = slider.value);
+        slider.addEventListener('input', updateConfidenceValue);
+        updateConfidenceValue(); // Set initial value
+    }
+    // The listener for the button is in attachMainListeners, which is fine as it's outside the re-rendered area.
+    // --- END: Added Confidence Slider Listeners ---
+
     const list = document.getElementById('recentTradesList');
     if (this.trades.length === 0) {
       list.innerHTML = '<div class="empty-state">No trades yet. Click "Add New Trade" to get started!</div>';
       // Clear glimpse sections if no data
-      document.getElementById('miniPlChart').getContext('2d').clearRect(0,0,document.getElementById('miniPlChart').width,document.getElementById('miniPlChart').height);
-      document.getElementById('aiGlimpse').innerHTML = '<div class="empty-state">No data for insights.</div>';
+      const miniChartCtx = document.getElementById('miniPlChart')?.getContext('2d');
+      if(miniChartCtx) miniChartCtx.clearRect(0,0,miniChartCtx.canvas.width,miniChartCtx.canvas.height);
+
+      const aiGlimpseEl = document.getElementById('aiGlimpse');
+      if(aiGlimpseEl) aiGlimpseEl.innerHTML = '<div class="empty-state">No data for insights.</div>';
       return;
     }
     
@@ -365,6 +377,10 @@ class TradingJournalApp {
         <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
       </div>`).join('');
 
+    // Render the new glimpse cards
+    this.renderMiniPLChart();
+    this.renderAIGlimpse();
+  }
     // Render the new glimpse cards
     this.renderMiniPLChart();
     this.renderAIGlimpse();
@@ -1154,6 +1170,7 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
