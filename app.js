@@ -3,6 +3,19 @@ const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+// Emergency fix - forces login form to show after 3 seconds
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    // Replace loading screen with login form
+    const loadingElements = document.querySelectorAll('[class*="loading"]');
+    loadingElements.forEach(el => el.style.display = 'none');
+    
+    // Show your login form (add your form's ID/class)
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) loginForm.style.display = 'block';
+  }, 3000);
+});
+
 class TradingJournalApp {
   constructor() {
     this.currentUser = null;
@@ -1071,3 +1084,4 @@ class TradingJournalApp {
 }
 
 window.app = new TradingJournalApp();
+
