@@ -34,9 +34,10 @@ class TradingJournalApp {
 
   /**
    * Listens for Supabase auth events (login, logout) and updates the UI accordingly.
+   * CORRECTED: onAuthStateChanged -> onAuthStateChange
    */
   handleAuthStateChange() {
-    this.supabase.auth.onAuthStateChanged(async (event, session) => {
+    this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AUTH] State Change Event:', event, 'Session:', session);
       
       const user = session?.user;
