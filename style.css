@@ -1692,3 +1692,27 @@ select.form-control {
     grid-template-columns: 1fr;
   }
 }
+/* ==========================================================================
+   DASHBOARD CARD ALIGNMENT FIX
+   ========================================================================== */
+
+/* This ensures all cards within the main dashboard grid stretch to the same height,
+   creating a clean, aligned layout. */
+.dashboard-main-grid .card {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Make card fill its container */
+}
+
+/* We make the card's body grow to fill the available space */
+.dashboard-main-grid .card .card__body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* This allows the chart container to grow as well, removing the fixed height */
+.dashboard-chart-container {
+  flex-grow: 1;
+  position: relative;
+}
