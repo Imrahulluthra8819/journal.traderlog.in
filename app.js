@@ -33,22 +33,24 @@ class TradingJournalApp {
   /* ------------------------------- AUTH ---------------------------------- */
 
   /**
-   * Listens for Supabase auth events. This is now primarily for handling
-   * the initial session on page load and for handling logouts.
+   * Listens for Supabase auth events. This is the single source of truth for auth state.
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`[AUTH] Event: ${event}`);
-      // Handle initial session on page load
-      if (event === 'INITIAL_SESSION' && session) {
-        this.currentUser = session.user;
-        console.log('[AUTH] Existing session found. Initializing app...');
+      const user = session?.user;
+
+      // If a user is present in the session and we haven't set them yet, it's a login/initial load.
+      if (user && (!this.currentUser || this.currentUser.id !== user.id)) {
+        this.currentUser = user;
+        console.log('[AUTH] User session detected. Initializing app...');
         await this.loadUserData();
         this.showMainApp();
       } 
-      // Handle logout
-      else if (event === 'SIGNED_OUT') {
+      // If no user is in the session and we thought one was logged in, it's a logout.
+      else if (!user && this.currentUser) {
         this.currentUser = null;
+        console.log('[AUTH] Logout detected. Resetting app...');
         this.allTrades = [];
         this.allConfidence = [];
         Object.values(this.charts).forEach(chart => chart?.destroy());
@@ -80,18 +82,12 @@ class TradingJournalApp {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
 
-        // Await the sign-in process
-        const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+        const { error } = await this.supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
           this.showAuthError('login-password-error', error.message);
-        } else if (data.user) {
-          // If sign-in is successful, WE now control the flow.
-          console.log('[AUTH] signInWithPassword successful. Initializing app...');
-          this.currentUser = data.user;
-          await this.loadUserData();
-          this.showMainApp();
         }
+        // On success, onAuthStateChange will handle the rest.
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = originalButtonText;
