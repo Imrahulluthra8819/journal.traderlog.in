@@ -33,25 +33,23 @@ class TradingJournalApp {
   /* ------------------------------- AUTH ---------------------------------- */
 
   /**
-   * Listens for Supabase auth events (login, logout) and updates the UI accordingly.
-   * CORRECTED: Simplified logic to prevent race conditions on repeated SIGNED_IN events.
+   * Listens for Supabase auth events. This is now primarily for handling
+   * the initial session on page load and for handling logouts.
+   * The login form now handles the post-login flow directly.
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[AUTH] Event: ${event}, Current User: ${this.currentUser?.id}, Session User: ${session?.user?.id}`);
-      const user = session?.user;
-
-      // If a user exists in the session AND we haven't set it in our app yet, it's a new login.
-      if (user && !this.currentUser) {
-        this.currentUser = user;
-        console.log('[AUTH] New login detected. Initializing app...');
+      console.log(`[AUTH] Event: ${event}`);
+      // Handle initial session on page load
+      if (event === 'INITIAL_SESSION' && session) {
+        this.currentUser = session.user;
+        console.log('[AUTH] Existing session found. Initializing app...');
         await this.loadUserData();
         this.showMainApp();
       } 
-      // If no user exists in the session AND we still think a user is logged in, it's a logout.
-      else if (!user && this.currentUser) {
+      // Handle logout
+      else if (event === 'SIGNED_OUT') {
         this.currentUser = null;
-        console.log('[AUTH] Logout detected. Resetting app...');
         this.allTrades = [];
         this.allConfidence = [];
         Object.values(this.charts).forEach(chart => chart?.destroy());
@@ -63,6 +61,7 @@ class TradingJournalApp {
 
   /**
    * Sets up listeners for login and signup forms.
+   * CORRECTED: The login form now has a direct, sequential flow to prevent race conditions.
    */
   setupAuthListeners() {
     document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -83,12 +82,17 @@ class TradingJournalApp {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
 
-        const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+        // Await the sign-in process
+        const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
           this.showAuthError('login-password-error', error.message);
-        } else {
-          // Success is handled by onAuthStateChange, no action needed here.
+        } else if (data.user) {
+          // If sign-in is successful, WE now control the flow.
+          console.log('[AUTH] signInWithPassword successful. Initializing app...');
+          this.currentUser = data.user;
+          await this.loadUserData();
+          this.showMainApp();
         }
       } finally {
         submitButton.disabled = false;
