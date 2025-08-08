@@ -246,7 +246,6 @@ class TradingJournalApp {
     document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
-    document.getElementById('saveConfidenceBtn').addEventListener('click', () => this.saveDailyConfidence());
 
     this.setupAddTradeForm();
     document.getElementById('exportData').addEventListener('click', () => this.exportCSV());
@@ -342,23 +341,28 @@ class TradingJournalApp {
     document.getElementById('totalTrades').textContent = s.totalTrades;
     document.getElementById('avgRR').textContent = s.avgRR;
 
-    // --- START: Added Confidence Slider Listeners ---
-    // This ensures the listeners are attached every time the dashboard is rendered.
+    // --- START: Correctly Scoped Confidence Listeners ---
     const slider = document.getElementById('dailyConfidence');
     const out = document.getElementById('confidenceValue');
+    const saveBtn = document.getElementById('saveConfidenceBtn');
+
     if (slider && out) {
-        // Update the display value when the slider is moved
         const updateConfidenceValue = () => (out.textContent = slider.value);
         slider.addEventListener('input', updateConfidenceValue);
-        updateConfidenceValue(); // Set initial value
+        updateConfidenceValue(); 
     }
-    // The listener for the button is in attachMainListeners, which is fine as it's outside the re-rendered area.
-    // --- END: Added Confidence Slider Listeners ---
+    if (saveBtn) {
+        // To prevent adding multiple listeners, we replace the button with a clone
+        // This is a robust way to ensure only one listener is ever attached.
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.addEventListener('click', () => this.saveDailyConfidence());
+    }
+    // --- END: Correctly Scoped Confidence Listeners ---
 
     const list = document.getElementById('recentTradesList');
     if (this.trades.length === 0) {
       list.innerHTML = '<div class="empty-state">No trades yet. Click "Add New Trade" to get started!</div>';
-      // Clear glimpse sections if no data
       const miniChartCtx = document.getElementById('miniPlChart')?.getContext('2d');
       if(miniChartCtx) miniChartCtx.clearRect(0,0,miniChartCtx.canvas.width,miniChartCtx.canvas.height);
 
@@ -367,6 +371,19 @@ class TradingJournalApp {
       return;
     }
     
+    list.innerHTML = this.trades.slice(0, 5).map(t => `
+      <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
+        <div class="trade-info">
+          <span class="trade-symbol">${t.symbol}</span>
+          <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
+          <span class="trade-date">${this.formatDate(t.entryDate)}</span>
+        </div>
+        <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
+      </div>`).join('');
+
+    this.renderMiniPLChart();
+    this.renderAIGlimpse();
+  }
     list.innerHTML = this.trades.slice(0, 5).map(t => `
       <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
         <div class="trade-info">
@@ -1170,6 +1187,7 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
