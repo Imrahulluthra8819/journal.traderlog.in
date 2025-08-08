@@ -247,6 +247,11 @@ class TradingJournalApp {
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
 
+    const slider = document.getElementById('dailyConfidence');
+    const out = document.getElementById('confidenceValue');
+    slider.addEventListener('input', () => (out.textContent = slider.value));
+    document.getElementById('saveConfidenceBtn').addEventListener('click', () => this.saveDailyConfidence());
+
     this.setupAddTradeForm();
     document.getElementById('exportData').addEventListener('click', () => this.exportCSV());
     document.getElementById('prevMonth').addEventListener('click', () => this.changeCalendarMonth(-1));
@@ -341,36 +346,11 @@ class TradingJournalApp {
     document.getElementById('totalTrades').textContent = s.totalTrades;
     document.getElementById('avgRR').textContent = s.avgRR;
 
-    // --- START: Correctly Scoped Confidence Listeners ---
-    const slider = document.getElementById('dailyConfidence');
-    const out = document.getElementById('confidenceValue');
-    const saveBtn = document.getElementById('saveConfidenceBtn');
-
-    if (slider && out) {
-        const updateConfidenceValue = () => (out.textContent = slider.value);
-        slider.addEventListener('input', updateConfidenceValue);
-        updateConfidenceValue(); 
-    }
-    if (saveBtn) {
-        // To prevent adding multiple listeners, we replace the button with a clone
-        // This is a robust way to ensure only one listener is ever attached.
-        const newSaveBtn = saveBtn.cloneNode(true);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
-        newSaveBtn.addEventListener('click', () => this.saveDailyConfidence());
-    }
-    // --- END: Correctly Scoped Confidence Listeners ---
-
     const list = document.getElementById('recentTradesList');
     if (this.trades.length === 0) {
       list.innerHTML = '<div class="empty-state">No trades yet. Click "Add New Trade" to get started!</div>';
-      const miniChartCtx = document.getElementById('miniPlChart')?.getContext('2d');
-      if(miniChartCtx) miniChartCtx.clearRect(0,0,miniChartCtx.canvas.width,miniChartCtx.canvas.height);
-
-      const aiGlimpseEl = document.getElementById('aiGlimpse');
-      if(aiGlimpseEl) aiGlimpseEl.innerHTML = '<div class="empty-state">No data for insights.</div>';
       return;
     }
-    
     list.innerHTML = this.trades.slice(0, 5).map(t => `
       <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
         <div class="trade-info">
@@ -380,85 +360,8 @@ class TradingJournalApp {
         </div>
         <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
       </div>`).join('');
-
-    this.renderMiniPLChart();
-    this.renderAIGlimpse();
-  }
-    list.innerHTML = this.trades.slice(0, 5).map(t => `
-      <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
-        <div class="trade-info">
-          <span class="trade-symbol">${t.symbol}</span>
-          <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
-          <span class="trade-date">${this.formatDate(t.entryDate)}</span>
-        </div>
-        <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
-      </div>`).join('');
-
-    // Render the new glimpse cards
-    this.renderMiniPLChart();
-    this.renderAIGlimpse();
-  }
-    // Render the new glimpse cards
-    this.renderMiniPLChart();
-    this.renderAIGlimpse();
-  }
-  renderMiniPLChart() {
-    const ctx = document.getElementById('miniPlChart');
-    if (!ctx) return;
-    this.charts.miniPl?.destroy();
-    if (this.trades.length < 2) { 
-        ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); 
-        return; 
-    }
-
-    const sorted = [...this.trades].sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
-    const labels = sorted.map(t => this.formatDate(t.entryDate));
-    let cumulativePL = 0;
-    const data = sorted.map(t => {
-        cumulativePL += t.netPL;
-        return cumulativePL;
-    });
-
-    this.charts.miniPl = new Chart(ctx, {
-        type: 'line',
-        data: { 
-            labels: labels, 
-            datasets: [{ 
-                label: 'Cumulative P&L', 
-                data: data, 
-                borderColor: '#1FB8CD', 
-                backgroundColor: 'rgba(31,184,205,0.1)', 
-                tension: 0.4, 
-                fill: true,
-                pointRadius: 0 // Hide points on the mini chart
-            }] 
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { display: false }, // Hide Y-axis labels
-                x: { display: false }  // Hide X-axis labels
-            }
-        }
-    });
   }
 
-  renderAIGlimpse() {
-      const insightEl = document.getElementById('aiGlimpse');
-      if (this.trades.length < 3) {
-          insightEl.innerHTML = '<div class="empty-state">Add more trades for an insight.</div>';
-          return;
-      }
-      
-      const best = this.bestStrategy();
-      if (best !== 'N/A') {
-          insightEl.innerHTML = `<div class="suggestion-item suggestion-good">Your most profitable strategy is currently <strong>${best}</strong>. Focus on finding more of these setups.</div>`;
-      } else {
-          insightEl.innerHTML = '<div class="suggestion-item suggestion-info">Keep trading to discover your most profitable patterns.</div>';
-      }
-  }
   async saveDailyConfidence() {
     const level = parseInt(document.getElementById('dailyConfidence').value, 10);
     const today = new Date().toISOString().split('T')[0];
@@ -1187,8 +1090,5 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
-
-
-
 
 
