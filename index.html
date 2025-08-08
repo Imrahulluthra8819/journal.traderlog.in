@@ -21,6 +21,15 @@ setTimeout(() => {
     showLoginForm(); // Show the login form instead
   }
 }, 3000); // 3 seconds timeout
+clearTimeout(loadingTimeout);
+    try {
+  // Your existing code that checks login status
+  const user = await checkUserLogin();
+} catch (error) {
+  // Add this to ensure loading stops on error
+  hideLoadingFunction();
+  showLoginForm();
+}
     <!-- Authentication Screen -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
@@ -1473,4 +1482,5 @@ setTimeout(() => {
     </script>
 </body>
 </html>
+
 
