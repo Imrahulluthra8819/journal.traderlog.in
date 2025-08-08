@@ -1,6 +1,6 @@
-// Trading Journal Application - Supabase Edition v5
-// This version provides a definitive fix for the login issue by ensuring
-// the JS and HTML form fields are perfectly synchronized.
+// Trading Journal Application - Supabase Edition
+// This version contains the definitive fix for the login functionality
+// by correctly referencing the original HTML form fields.
 
 class TradingJournalApp {
   constructor() {
@@ -91,16 +91,16 @@ class TradingJournalApp {
       e.preventDefault();
       this.clearAuthErrors();
 
-      // FINAL LOGIN FIX: Read values directly from the input fields by their correct name
+      // FINAL LOGIN FIX: Read values directly from the input fields using the correct names from your HTML
       const form = e.target;
-      const emailInput = form.querySelector('input[name="email"]');
+      const emailInput = form.querySelector('input[name="username"]'); // Corrected from 'email' to 'username'
       const passwordInput = form.querySelector('input[name="password"]');
 
       const email = emailInput ? emailInput.value.trim() : '';
       const password = passwordInput ? passwordInput.value.trim() : '';
 
       if (!email || !password) {
-        this.showAuthError('login-email-error', 'Please fill all fields');
+        this.showAuthError('login-username-error', 'Please fill all fields'); // Corrected to match HTML ID
         return;
       }
 
