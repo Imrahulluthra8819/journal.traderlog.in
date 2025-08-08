@@ -338,6 +338,7 @@ class TradingJournalApp {
   }
 
   renderDashboard() {
+    // --- This part remains the same ---
     const s = this.calculateStats();
     const totalPLEl = document.getElementById('totalPL');
     totalPLEl.textContent = this.formatCurrency(s.totalPL);
@@ -349,17 +350,21 @@ class TradingJournalApp {
     const list = document.getElementById('recentTradesList');
     if (this.trades.length === 0) {
       list.innerHTML = '<div class="empty-state">No trades yet. Click "Add New Trade" to get started!</div>';
-      return;
+    } else {
+        list.innerHTML = this.trades.slice(0, 5).map(t => `
+        <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
+            <div class="trade-info">
+            <span class="trade-symbol">${t.symbol}</span>
+            <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
+            <span class="trade-date">${this.formatDate(t.entryDate)}</span>
+            </div>
+            <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
+        </div>`).join('');
     }
-    list.innerHTML = this.trades.slice(0, 5).map(t => `
-      <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
-        <div class="trade-info">
-          <span class="trade-symbol">${t.symbol}</span>
-          <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
-          <span class="trade-date">${this.formatDate(t.entryDate)}</span>
-        </div>
-        <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
-      </div>`).join('');
+
+    // --- ADD THESE TWO LINES ---
+    this.drawDashboardPLChart();
+    this.renderDashboardAIFeedback();
   }
 
   async saveDailyConfidence() {
@@ -612,6 +617,81 @@ class TradingJournalApp {
   }
 
   hideTradeModal() { document.getElementById('tradeModal').classList.add('hidden'); }
+    /* ---------------------- NEW DASHBOARD HELPERS ----------------------------- */
+  drawDashboardPLChart() {
+    const ctx = document.getElementById('dashboardPlChart');
+    if (!ctx) return;
+    if (this.charts.dashboardPl) {
+      this.charts.dashboardPl.destroy();
+    }
+    if (this.trades.length < 2) {
+      const context = ctx.getContext('2d');
+      context.clearRect(0, 0, ctx.width, ctx.height);
+      context.fillStyle = 'grey';
+      context.textAlign = 'center';
+      context.fillText('Need at least 2 trades to show a curve.', ctx.width / 2, ctx.height / 2);
+      return;
+    }
+
+    const sorted = [...this.trades].sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
+    const labels = sorted.map((t, i) => `Trade ${i + 1}`);
+    const data = [];
+    let cumulativePL = 0;
+    sorted.forEach(trade => {
+      cumulativePL += trade.netPL || 0;
+      data.push(cumulativePL);
+    });
+
+    this.charts.dashboardPl = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Cumulative P&L',
+          data: data,
+          borderColor: 'rgba(31, 184, 205, 0.8)',
+          backgroundColor: 'rgba(31, 184, 205, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              font: { size: 10 },
+              callback: (value) => this.formatCurrency(value).replace('.00', '')
+            }
+          },
+          x: {
+            display: false
+          }
+        }
+      }
+    });
+  }
+
+  renderDashboardAIFeedback() {
+      const container = document.getElementById('dashboardAiFeedback');
+      if (!container) return;
+
+      if (this.trades.length < 3) {
+          container.innerHTML = '<div class="empty-state">Add more trades for AI feedback.</div>';
+          return;
+      }
+      // Reuse the existing AI feedback generator
+      container.innerHTML = this.generateAIFeedback();
+  }
+
 
   /* -------------------------- ANALYTICS & CHARTS ------------------------------ */
   renderAnalytics() {
@@ -1090,5 +1170,6 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
