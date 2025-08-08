@@ -1564,3 +1564,78 @@ select.form-control {
 .suggestions-grid {
   align-items: stretch;
 }
+/* --- Calendar & Tooltip Styles --- */
+
+/* Default style for desktop */
+.calendar-section {
+    max-width: 500px; /* Final smaller width for desktop */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Styles for the calendar tooltip */
+.calendar-tooltip {
+    position: absolute;
+    display: none;
+    background-color: #2c3e50;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    z-index: 1001;
+    pointer-events: none;
+    font-size: 0.9em;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    max-width: 280px;
+    border: 1px solid #34495e;
+    transition: opacity 0.2s;
+}
+
+.calendar-tooltip h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1em;
+    color: #1abc9c;
+    border-bottom: 1px solid #34495e;
+    padding-bottom: 5px;
+}
+
+.calendar-tooltip-trade {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #34495e;
+}
+.calendar-tooltip-trade:last-child {
+    border-bottom: none;
+}
+
+.calendar-tooltip-trade .symbol {
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.calendar-tooltip-trade .pl.positive {
+    color: #2ecc71;
+}
+
+.calendar-tooltip-trade .pl.negative {
+    color: #e74c3c;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .calendar-section {
+        max-width: 100%; /* Use full width on mobile */
+    }
+
+    .pl-calendar .calendar-day {
+        font-size: 0.8em;
+        padding: 4px;
+    }
+
+    .calendar-legend {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
