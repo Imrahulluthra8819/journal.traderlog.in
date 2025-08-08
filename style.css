@@ -1716,3 +1716,31 @@ select.form-control {
   flex-grow: 1;
   position: relative;
 }
+/* ==========================================================================
+   HEADER ACTIONS & CURRENCY SELECTOR
+   ========================================================================== */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+#currencySelector {
+  width: 120px;
+  height: 40px; /* Match button height */
+}
+
+/* On smaller screens, make the header wrap nicely */
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-16);
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
