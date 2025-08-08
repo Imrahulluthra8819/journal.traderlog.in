@@ -145,67 +145,6 @@
 }
 
 /* Dark mode colors */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* RGB versions for opacity control (Dark Mode) */
-    --color-gray-400-rgb: 119, 124, 124;
-    --color-teal-300-rgb: 50, 184, 198;
-    --color-gray-300-rgb: 167, 169, 169;
-    --color-gray-200-rgb: 245, 245, 245;
-
-    /* Background color tokens (Dark Mode) */
-    --color-bg-1: rgba(29, 78, 216, 0.15); /* Dark blue */
-    --color-bg-2: rgba(180, 83, 9, 0.15); /* Dark yellow */
-    --color-bg-3: rgba(21, 128, 61, 0.15); /* Dark green */
-    --color-bg-4: rgba(185, 28, 28, 0.15); /* Dark red */
-    --color-bg-5: rgba(107, 33, 168, 0.15); /* Dark purple */
-    --color-bg-6: rgba(194, 65, 12, 0.15); /* Dark orange */
-    --color-bg-7: rgba(190, 24, 93, 0.15); /* Dark pink */
-    --color-bg-8: rgba(8, 145, 178, 0.15); /* Dark cyan */
-    
-    /* Semantic Color Tokens (Dark Mode) */
-    --color-background: var(--color-charcoal-700);
-    --color-surface: var(--color-charcoal-800);
-    --color-text: var(--color-gray-200);
-    --color-text-secondary: rgba(var(--color-gray-300-rgb), 0.7);
-    --color-primary: var(--color-teal-300);
-    --color-primary-hover: var(--color-teal-400);
-    --color-primary-active: var(--color-teal-800);
-    --color-secondary: rgba(var(--color-gray-400-rgb), 0.15);
-    --color-secondary-hover: rgba(var(--color-gray-400-rgb), 0.25);
-    --color-secondary-active: rgba(var(--color-gray-400-rgb), 0.3);
-    --color-border: rgba(var(--color-gray-400-rgb), 0.3);
-    --color-error: var(--color-red-400);
-    --color-success: var(--color-teal-300);
-    --color-warning: var(--color-orange-400);
-    --color-info: var(--color-gray-300);
-    --color-focus-ring: rgba(var(--color-teal-300-rgb), 0.4);
-    --color-btn-primary-text: var(--color-slate-900);
-    --color-card-border: rgba(var(--color-gray-400-rgb), 0.2);
-    --color-card-border-inner: rgba(var(--color-gray-400-rgb), 0.15);
-    --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.1),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-    --button-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
-    --color-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
-    --color-select-caret: rgba(var(--color-gray-200-rgb), 0.8);
-
-    /* Common style patterns - updated for dark mode */
-    --focus-ring: 0 0 0 3px var(--color-focus-ring);
-    --focus-outline: 2px solid var(--color-primary);
-    --status-bg-opacity: 0.15;
-    --status-border-opacity: 0.25;
-    --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-
-    /* RGB versions for dark mode */
-    --color-success-rgb: var(--color-teal-300-rgb);
-    --color-error-rgb: var(--color-red-400-rgb);
-    --color-warning-rgb: var(--color-orange-400-rgb);
-    --color-info-rgb: var(--color-gray-300-rgb);
-  }
-}
-
-/* Data attribute for manual theme switching */
 [data-color-scheme="dark"] {
   /* RGB versions for opacity control (dark mode) */
   --color-gray-400-rgb: 119, 124, 124;
@@ -261,40 +200,6 @@
   --color-error-rgb: var(--color-red-400-rgb);
   --color-warning-rgb: var(--color-orange-400-rgb);
   --color-info-rgb: var(--color-gray-300-rgb);
-}
-
-[data-color-scheme="light"] {
-  /* RGB versions for opacity control (light mode) */
-  --color-brown-600-rgb: 94, 82, 64;
-  --color-teal-500-rgb: 33, 128, 141;
-  --color-slate-900-rgb: 19, 52, 59;
-  
-  /* Semantic Color Tokens (Light Mode) */
-  --color-background: var(--color-cream-50);
-  --color-surface: var(--color-cream-100);
-  --color-text: var(--color-slate-900);
-  --color-text-secondary: var(--color-slate-500);
-  --color-primary: var(--color-teal-500);
-  --color-primary-hover: var(--color-teal-600);
-  --color-primary-active: var(--color-teal-700);
-  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
-  --color-border: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-btn-primary-text: var(--color-cream-50);
-  --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-error: var(--color-red-500);
-  --color-success: var(--color-teal-500);
-  --color-warning: var(--color-orange-500);
-  --color-info: var(--color-slate-500);
-  --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
-
-  /* RGB versions for light mode */
-  --color-success-rgb: var(--color-teal-500-rgb);
-  --color-error-rgb: var(--color-red-500-rgb);
-  --color-warning-rgb: var(--color-orange-500-rgb);
-  --color-info-rgb: var(--color-slate-500-rgb);
 }
 
 /* Base styles */
@@ -501,25 +406,14 @@ select.form-control {
   padding-right: var(--space-32);
 }
 
-/* Add a dark mode specific caret */
-@media (prefers-color-scheme: dark) {
-  select.form-control {
-    background-image: var(--select-caret-dark);
-  }
-}
-
-/* Also handle data-color-scheme */
 [data-color-scheme="dark"] select.form-control {
   background-image: var(--select-caret-dark);
 }
 
-[data-color-scheme="light"] select.form-control {
-  background-image: var(--select-caret-light);
-}
-
 .form-control:focus {
   border-color: var(--color-primary);
-  outline: var(--focus-outline);
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .form-label {
@@ -557,54 +451,10 @@ select.form-control {
   border-bottom: 1px solid var(--color-card-border-inner);
 }
 
-/* Status indicators - simplified with CSS variables */
-.status {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-6) var(--space-12);
-  border-radius: var(--radius-full);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-}
-
-.status--success {
-  background-color: rgba(
-    var(--color-success-rgb, 33, 128, 141),
-    var(--status-bg-opacity)
-  );
-  color: var(--color-success);
-  border: 1px solid
-    rgba(var(--color-success-rgb, 33, 128, 141), var(--status-border-opacity));
-}
-
-.status--error {
-  background-color: rgba(
-    var(--color-error-rgb, 192, 21, 47),
-    var(--status-bg-opacity)
-  );
-  color: var(--color-error);
-  border: 1px solid
-    rgba(var(--color-error-rgb, 192, 21, 47), var(--status-border-opacity));
-}
-
-.status--warning {
-  background-color: rgba(
-    var(--color-warning-rgb, 168, 75, 47),
-    var(--status-bg-opacity)
-  );
-  color: var(--color-warning);
-  border: 1px solid
-    rgba(var(--color-warning-rgb, 168, 75, 47), var(--status-border-opacity));
-}
-
-.status--info {
-  background-color: rgba(
-    var(--color-info-rgb, 98, 108, 113),
-    var(--status-bg-opacity)
-  );
-  color: var(--color-info);
-  border: 1px solid
-    rgba(var(--color-info-rgb, 98, 108, 113), var(--status-border-opacity));
+.card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Container layout */
@@ -638,74 +488,8 @@ select.form-control {
 }
 
 /* Utility classes */
-.flex {
-  display: flex;
-}
-.flex-col {
-  flex-direction: column;
-}
-.items-center {
-  align-items: center;
-}
-.justify-center {
-  justify-content: center;
-}
-.justify-between {
-  justify-content: space-between;
-}
-.gap-4 {
-  gap: var(--space-4);
-}
-.gap-8 {
-  gap: var(--space-8);
-}
-.gap-16 {
-  gap: var(--space-16);
-}
-
-.m-0 {
-  margin: 0;
-}
-.mt-8 {
-  margin-top: var(--space-8);
-}
-.mb-8 {
-  margin-bottom: var(--space-8);
-}
-.mx-8 {
-  margin-left: var(--space-8);
-  margin-right: var(--space-8);
-}
-.my-8 {
-  margin-top: var(--space-8);
-  margin-bottom: var(--space-8);
-}
-
-.p-0 {
-  padding: 0;
-}
-.py-8 {
-  padding-top: var(--space-8);
-  padding-bottom: var(--space-8);
-}
-.px-8 {
-  padding-left: var(--space-8);
-  padding-right: var(--space-8);
-}
-.py-16 {
-  padding-top: var(--space-16);
-  padding-bottom: var(--space-16);
-}
-.px-16 {
-  padding-left: var(--space-16);
-  padding-right: var(--space-16);
-}
-
-.block {
-  display: block;
-}
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 /* Accessibility */
@@ -735,9 +519,9 @@ select.form-control {
   font-family: 'FKGroteskNeue';
   src: url('https://r2cdn.perplexity.ai/fonts/FKGroteskNeue.woff2')
     format('woff2');
+  font-display: swap;
 }
 
-/* END PERPLEXITY DESIGN SYSTEM */
 /* Authentication Screen */
 .auth-screen {
   display: flex;
@@ -803,34 +587,11 @@ select.form-control {
   display: block;
 }
 
-.auth-demo {
-  margin-top: var(--space-24);
-  padding-top: var(--space-24);
-  border-top: 1px solid var(--color-border);
-  text-align: center;
-}
-
-.demo-accounts {
-  display: flex;
-  gap: var(--space-8);
-  margin-top: var(--space-12);
-}
-
 .form-error {
   color: var(--color-error);
   font-size: var(--font-size-sm);
   margin-top: var(--space-4);
-  display: none;
-}
-
-.form-error.active {
-  display: block;
-}
-
-.form-help {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  margin-top: var(--space-4);
+  min-height: 1em; /* Reserve space to prevent layout shift */
 }
 
 /* Main Application */
@@ -843,6 +604,9 @@ select.form-control {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .nav-container {
@@ -1132,7 +896,7 @@ select.form-control {
   color: var(--color-text-secondary);
 }
 
-/* Add Trade Form - CENTERED STYLING */
+/* Add Trade Form */
 .add-trade-container {
   display: flex;
   justify-content: center;
@@ -1149,12 +913,6 @@ select.form-control {
   display: flex;
   gap: var(--space-16);
   justify-content: flex-end;
-}
-
-@media (min-width: 992px) {
-  .add-trade-footer {
-    justify-content: center;
-  }
 }
 
 .form-grid {
@@ -1370,147 +1128,10 @@ select.form-control {
 }
 
 /* AI Suggestions */
-#ai-suggestions {
-  text-align: center;
-}
-
-#ai-suggestions .container {
-  max-width: var(--container-xl);
-  margin: 0 auto;
-}
-
-#ai-suggestions .section-header {
-  text-align: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: var(--space-8);
-  margin-bottom: var(--space-32);
-}
-
-#ai-suggestions .section-header h1 {
-  text-align: center;
-  margin: 0;
-}
-
-#ai-suggestions .section-header p {
-  text-align: center;
-  margin: 0;
-  color: var(--color-text-secondary);
-}
-
-.smart-suggestion-banner {
-  margin: 0 auto var(--space-32) auto;
-  background: var(--color-bg-1);
-  border: 1px solid var(--color-primary);
-  text-align: center;
-  max-width: 800px;
-}
-
-.smart-suggestion-content {
-  text-align: center;
-}
-
-.smart-suggestion-content h3 {
-  margin: 0 0 var(--space-12) 0;
-  color: var(--color-primary);
-  text-align: center;
-}
-
-.smart-suggestion-text {
-  color: var(--color-text);
-  line-height: var(--line-height-normal);
-  text-align: center;
-  font-size: var(--font-size-lg);
-}
-
 .suggestions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: var(--space-20);
-  justify-content: center;
-  align-items: start;
-  margin: 0 auto;
-  max-width: 1200px;
-}
-
-.suggestion-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-card-border);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.suggestion-card .card__header {
-  text-align: center;
-  background: var(--color-bg-2);
-  border-bottom: 1px solid var(--color-card-border-inner);
-}
-
-.suggestion-card .card__header h3 {
-  text-align: center;
-  margin: 0;
-  color: var(--color-text);
-  font-size: var(--font-size-lg);
-}
-
-.suggestion-card .card__body {
-  text-align: center;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: var(--space-20);
-}
-
-.suggestion-content {
-  color: var(--color-text);
-  line-height: var(--line-height-normal);
-  text-align: center;
-  width: 100%;
-}
-
-.suggestion-item {
-  padding: var(--space-16);
-  border-radius: var(--radius-base);
-  margin-bottom: var(--space-12);
-  text-align: center;
-}
-
-.suggestion-item:last-child {
-  margin-bottom: 0;
-}
-
-.suggestion-title {
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-8);
-  color: var(--color-text);
-  text-align: center;
-  font-size: var(--font-size-md);
-}
-
-.suggestion-desc {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  text-align: center;
-  line-height: var(--line-height-normal);
-}
-
-.suggestion-success {
-  background: rgba(var(--color-success-rgb), 0.1);
-  border: 1px solid rgba(var(--color-success-rgb), 0.2);
-}
-
-.suggestion-warning {
-  background: rgba(var(--color-warning-rgb), 0.1);
-  border: 1px solid rgba(var(--color-warning-rgb), 0.2);
-}
-
-.suggestion-info {
-  background: rgba(var(--color-info-rgb), 0.1);
-  border: 1px solid rgba(var(--color-info-rgb), 0.2);
 }
 
 /* Reports */
@@ -1518,32 +1139,6 @@ select.form-control {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-20);
-}
-
-.report-card {
-  background: var(--color-surface);
-}
-
-.report-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-8) 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.report-item:last-child {
-  border-bottom: none;
-}
-
-.report-label {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.report-value {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
 }
 
 /* P&L Calendar */
@@ -1632,25 +1227,11 @@ select.form-control {
   border-radius: var(--radius-sm);
 }
 
-.legend-color.profit-high {
-  background: var(--color-success);
-}
-
-.legend-color.profit-low {
-  background: rgba(var(--color-success-rgb), 0.3);
-}
-
-.legend-color.no-trades {
-  background: var(--color-bg-2);
-}
-
-.legend-color.loss-low {
-  background: rgba(var(--color-error-rgb), 0.3);
-}
-
-.legend-color.loss-high {
-  background: var(--color-error);
-}
+.legend-color.profit-high { background: var(--color-success); }
+.legend-color.profit-low { background: rgba(var(--color-success-rgb), 0.3); }
+.legend-color.no-trades { background: var(--color-bg-2); }
+.legend-color.loss-low { background: rgba(var(--color-error-rgb), 0.3); }
+.legend-color.loss-high { background: var(--color-error); }
 
 /* Modal */
 .modal {
@@ -1761,25 +1342,14 @@ select.form-control {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   box-shadow: var(--shadow-lg);
-  transform: translateX(100%);
+  transform: translateX(120%);
   animation: slideIn 0.3s ease-out forwards;
 }
 
-.toast.success {
-  background: var(--color-success);
-}
-
-.toast.error {
-  background: var(--color-error);
-}
-
-.toast.warning {
-  background: var(--color-warning);
-}
-
-.toast.info {
-  background: var(--color-info);
-}
+.toast.success { background: var(--color-success); }
+.toast.error { background: var(--color-error); }
+.toast.warning { background: var(--color-warning); }
+.toast.info { background: var(--color-info); }
 
 @keyframes slideIn {
   to {
@@ -1828,37 +1398,85 @@ select.form-control {
 }
 
 /* Utility classes */
-.positive { 
-  color: var(--color-success) !important; 
+.positive { color: var(--color-success) !important; }
+.negative { color: var(--color-error) !important; }
+
+/* Google Sign-in Button */
+#googleSignInBtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem auto 0;
+    max-width: 280px;
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 15px;
+    color: #3c4043;
+    background-color: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
 }
 
-.negative { 
-  color: var(--color-error) !important; 
+#googleSignInBtn img {
+    height: 18px;
+    margin-right: 12px;
 }
 
-.text-center {
-  text-align: center;
+#googleSignInBtn:hover {
+    background-color: #f8f9fa;
 }
 
-.hidden {
-  display: none !important;
+.auth-divider {
+    text-align: center;
+    margin: var(--space-24) 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
 }
 
-/* Responsive adjustments */
+
+/* ==========================================================================
+   MOBILE OPTIMIZATIONS
+   These styles only apply on screens 768px or smaller
+   ========================================================================== */
 @media (max-width: 768px) {
   .nav-container {
     flex-direction: column;
-    padding: var(--space-16);
+    padding: var(--space-12);
+    height: auto;
   }
   
   .nav-menu {
-    margin-top: var(--space-16);
+    margin-top: var(--space-12);
     flex-wrap: wrap;
     justify-content: center;
+    width: 100%;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-8);
+  }
+
+  .nav-link {
+    padding: var(--space-8) var(--space-12);
+    height: auto;
+    line-height: 1.5;
   }
   
   .nav-user {
-    margin-top: var(--space-16);
+    margin-top: var(--space-12);
+    width: 100%;
+    justify-content: space-between;
   }
   
   .stats-grid,
@@ -1891,6 +1509,7 @@ select.form-control {
     justify-content: flex-start;
   }
   
+  /* This converts the table to a "card" view on mobile */
   .trade-table,
   .trade-table thead,
   .trade-table tbody,
@@ -1918,75 +1537,22 @@ select.form-control {
     position: relative;
     padding-left: 50%;
     padding-bottom: var(--space-8);
+    text-align: right;
   }
   
   .trade-table td:before {
     content: attr(data-label);
     position: absolute;
-    left: var(--space-6);
+    left: var(--space-12);
     width: 45%;
     padding-right: var(--space-10);
     white-space: nowrap;
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-secondary);
+    text-align: left;
   }
 
   .pl-calendar {
     gap: var(--space-2);
   }
-
-  .calendar-legend {
-    flex-direction: column;
-    gap: var(--space-8);
-  }
-
-  .collapse-card summary {
-    padding: var(--space-12);
-    font-size: var(--font-size-sm);
-  }
-
-  .collapse-content {
-    padding: var(--space-12);
-  }
-
-  .checkbox-group label, .radio-group label {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--space-6);
-    font-size: var(--font-size-xs);
-  }
-}
-/* --- Refined Google Sign-In Button Style --- */
-#googleSignInBtn {
-    /* Layout & Centering */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 1rem auto 0; /* Centers the button on the page */
-
-    /* SIZING - Adjust these values to your liking! */
-    max-width: 280px;      /* << REDUCED a bit more */
-    width: 100%;
-    padding: 8px 16px;     /* << REDUCED PADDING for a shorter, sleeker button */
-    font-size: 15px;       /* << REDUCED FONT SIZE */
-
-    /* Appearance */
-    color: #3c4043;
-    background-color: #ffffff;
-    border: 1px solid #dadce0;
-    border-radius: 4px; /* Optional: adds slightly rounded corners */
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
-}
-
-/* Controls the Google logo inside the button */
-#googleSignInBtn img {
-    height: 18px;        /* Controls the icon size */
-    margin-right: 12px;  /* Adds space between the icon and text */
-}
-
-/* A subtle hover effect to improve user experience */
-#googleSignInBtn:hover {
-    background-color: #f8f9fa;
 }
