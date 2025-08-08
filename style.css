@@ -1669,3 +1669,36 @@ select.form-control {
         grid-column: span 6; /* Full width for all cards on small screens */
     }
 }
+/* --- New Re-arranged Dashboard Styles --- */
+
+.dashboard-grid-new {
+    display: grid;
+    gap: 1.5rem;
+    /* Define grid areas for layout */
+    grid-template-areas:
+        "stats stats"
+        "confidence analytics"
+        "recent-trades ai-suggestion";
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Assign each element to its grid area */
+.stats-grid-container { grid-area: stats; }
+#dashboardConfidence { grid-area: confidence; }
+#dashboardAnalytics { grid-area: analytics; }
+#dashboardRecentTrades { grid-area: recent-trades; }
+#dashboardAISuggestion { grid-area: ai-suggestion; }
+
+
+/* On screens smaller than 992px, stack everything in a single column */
+@media (max-width: 992px) {
+    .dashboard-grid-new {
+        grid-template-columns: 1fr; /* Single column */
+        grid-template-areas:
+            "stats"
+            "confidence"
+            "analytics"
+            "recent-trades"
+            "ai-suggestion";
+    }
+}
