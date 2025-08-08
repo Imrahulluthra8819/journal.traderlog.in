@@ -6,13 +6,11 @@
     <title>Trading Journal - Professional Trading Tracker</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-    <!-- Authentication Screen -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
             <div class="auth-header">
@@ -23,7 +21,6 @@
                 <button class="auth-tab active" data-tab="login">Login</button>
                 <button class="auth-tab" data-tab="signup">Sign Up</button>
             </div>
-            <!-- Login Form -->
             <div id="loginForm" class="auth-form active">
                 <h2>Welcome Back</h2>
                 <form id="loginFormElement" novalidate>
@@ -40,7 +37,6 @@
                     <button type="submit" class="btn btn--primary btn--full-width">Login</button>
                 </form>
             </div>
-            <!-- Signup Form -->
             <div id="signupForm" class="auth-form">
                 <h2>Create Account</h2>
                 <form id="signupFormElement" novalidate>
@@ -63,12 +59,16 @@
                     <button type="submit" class="btn btn--primary btn--full-width">Create Account</button>
                 </form>
             </div>
-        </div>
+
+            <div class="auth-divider"><span>OR</span></div>
+            <button id="googleSignInBtn" class="google-signin-btn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo">
+                Sign in with Google
+            </button>
+            </div>
     </div>
 
-    <!-- Main Application -->
     <div id="mainApp" class="main-app hidden">
-        <!-- Navigation Bar -->
         <nav class="navbar">
             <div class="nav-container">
                 <div class="nav-brand">
@@ -92,23 +92,19 @@
             </div>
         </nav>
 
-        <!-- Main Content Area -->
         <main class="main-content">
-            <!-- Dashboard Section -->
             <section id="dashboard" class="section active">
                 <div class="container">
                     <div class="section-header">
                         <h1>Trading Dashboard</h1>
                         <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
                     </div>
-                    <!-- Key Performance Metrics -->
                     <div class="stats-grid">
                         <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-content"><h3 id="totalPL" class="stat-value">₹0</h3><p>Total P&L</p></div></div>
                         <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-content"><h3 id="winRate" class="stat-value">0%</h3><p>Win Rate</p></div></div>
                         <div class="stat-card"><div class="stat-icon">🎯</div><div class="stat-content"><h3 id="totalTrades" class="stat-value">0</h3><p>Total Trades</p></div></div>
                         <div class="stat-card"><div class="stat-icon">⚖️</div><div class="stat-content"><h3 id="avgRR" class="stat-value">1:0</h3><p>Avg Risk:Reward</p></div></div>
                     </div>
-                    <!-- Daily Confidence Tracker -->
                     <div class="confidence-tracker card">
                         <div class="card__body">
                             <h3>How are you feeling about trading today?</h3>
@@ -123,7 +119,6 @@
                             <div id="confidenceMessage" class="confidence-message"></div>
                         </div>
                     </div>
-                    <!-- Recent Trades Overview -->
                     <div class="recent-trades card">
                         <div class="card__header"><h3>Recent Trades</h3><button class="view-all-link" data-section="history">View All Trades</button></div>
                         <div class="card__body"><div id="recentTradesList"><div class="loading">Loading recent trades...</div></div></div>
@@ -131,7 +126,6 @@
                 </div>
             </section>
 
-            <!-- Add Trade Section -->
             <section id="add-trade" class="section">
                 <div class="container">
                     <div class="section-header"><h1>Add New Trade</h1><p>Record all details of your trade for complete analysis</p></div>
@@ -140,7 +134,6 @@
                             <div class="card__header"><h3>Trade Information</h3></div>
                             <div class="card__body">
                                 <form id="addTradeForm" novalidate>
-                                    <!-- Basic Trade Details -->
                                     <div class="form-grid">
                                         <div class="form-group"><label class="form-label">Symbol *</label><input type="text" name="symbol" class="form-control" required placeholder="e.g., NIFTY, BANKNIFTY"><div class="form-error" id="symbol-error"></div></div>
                                         <div class="form-group"><label class="form-label">Direction *</label><select name="direction" class="form-control" required><option value="">Select Direction</option><option value="Long">Long</option><option value="Short">Short</option></select><div class="form-error" id="direction-error"></div></div>
@@ -159,8 +152,6 @@
                                         <div class="form-group full-width"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="3" placeholder="What went well, what went wrong, improvements needed..."></textarea></div>
                                     </div>
 
-                                    <!-- ====================== New Psychology-Focused Sections ====================== -->
-                                    <!-- Pre-Trade Psychology -->
                                     <details class="collapse-card">
                                         <summary>Pre-Trade Psychology</summary>
                                         <div class="collapse-content">
@@ -176,7 +167,6 @@
                                         </div>
                                     </details>
 
-                                    <!-- Trade Setup Analysis -->
                                     <details class="collapse-card">
                                         <summary>Trade Setup Analysis</summary>
                                         <div class="collapse-content">
@@ -206,7 +196,6 @@
                                         </div>
                                     </details>
 
-                                    <!-- During Trade Management -->
                                     <details class="collapse-card">
                                         <summary>During Trade Management</summary>
                                         <div class="collapse-content">
@@ -225,7 +214,6 @@
                                         </div>
                                     </details>
 
-                                    <!-- Exit Analysis -->
                                     <details class="collapse-card">
                                         <summary>Exit Analysis</summary>
                                         <div class="collapse-content">
@@ -246,7 +234,6 @@
                                         </div>
                                     </details>
 
-                                    <!-- Market Context -->
                                     <details class="collapse-card">
                                         <summary>Market Context</summary>
                                         <div class="collapse-content">
@@ -274,9 +261,6 @@
                                             </div>
                                         </div>
                                     </details>
-                                    <!-- ====================== End Psychology Sections ====================== -->
-
-                                    <!-- Auto-calculated fields display -->
                                     <div class="calculated-fields">
                                         <h4>Calculated Values</h4>
                                         <div class="calc-grid">
@@ -294,15 +278,12 @@
                 </div>
             </section>
 
-            <!-- Trade History Section -->
             <section id="history" class="section"><div class="container"><div class="section-header"><h1>Trade History</h1><div class="filter-controls"><select id="symbolFilter" class="form-control" style="width: 150px;"><option value="">All Symbols</option></select><select id="strategyFilter" class="form-control" style="width: 150px;"><option value="">All Strategies</option></select></div></div><div id="historyContent"><div class="loading">Loading trade history...</div></div></div></section>
 
-            <!-- Analytics Section -->
             <section id="analytics" class="section">
                 <div class="container">
                     <div class="section-header"><h1>Analytics & Performance</h1></div>
                     <div class="analytics-summary"><div class="summary-card card"><div class="card__body"><h3>Performance Summary</h3><div class="summary-stats"><div class="summary-item"><span class="label">Total Trades:</span><span class="value" id="analyticsTotalTrades">0</span></div><div class="summary-item"><span class="label">Win Rate:</span><span class="value" id="analyticsWinRate">0%</span></div><div class="summary-item"><span class="label">Net P&L:</span><span class="value" id="analyticsNetPL">₹0</span></div><div class="summary-item"><span class="label">Best Trade:</span><span class="value" id="analyticsBestTrade">₹0</span></div><div class="summary-item"><span class="label">Worst Trade:</span><span class="value" id="analyticsWorstTrade">₹0</span></div><div class="summary-item"><span class="label">Avg Risk:Reward:</span><span class="value" id="analyticsAvgRR">1:0</span></div></div></div></div></div>
-                    <!-- Interactive Charts -->
                     <div class="charts-grid">
                         <div class="chart-container" style="position: relative; height: 400px;"><h3>P&L Curve Over Time</h3><canvas id="plChart"></canvas></div>
                         <div class="chart-container" style="position: relative; height: 400px;"><h3>Risk-Reward Distribution</h3><canvas id="rrChart"></canvas></div>
@@ -312,7 +293,6 @@
                 </div>
             </section>
 
-            <!-- AI Suggestions Section -->
             <section id="ai-suggestions" class="section">
                 <div class="container">
                     <div class="section-header"><h1>🧠 AI Suggestions</h1><p>Personalized insights and recommendations based on your trading data</p></div>
@@ -321,7 +301,6 @@
                 </div>
             </section>
 
-            <!-- Reports Section -->
             <section id="reports" class="section">
                 <div class="container">
                     <div class="section-header"><h1>Reports & Calendar</h1><button class="btn btn--primary" id="exportData">Export to CSV</button></div>
@@ -330,11 +309,9 @@
                 </div>
             </section>
         </main>
-        <!-- Trade Detail Modal -->
         <div id="tradeModal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h2>Trade Details</h2><button class="modal-close" onclick="app.hideTradeModal()">&times;</button></div><div class="modal-body" id="tradeModalBody"></div><div class="modal-footer"><button class="btn btn--outline" onclick="app.hideTradeModal()">Close</button><button class="btn btn--primary" id="editTradeBtn">Edit Trade</button></div></div></div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="app.js"></script>
