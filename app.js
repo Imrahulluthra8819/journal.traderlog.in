@@ -795,6 +795,7 @@ class TradingJournalApp {
     this.buildCalendar();
   }
 
+  // Replace the old buildCalendar function with this one
   buildCalendar() {
     const date = this.currentCalendarDate;
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -802,28 +803,82 @@ class TradingJournalApp {
 
     document.getElementById('currentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     const cal = document.getElementById('plCalendar');
-    cal.innerHTML = '';
+    cal.innerHTML = ''; // Clear previous calendar
 
-    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => cal.innerHTML += `<div class="calendar-day header">${d}</div>`);
-    for (let i = 0; i < monthStart.getDay(); i++) cal.innerHTML += `<div class="calendar-day no-trades"></div>`;
+    // Add day headers
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
+        const headerEl = document.createElement('div');
+        headerEl.className = 'calendar-day header';
+        headerEl.textContent = d;
+        cal.appendChild(headerEl);
+    });
 
+    // Add empty spacer days
+    for (let i = 0; i < monthStart.getDay(); i++) {
+        const spacerEl = document.createElement('div');
+        spacerEl.className = 'calendar-day no-trades';
+        cal.appendChild(spacerEl);
+    }
+
+    // Add days of the month
     for (let d = 1; d <= monthEnd.getDate(); d++) {
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      // Corrected property name from t.entry_date to t.entryDate
-      const trades = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
-      let cls = 'no-trades';
-      if (trades.length) {
-        // Corrected property name from t.net_pl to t.netPL
-        const pl = trades.reduce((sum, t) => sum + t.netPL, 0);
-        if (pl > 1000) cls = 'profit-high';
-        else if (pl > 0) cls = 'profit-low';
-        else if (pl < -1000) cls = 'loss-high';
-        else if (pl < 0) cls = 'loss-low';
-      }
-      cal.innerHTML += `<div class="calendar-day ${cls}">${d}</div>`;
+        const dayEl = document.createElement('div');
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const tradesOnDay = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
+        
+        let cls = 'no-trades';
+        if (tradesOnDay.length > 0) {
+            const pl = tradesOnDay.reduce((sum, t) => sum + t.netPL, 0);
+            if (pl > 1000) cls = 'profit-high';
+            else if (pl > 0) cls = 'profit-low';
+            else if (pl < -1000) cls = 'loss-high';
+            else if (pl < 0) cls = 'loss-low';
+            else cls = 'profit-low'; // Breakeven
+
+            // Add event listeners if there are trades
+            dayEl.addEventListener('mouseenter', (e) => this.showCalendarTooltip(e, tradesOnDay, key));
+            dayEl.addEventListener('mousemove', (e) => this.updateTooltipPosition(e));
+            dayEl.addEventListener('mouseleave', () => this.hideCalendarTooltip());
+        }
+        
+        dayEl.className = `calendar-day ${cls}`;
+        dayEl.textContent = d;
+        cal.appendChild(dayEl);
     }
   }
-/* ------------------------ NEW REPORT & AI HELPERS ------------------------ */
+// --- Add these three new functions ---
+  showCalendarTooltip(event, trades, dateKey) {
+    const tooltip = document.getElementById('calendarTooltip');
+    const formattedDate = new Date(dateKey).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    
+    let content = `<h4>Trades for ${formattedDate}</h4>`;
+    trades.forEach(trade => {
+        content += `
+            <div class="calendar-tooltip-trade">
+                <span class="symbol">${trade.symbol}</span>
+                <span class="pl ${trade.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(trade.netPL)}</span>
+            </div>
+        `;
+    });
+
+    tooltip.innerHTML = content;
+    tooltip.style.display = 'block';
+    this.updateTooltipPosition(event);
+  }
+
+  hideCalendarTooltip() {
+      const tooltip = document.getElementById('calendarTooltip');
+      tooltip.style.display = 'none';
+  }
+
+  updateTooltipPosition(event) {
+      const tooltip = document.getElementById('calendarTooltip');
+      // Position tooltip slightly to the right and below the cursor
+      tooltip.style.left = (event.pageX + 15) + 'px';
+      tooltip.style.top = (event.pageY + 15) + 'px';
+  }
+  // --- End of new functions ---
+  /* ------------------------ NEW REPORT & AI HELPERS ------------------------ */
 
   generateWeeklyReport() {
     const oneWeekAgo = new Date();
@@ -1035,4 +1090,5 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
