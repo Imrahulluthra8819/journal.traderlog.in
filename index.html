@@ -11,7 +11,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <!-- Add this entire style block -->
     <style>
-        /* Reduce calendar section width and center it */
+    <!-- Add this entire style block -->
+    <style>
+        /* Default style for desktop */
         .calendar-section {
             max-width: 50%;
             margin-left: auto;
@@ -69,6 +71,24 @@
             color: #e74c3c; /* Red for loss */
             font-weight: bold;
         }
+
+        /* --- START: Mobile Responsive Styles --- */
+        @media (max-width: 768px) {
+            .calendar-section {
+                max-width: 100%; /* Use full width on mobile */
+            }
+
+            .pl-calendar .calendar-day {
+                font-size: 0.8em; /* Make day numbers smaller */
+                padding: 4px; /* Reduce padding */
+            }
+
+            .calendar-legend {
+                flex-direction: column; /* Stack legend items vertically */
+                align-items: flex-start;
+            }
+        }
+        /* --- END: Mobile Responsive Styles --- */
     </style>
 </head>
 <body>
@@ -380,4 +400,5 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
