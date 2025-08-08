@@ -4,12 +4,13 @@ class TradingJournalApp {
     // --- FIREBASE SETUP ---
     // PASTE YOUR FIREBASE CONFIG OBJECT HERE
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyCcbykkhvTw671DG1EaAj7Tw9neQcXJjS0",
+      authDomain: "trad-77851.firebaseapp.com",
+      projectId: "trad-77851",
+      storageBucket: "trad-77851.appspot.com",
+      messagingSenderId: "1099300399869",
+      appId: "1:1099300399869:web:d201028b9168d24feb2c94",
+      measurementId: "G-9TV0H4BWN6"
     };
 
     // Initialize Firebase
