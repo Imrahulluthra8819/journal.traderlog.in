@@ -727,15 +727,26 @@ class TradingJournalApp {
   }
 
   /* ----------------------- AI SUGGESTIONS ----------------------------- */
-  renderAISuggestions() {
-    const s = this.calculateStats();
-    document.getElementById('smartInsight').textContent = s.totalPL>=0 ?
-      `Great job! You're net positive ${this.formatCurrency(s.totalPL)} with a ${s.winRate}% win rate.` :
-      `You're net negative ${this.formatCurrency(s.totalPL)}. Focus on risk management and psychology.`;
+ renderAISuggestions() {
+    if (this.trades.length < 3) {
+        document.getElementById('smartInsight').textContent = "Add at least 3 trades to start receiving AI-powered suggestions and insights.";
+        document.querySelectorAll('.suggestion-content').forEach(el => el.innerHTML = '<div class="empty-state">Not enough data.</div>');
+        return;
+    }
 
-    document.getElementById('aiFeedback').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Win Rate</div><div class="suggestion-desc">${s.winRate}% over ${s.totalTrades} trades.</div></div>`;
-    document.getElementById('edgeAnalyzer').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Best Strategy</div><div class="suggestion-desc">${this.bestStrategy()}</div></div>`;
-    
+    const s = this.calculateStats();
+    document.getElementById('smartInsight').textContent = s.totalPL >= 0 ?
+      `Great job! You're net positive ${this.formatCurrency(s.totalPL)} with a ${s.winRate}% win rate.` :
+      `You're net negative ${this.formatCurrency(s.totalPL)}. Focus on improving risk management and strategy selection.`;
+
+    document.getElementById('aiFeedback').innerHTML = this.generateAIFeedback();
+    document.getElementById('edgeAnalyzer').innerHTML = this.analyzeTradingEdge();
+    document.getElementById('repeatTrades').innerHTML = this.findRepeatLosingTrades();
+    document.getElementById('entryAnalysis').innerHTML = this.analyzeEntries();
+    document.getElementById('emotionalBias').innerHTML = this.analyzeEmotionalBias();
+    document.getElementById('setupQuality').innerHTML = this.calculateSetupQuality();
+    document.getElementById('timeConfidence').innerHTML = this.analyzeTimeBasedConfidence();
+
     this.drawConfidenceChart();
   }
 
@@ -769,9 +780,14 @@ class TradingJournalApp {
   }
 
   /* ------------------------ REPORTS & CALENDAR ------------------------ */
+  /* ------------------------ REPORTS & CALENDAR ------------------------ */
   renderReports() {
     this.buildCalendar();
-    // Other report logic can go here
+    // Generate and render the content for each report card
+    document.getElementById('weeklyReport').innerHTML = this.generateWeeklyReport();
+    document.getElementById('monthlyReport').innerHTML = this.generateMonthlyReport();
+    document.getElementById('strategyReport').innerHTML = this.generateStrategyReport();
+    document.getElementById('emotionalReport').innerHTML = this.generateEmotionalReport();
   }
 
   changeCalendarMonth(offset) {
@@ -782,27 +798,227 @@ class TradingJournalApp {
   buildCalendar() {
     const date = this.currentCalendarDate;
     const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-    const monthEnd = new Date(date.getFullYear(), date.getMonth()+1, 0);
-    
-    document.getElementById('currentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month:'long', year:'numeric' });
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+    document.getElementById('currentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     const cal = document.getElementById('plCalendar');
-    cal.innerHTML='';
+    cal.innerHTML = '';
 
-    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=> cal.innerHTML += `<div class="calendar-day header">${d}</div>`);
-    for(let i=0;i<monthStart.getDay();i++) cal.innerHTML += `<div class="calendar-day no-trades"></div>`;
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => cal.innerHTML += `<div class="calendar-day header">${d}</div>`);
+    for (let i = 0; i < monthStart.getDay(); i++) cal.innerHTML += `<div class="calendar-day no-trades"></div>`;
 
-    for(let d=1; d<=monthEnd.getDate(); d++){
-      const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const trades = this.trades.filter(t => t.entry_date && t.entry_date.startsWith(key));
+    for (let d = 1; d <= monthEnd.getDate(); d++) {
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      // Corrected property name from t.entry_date to t.entryDate
+      const trades = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
       let cls = 'no-trades';
       if (trades.length) {
-        const pl = trades.reduce((sum,t)=>sum+t.net_pl,0);
-        if (pl>1000) cls='profit-high'; else if (pl>0) cls='profit-low'; else if (pl<-1000) cls='loss-high'; else if (pl < 0) cls='loss-low';
+        // Corrected property name from t.net_pl to t.netPL
+        const pl = trades.reduce((sum, t) => sum + t.netPL, 0);
+        if (pl > 1000) cls = 'profit-high';
+        else if (pl > 0) cls = 'profit-low';
+        else if (pl < -1000) cls = 'loss-high';
+        else if (pl < 0) cls = 'loss-low';
       }
       cal.innerHTML += `<div class="calendar-day ${cls}">${d}</div>`;
     }
   }
+/* ------------------------ NEW REPORT & AI HELPERS ------------------------ */
 
+  generateWeeklyReport() {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const weeklyTrades = this.trades.filter(t => new Date(t.entryDate) >= oneWeekAgo);
+
+    if (weeklyTrades.length === 0) return '<div class="empty-state">No trades in the last 7 days.</div>';
+
+    const stats = this.calculateStatsForTrades(weeklyTrades);
+    return `
+      <div class="report-item"><span>Trades:</span><span>${stats.totalTrades}</span></div>
+      <div class="report-item"><span>Win Rate:</span><span>${stats.winRate}%</span></div>
+      <div class="report-item"><span>Net P&L:</span><span class="${stats.totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(stats.totalPL)}</span></div>
+    `;
+  }
+
+  generateMonthlyReport() {
+    const thisMonth = new Date().getMonth();
+    const thisYear = new Date().getFullYear();
+    const monthlyTrades = this.trades.filter(t => {
+        const tradeDate = new Date(t.entryDate);
+        return tradeDate.getMonth() === thisMonth && tradeDate.getFullYear() === thisYear;
+    });
+
+    if (monthlyTrades.length === 0) return '<div class="empty-state">No trades this month.</div>';
+
+    const stats = this.calculateStatsForTrades(monthlyTrades);
+    return `
+      <div class="report-item"><span>Trades:</span><span>${stats.totalTrades}</span></div>
+      <div class="report-item"><span>Win Rate:</span><span>${stats.winRate}%</span></div>
+      <div class="report-item"><span>Net P&L:</span><span class="${stats.totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(stats.totalPL)}</span></div>
+      <div class="report-item"><span>Best Trade:</span><span class="positive">${this.formatCurrency(stats.bestTrade)}</span></div>
+      <div class="report-item"><span>Worst Trade:</span><span class="negative">${this.formatCurrency(stats.worstTrade)}</span></div>
+    `;
+  }
+
+  generateStrategyReport() {
+      const byStrategy = {};
+      this.trades.forEach(t => {
+          if (!t.strategy) return;
+          if (!byStrategy[t.strategy]) byStrategy[t.strategy] = [];
+          byStrategy[t.strategy].push(t);
+      });
+
+      if (Object.keys(byStrategy).length === 0) return '<div class="empty-state">No strategies defined.</div>';
+
+      let table = '<table class="report-table"><thead><tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>Net P&L</th></tr></thead><tbody>';
+      for (const strategy in byStrategy) {
+          const stats = this.calculateStatsForTrades(byStrategy[strategy]);
+          table += `
+        <tr>
+          <td>${strategy}</td>
+          <td>${stats.totalTrades}</td>
+          <td>${stats.winRate}%</td>
+          <td class="${stats.totalPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(stats.totalPL)}</td>
+        </tr>`;
+      }
+      table += '</tbody></table>';
+      return table;
+  }
+
+  generateEmotionalReport() {
+      const preEmotions = {};
+      this.trades.forEach(t => {
+          if (!t.preEmotion) return;
+          if (!preEmotions[t.preEmotion]) preEmotions[t.preEmotion] = { total: 0, pl: 0 };
+          preEmotions[t.preEmotion].total++;
+          preEmotions[t.preEmotion].pl += t.netPL;
+      });
+
+      if (Object.keys(preEmotions).length === 0) return '<div class="empty-state">No emotional data recorded.</div>';
+
+      let mostProfitable = { emotion: 'N/A', avg: -Infinity };
+      let leastProfitable = { emotion: 'N/A', avg: Infinity };
+
+      for (const emotion in preEmotions) {
+          const avg = preEmotions[emotion].pl / preEmotions[emotion].total;
+          if (avg > mostProfitable.avg) mostProfitable = { emotion, avg };
+          if (avg < leastProfitable.avg) leastProfitable = { emotion, avg };
+      }
+
+      return `
+      <div class="report-item"><span>Most Profitable Emotion:</span><span>${mostProfitable.emotion} (${this.formatCurrency(mostProfitable.avg)}/trade)</span></div>
+      <div class="report-item"><span>Least Profitable Emotion:</span><span>${leastProfitable.emotion} (${this.formatCurrency(leastProfitable.avg)}/trade)</span></div>
+    `;
+  }
+
+  generateAIFeedback() {
+      const stats = this.calculateStats();
+      let feedback = '';
+      if (stats.winRate < 50) {
+          feedback += `<div class="suggestion-item suggestion-warning">Your win rate is ${stats.winRate}%. Consider reviewing your entry criteria and risk management.</div>`;
+      } else {
+          feedback += `<div class="suggestion-item suggestion-good">Your win rate of ${stats.winRate}% is solid. Keep refining what works!</div>`;
+      }
+      const avgRR = parseFloat(stats.avgRR.split(':')[1]);
+      if (avgRR < 1.5) {
+          feedback += `<div class="suggestion-item suggestion-warning">Your average Risk:Reward is low (${stats.avgRR}). Aim for setups with a higher potential reward.</div>`;
+      }
+      return feedback;
+  }
+
+  analyzeTradingEdge() {
+      const best = this.bestStrategy();
+      const worstStrategies = Object.entries(this.trades.reduce((acc, t) => {
+          if (t.strategy) acc[t.strategy] = (acc[t.strategy] || 0) + t.netPL;
+          return acc;
+      }, {})).sort((a, b) => a[1] - b[1]);
+
+      let result = `<div class="suggestion-item suggestion-good">Your most profitable strategy is <strong>${best}</strong>. Focus on mastering it.</div>`;
+      if (worstStrategies.length > 0 && worstStrategies[0][1] < 0) {
+          result += `<div class="suggestion-item suggestion-warning">Your least profitable strategy is <strong>${worstStrategies[0][0]}</strong>. Consider avoiding or re-evaluating it.</div>`;
+      }
+      return result;
+  }
+
+  findRepeatLosingTrades() {
+      const losingTrades = this.trades.filter(t => t.netPL < 0);
+      const patternCount = {};
+      losingTrades.forEach(t => {
+          const pattern = `${t.symbol} on ${t.strategy}`;
+          if (t.strategy) {
+              patternCount[pattern] = (patternCount[pattern] || 0) + 1;
+          }
+      });
+
+      const recurringLosses = Object.entries(patternCount).filter(([, count]) => count > 1).sort((a, b) => b[1] - a[1]);
+
+      if (recurringLosses.length > 0) {
+          return `<div class="suggestion-item suggestion-warning">You have recurring losses with: <strong>${recurringLosses[0][0]}</strong> (${recurringLosses[0][1]} times). Analyze these trades to find the issue.</div>`;
+      }
+      return '<div class="suggestion-item suggestion-info">No significant recurring losing patterns detected. Good job diversifying your approach.</div>';
+  }
+
+  analyzeEntries() {
+      const fomoTrades = this.trades.filter(t => t.fomoLevel > 5 && t.netPL < 0);
+      if (fomoTrades.length > 2) {
+          return `<div class="suggestion-item suggestion-warning">You've made ${fomoTrades.length} losing trades with high FOMO. Ensure you wait for your setup and avoid chasing the market.</div>`;
+      }
+      const earlyEntries = this.trades.filter(t => t.waitedForSetup === 'No, entered early' && t.netPL < 0);
+      if (earlyEntries.length > 2) {
+          return `<div class="suggestion-item suggestion-warning">You have ${earlyEntries.length} losing trades where you entered early. Practice patience and wait for confirmation.</div>`;
+      }
+      return '<div class="suggestion-item suggestion-good">Your entries appear disciplined. Keep waiting for your A+ setups.</div>';
+  }
+
+  analyzeEmotionalBias() {
+      const frustrationExits = this.trades.filter(t => t.exitEmotion === 'Frustrated' && t.netPL < 0);
+      if (frustrationExits.length > 2) {
+          return `<div class="suggestion-item suggestion-warning">You've exited ${frustrationExits.length} losing trades feeling frustrated. This can lead to revenge trading. Take a break after a loss.</div>`;
+      }
+      const fearExits = this.trades.filter(t => t.primaryExitReason === 'Fear-based exit');
+      if (fearExits.length > 2) {
+          const profitLeft = fearExits.reduce((sum, t) => {
+              if (t.netPL > 0 && t.targetPrice > t.exitPrice) return sum + (t.targetPrice - t.exitPrice) * t.quantity;
+              return sum;
+          }, 0);
+          return `<div class="suggestion-item suggestion-warning">You've exited ${fearExits.length} trades due to fear, potentially leaving ${this.formatCurrency(profitLeft)} on the table. Trust your plan.</div>`;
+      }
+      return '<div class="suggestion-item suggestion-info">Your emotional responses to trades seem balanced. Keep maintaining a neutral mindset.</div>';
+  }
+
+  calculateSetupQuality() {
+      const highQualityTrades = this.trades.filter(t => t.technicalConfluence && t.technicalConfluence.length >= 3);
+      if (highQualityTrades.length === 0) return '<div class="empty-state">Not enough data on setup quality.</div>';
+
+      const stats = this.calculateStatsForTrades(highQualityTrades);
+      return `<div class="suggestion-item suggestion-info">For trades with 3+ confluence factors, your win rate is <strong>${stats.winRate}%</strong> with a P&L of <strong>${this.formatCurrency(stats.totalPL)}</strong>. Prioritize these high-quality setups.</div>`;
+  }
+
+  analyzeTimeBasedConfidence() {
+      const morningTrades = this.trades.filter(t => t.marketSession === 'Market Open (9:30-10:30)');
+      if (morningTrades.length < 3) return '<div class="empty-state">Not enough trades during market open to analyze.</div>';
+
+      const stats = this.calculateStatsForTrades(morningTrades);
+      let suggestion = '';
+      if (stats.totalPL > 0) {
+          suggestion = `<div class="suggestion-item suggestion-good">You perform well during the market open, with a P&L of <strong>${this.formatCurrency(stats.totalPL)}</strong>. This might be your golden hour.</div>`;
+      } else {
+          suggestion = `<div class="suggestion-item suggestion-warning">You seem to struggle during the market open, with a P&L of <strong>${this.formatCurrency(stats.totalPL)}</strong>. This period is volatile; consider trading smaller or waiting for the market to settle.</div>`;
+      }
+      return suggestion;
+  }
+
+  calculateStatsForTrades(trades) {
+      if (trades.length === 0) {
+          return { totalPL: 0, winRate: 0, totalTrades: 0, bestTrade: 0, worstTrade: 0 };
+      }
+      const totalPL = trades.reduce((sum, t) => sum + (t.netPL || 0), 0);
+      const wins = trades.filter(t => t.netPL > 0).length;
+      const winRate = trades.length > 0 ? Math.round((wins / trades.length) * 100) : 0;
+      const bestTrade = Math.max(0, ...trades.map(t => t.netPL));
+      const worstTrade = Math.min(0, ...trades.map(t => t.netPL));
+      return { totalPL, winRate, totalTrades: trades.length, bestTrade, worstTrade };
+  }
   /* ------------------------ EXPORT ------------------------------------- */
   exportCSV() {
     if (this.trades.length===0) { this.showToast('No trades to export','warning'); return; }
@@ -819,3 +1035,4 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
