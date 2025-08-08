@@ -1,6 +1,7 @@
 // Trading Journal Application - Supabase Edition v4
 // This version provides a definitive fix for saving trades by ensuring all
 // optional numeric form fields are correctly formatted as numbers or null.
+// This version also fixes the login error display.
 
 class TradingJournalApp {
   constructor() {
@@ -95,7 +96,8 @@ class TradingJournalApp {
       const password = fd.get('password').trim();
       this.clearAuthErrors();
       if (!email || !password) {
-        this.showAuthError('login-email-error', 'Please fill all fields');
+        // FINAL LOGIN FIX: Use the correct error ID from the original HTML
+        this.showAuthError('login-username-error', 'Please fill all fields');
         return;
       }
 
@@ -149,8 +151,10 @@ class TradingJournalApp {
 
   showAuthError(id, msg) {
     const el = document.getElementById(id);
-    el.textContent = msg;
-    el.classList.add('active');
+    if (el) {
+      el.textContent = msg;
+      el.classList.add('active');
+    }
   }
 
   clearAuthErrors() {
