@@ -1,7 +1,7 @@
 // Trading Journal Application - Supabase Edition v4
 // This version provides a definitive fix for saving trades by ensuring all
 // optional numeric form fields are correctly formatted as numbers or null.
-// This version also fixes the login error display.
+// This version also fixes the login error display and uses a more robust login method.
 
 class TradingJournalApp {
   constructor() {
@@ -90,18 +90,22 @@ class TradingJournalApp {
     // Login form
     document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
-      // LOGIN FIX: Accept 'email' or 'username' as the field name from the form.
-      const email = (fd.get('email') || fd.get('username')).trim();
-      const password = fd.get('password').trim();
       this.clearAuthErrors();
+
+      // FINAL LOGIN FIX: Read values directly from the input fields
+      const form = e.target;
+      const emailInput = form.querySelector('input[name="username"]');
+      const passwordInput = form.querySelector('input[name="password"]');
+
+      const email = emailInput ? emailInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value.trim() : '';
+
       if (!email || !password) {
-        // FINAL LOGIN FIX: Use the correct error ID from the original HTML
         this.showAuthError('login-username-error', 'Please fill all fields');
         return;
       }
 
-      const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+      const { error } = await this.supabase.auth.signInWithPassword({ email: email, password: password });
 
       if (error) {
         this.showAuthError('login-password-error', error.message);
