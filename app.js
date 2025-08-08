@@ -3,7 +3,7 @@ class TradingJournalApp {
   constructor() {
     // --- SUPABASE SETUP ---
     const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UG2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
     this.supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // --- APP STATE ---
@@ -445,6 +445,12 @@ class TradingJournalApp {
     const fd = new FormData(form);
     form.querySelectorAll('.form-error').forEach(e => e.classList.remove('active'));
 
+    // ADDED: Check if user is logged in before submitting
+    if (!this.currentUser) {
+        this.showToast('You must be logged in to add a trade.', 'error');
+        return;
+    }
+
     const trade = {
       user_id: this.currentUser.id,
       symbol: fd.get('symbol').toUpperCase(),
@@ -498,12 +504,18 @@ class TradingJournalApp {
       trade.riskRewardRatio = 0;
     }
 
+    // ADDED: More detailed logging before the request
+    console.log('[DATA] Attempting to insert trade for user:', this.currentUser.id);
+    console.log('[DATA] Trade object:', trade);
+
     const { data, error } = await this.supabase
       .from('trades')
       .insert([trade])
       .select();
 
     if (error) {
+      // ADDED: Log the full error object for better debugging
+      console.error('[DATA] Supabase insert error:', error);
       this.showToast(`Error saving trade: ${error.message}`, 'error');
     } else {
       this.allTrades.unshift(data[0]);
