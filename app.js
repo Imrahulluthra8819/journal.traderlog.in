@@ -25,6 +25,7 @@ class TradingJournalApp {
     this.charts = {};
     this.mainListenersAttached = false;
     this.currentCalendarDate = new Date();
+    this.currencySymbol = '₹'; // Default to INR
 
     // --- BOOTSTRAP ---
     if (document.readyState === 'loading') {
@@ -245,6 +246,11 @@ class TradingJournalApp {
     });
     document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('currencySelector').addEventListener('change', (e) => {
+        this.currencySymbol = e.target.value;
+        // This event will trigger a refresh of the current section
+        document.dispatchEvent(new CustomEvent('data-changed'));
+    });
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
 
     const slider = document.getElementById('dailyConfidence');
@@ -296,12 +302,17 @@ class TradingJournalApp {
   }
 
   /* ------------------------------ HELPERS ------------------------------- */
-  formatCurrency(val) {
-    if (val === null || val === undefined) return '₹0.00';
+   formatCurrency(val) {
+    if (val === null || val === undefined) return `${this.currencySymbol}0.00`;
+    
     const sign = val < 0 ? '-' : '';
-    return sign + '₹' + Math.abs(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const locale = this.currencySymbol === '₹' ? 'en-IN' : 'en-US';
+    
+    return sign + this.currencySymbol + Math.abs(val).toLocaleString(locale, { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+    });
   }
-
   formatDate(str) {
     if (!str) return 'N/A';
     return new Date(str).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
@@ -730,7 +741,7 @@ class TradingJournalApp {
     this.charts.pl = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets:[{ label:'Cumulative P&L', data:cum, borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.4, fill:true }] },
-      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:false, ticks:{ callback:v=>'₹'+v.toLocaleString('en-IN') } } } }
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:false, ticks: { callback: v => this.formatCurrency(v) } } } }
     });
   }
 
@@ -1170,6 +1181,7 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
