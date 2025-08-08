@@ -91,16 +91,16 @@ class TradingJournalApp {
       e.preventDefault();
       this.clearAuthErrors();
 
-      // FINAL LOGIN FIX: Read values directly from the input fields using the correct names from your HTML
+      // FINAL LOGIN FIX: Read values directly from the input fields using the correct names from your original HTML
       const form = e.target;
-      const emailInput = form.querySelector('input[name="username"]'); // Corrected from 'email' to 'username'
+      const emailInput = form.querySelector('input[name="username"]'); // Corrected to match your HTML
       const passwordInput = form.querySelector('input[name="password"]');
 
       const email = emailInput ? emailInput.value.trim() : '';
       const password = passwordInput ? passwordInput.value.trim() : '';
 
       if (!email || !password) {
-        this.showAuthError('login-username-error', 'Please fill all fields'); // Corrected to match HTML ID
+        this.showAuthError('login-username-error', 'Please fill all fields'); // Corrected to match your HTML
         return;
       }
 
