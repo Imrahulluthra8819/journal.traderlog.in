@@ -14,7 +14,13 @@
     <div id="loadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5rem;">
         Loading your trading journal...
     </div>
-
+// Add this near your authentication check code
+setTimeout(() => {
+  if (stillLoading) {
+    setLoading(false); // Force hide the loading screen
+    showLoginForm(); // Show the login form instead
+  }
+}, 3000); // 3 seconds timeout
     <!-- Authentication Screen -->
     <div id="authScreen" class="auth-screen">
         <div class="auth-container">
@@ -1467,3 +1473,4 @@
     </script>
 </body>
 </html>
+
