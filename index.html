@@ -97,9 +97,15 @@
             <section id="dashboard" class="section active">
     <div class="container">
         <div class="section-header">
-            <h1>Trading Dashboard</h1>
-            <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
-        </div>
+    <h1>Trading Dashboard</h1>
+    <div class="header-actions">
+        <select id="currencySelector" class="form-control">
+            <option value="₹">INR (₹)</option>
+            <option value="$">USD ($)</option>
+        </select>
+        <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
+    </div>
+</div>
 
         <!-- The top stats grid remains the same -->
         <div class="stats-grid">
@@ -364,6 +370,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
