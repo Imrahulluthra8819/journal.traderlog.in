@@ -90,7 +90,8 @@ class TradingJournalApp {
     document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const email = fd.get('email').trim();
+      // LOGIN FIX: Accept 'email' or 'username' as the field name from the form.
+      const email = (fd.get('email') || fd.get('username')).trim();
       const password = fd.get('password').trim();
       this.clearAuthErrors();
       if (!email || !password) {
