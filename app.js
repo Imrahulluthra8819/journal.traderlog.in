@@ -38,21 +38,28 @@ class TradingJournalApp {
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`[AUTH] Event: ${event}`);
-      // Handle initial session on page load
-      if (event === 'INITIAL_SESSION' && session) {
-        this.currentUser = session.user;
-        console.log('[AUTH] Existing session found. Initializing app...');
-        await this.loadUserData();
-        this.showMainApp();
-      } 
-      // Handle logout
-      else if (event === 'SIGNED_OUT') {
-        this.currentUser = null;
-        this.allTrades = [];
-        this.allConfidence = [];
-        Object.values(this.charts).forEach(chart => chart?.destroy());
-        this.charts = {};
-        this.showAuthScreen();
+      const user = session?.user;
+
+      if (user) {
+        // This block will run for INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, etc.
+        // We only want to run the full setup if the user is changing.
+        if (!this.currentUser || this.currentUser.id !== user.id) {
+          this.currentUser = user;
+          console.log('[AUTH] New or initial user session detected. Initializing app...');
+          await this.loadUserData();
+          this.showMainApp();
+        }
+      } else {
+        // This block will run for SIGNED_OUT
+        if (this.currentUser) {
+          this.currentUser = null;
+          console.log('[AUTH] Logout detected. Resetting app...');
+          this.allTrades = [];
+          this.allConfidence = [];
+          Object.values(this.charts).forEach(chart => chart?.destroy());
+          this.charts = {};
+          this.showAuthScreen();
+        }
       }
     });
   }
@@ -84,10 +91,8 @@ class TradingJournalApp {
         if (error) {
           this.showAuthError('login-password-error', error.message);
         } else if (data.user) {
-          console.log('[AUTH] signInWithPassword successful. Initializing app...');
-          this.currentUser = data.user;
-          await this.loadUserData();
-          this.showMainApp();
+          // The onAuthStateChange listener will handle the UI transition.
+          console.log('[AUTH] signInWithPassword successful.');
         }
       } finally {
         submitButton.disabled = false;
