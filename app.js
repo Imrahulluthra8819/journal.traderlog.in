@@ -3,7 +3,7 @@ class TradingJournalApp {
   constructor() {
     // --- SUPABASE SETUP ---
     const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb-AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
     this.supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // --- APP STATE ---
@@ -33,9 +33,7 @@ class TradingJournalApp {
   /* ------------------------------- AUTH ---------------------------------- */
 
   /**
-   * Listens for Supabase auth events. This is now primarily for handling
-   * the initial session on page load and for handling logouts.
-   * The login form now handles the post-login flow directly.
+   * Listens for Supabase auth events.
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
@@ -61,7 +59,6 @@ class TradingJournalApp {
 
   /**
    * Sets up listeners for login and signup forms.
-   * CORRECTED: The login form now has a direct, sequential flow to prevent race conditions.
    */
   setupAuthListeners() {
     document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -82,13 +79,11 @@ class TradingJournalApp {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
 
-        // Await the sign-in process
         const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
           this.showAuthError('login-password-error', error.message);
         } else if (data.user) {
-          // If sign-in is successful, WE now control the flow.
           console.log('[AUTH] signInWithPassword successful. Initializing app...');
           this.currentUser = data.user;
           await this.loadUserData();
@@ -180,7 +175,7 @@ class TradingJournalApp {
     console.log('[DATA] Loading user data...');
     this.showToast('Loading your data...', 'info');
     const [tradesResponse, confidenceResponse] = await Promise.all([
-      this.supabase.from('trades').select('*').order('entryDate', { ascending: false }),
+      this.supabase.from('trades').select('*').order('entry_date', { ascending: false }),
       this.supabase.from('confidence').select('*').order('date', { ascending: false })
     ]);
 
@@ -307,14 +302,14 @@ class TradingJournalApp {
     if (this.trades.length === 0) {
       return { totalPL: 0, winRate: 0, totalTrades: 0, avgRR: '1:0', bestTrade: 0, worstTrade: 0 };
     }
-    const totalPL = this.trades.reduce((sum, t) => sum + (t.netPL || 0), 0);
-    const wins = this.trades.filter(t => t.netPL > 0).length;
+    const totalPL = this.trades.reduce((sum, t) => sum + (t.net_pl || 0), 0);
+    const wins = this.trades.filter(t => t.net_pl > 0).length;
     const winRate = this.trades.length > 0 ? Math.round((wins / this.trades.length) * 100) : 0;
-    const bestTrade = Math.max(0, ...this.trades.map(t => t.netPL));
-    const worstTrade = Math.min(0, ...this.trades.map(t => t.netPL));
-    const validRRTrades = this.trades.filter(t => t.riskRewardRatio > 0);
+    const bestTrade = Math.max(0, ...this.trades.map(t => t.net_pl));
+    const worstTrade = Math.min(0, ...this.trades.map(t => t.net_pl));
+    const validRRTrades = this.trades.filter(t => t.risk_reward_ratio > 0);
     const avgRRNum = validRRTrades.length > 0 
-      ? (validRRTrades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / validRRTrades.length).toFixed(2)
+      ? (validRRTrades.reduce((sum, t) => sum + t.risk_reward_ratio, 0) / validRRTrades.length).toFixed(2)
       : '0.00';
 
     return { totalPL, winRate, totalTrades: this.trades.length, avgRR: '1:' + avgRRNum, bestTrade, worstTrade };
@@ -339,9 +334,9 @@ class TradingJournalApp {
         <div class="trade-info">
           <span class="trade-symbol">${t.symbol}</span>
           <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
-          <span class="trade-date">${this.formatDate(t.entryDate)}</span>
+          <span class="trade-date">${this.formatDate(t.entry_date)}</span>
         </div>
-        <div class="trade-pl ${t.netPL >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.netPL)}</div>
+        <div class="trade-pl ${t.net_pl >= 0 ? 'positive' : 'negative'}">${this.formatCurrency(t.net_pl)}</div>
       </div>`).join('');
   }
 
@@ -445,7 +440,6 @@ class TradingJournalApp {
     const fd = new FormData(form);
     form.querySelectorAll('.form-error').forEach(e => e.classList.remove('active'));
 
-    // ADDED: Check if user is logged in before submitting
     if (!this.currentUser) {
         this.showToast('You must be logged in to add a trade.', 'error');
         return;
@@ -456,65 +450,61 @@ class TradingJournalApp {
       symbol: fd.get('symbol').toUpperCase(),
       direction: fd.get('direction'),
       quantity: parseFloat(fd.get('quantity')),
-      entryPrice: parseFloat(fd.get('entryPrice')),
-      exitPrice: parseFloat(fd.get('exitPrice')),
-      stopLoss: parseFloat(fd.get('stopLoss')) || null,
-      targetPrice: parseFloat(fd.get('targetPrice')) || null,
+      entry_price: parseFloat(fd.get('entryPrice')),
+      exit_price: parseFloat(fd.get('exitPrice')),
+      stop_loss: parseFloat(fd.get('stopLoss')) || null,
+      target_price: parseFloat(fd.get('targetPrice')) || null,
       strategy: fd.get('strategy') || 'N/A',
-      exitReason: fd.get('exitReason') || 'N/A',
-      confidenceLevel: parseInt(fd.get('confidenceLevel')),
-      entryDate: fd.get('entryDate'),
-      exitDate: fd.get('exitDate'),
-      preEmotion: fd.get('preEmotion') || '',
-      postEmotion: fd.get('postEmotion') || '',
+      exit_reason: fd.get('exitReason') || 'N/A',
+      confidence_level: parseInt(fd.get('confidenceLevel')),
+      entry_date: fd.get('entryDate'),
+      exit_date: fd.get('exitDate'),
+      pre_emotion: fd.get('preEmotion') || '',
+      post_emotion: fd.get('postEmotion') || '',
       notes: fd.get('notes') || '',
-      sleepQuality: parseInt(fd.get('sleepQuality')) || 5,
-      physicalCondition: parseInt(fd.get('physicalCondition')) || 5,
-      marketSentiment: fd.get('marketSentiment') || '',
-      newsAwareness: fd.get('newsAwareness') || '',
-      marketEnvironment: fd.get('marketEnvironment') || '',
-      fomoLevel: parseInt(fd.get('fomoLevel')) || 1,
-      preStress: parseInt(fd.get('preStress')) || 1,
-      multiTimeframes: this.getCheckboxValues(form, 'multiTimeframes'),
-      volumeAnalysis: fd.get('volumeAnalysis') || '',
-      technicalConfluence: this.getCheckboxValues(form, 'technicalConfluence'),
-      marketSession: fd.get('marketSession') || '',
-      tradeCatalyst: fd.get('tradeCatalyst') || '',
-      waitedForSetup: this.getRadioValue(form, 'waitedForSetup'),
-      positionComfort: parseInt(fd.get('positionComfort')) || 5,
-      planDeviation: fd.get('planDeviation') || '',
-      stressDuring: parseInt(fd.get('stressDuring')) || 1,
-      primaryExitReason: fd.get('primaryExitReason') || '',
-      exitEmotion: fd.get('exitEmotion') || '',
-      wouldTakeAgain: this.getRadioValue(form, 'wouldTakeAgain'),
+      sleep_quality: parseInt(fd.get('sleepQuality')) || 5,
+      physical_condition: parseInt(fd.get('physicalCondition')) || 5,
+      market_sentiment: fd.get('marketSentiment') || '',
+      news_awareness: fd.get('newsAwareness') || '',
+      market_environment: fd.get('marketEnvironment') || '',
+      fomo_level: parseInt(fd.get('fomoLevel')) || 1,
+      pre_stress: parseInt(fd.get('preStress')) || 1,
+      multi_timeframes: this.getCheckboxValues(form, 'multiTimeframes'),
+      volume_analysis: fd.get('volumeAnalysis') || '',
+      technical_confluence: this.getCheckboxValues(form, 'technicalConfluence'),
+      market_session: fd.get('marketSession') || '',
+      trade_catalyst: fd.get('tradeCatalyst') || '',
+      waited_for_setup: this.getRadioValue(form, 'waitedForSetup'),
+      position_comfort: parseInt(fd.get('positionComfort')) || 5,
+      plan_deviation: fd.get('planDeviation') || '',
+      stress_during: parseInt(fd.get('stressDuring')) || 1,
+      primary_exit_reason: fd.get('primaryExitReason') || '',
+      exit_emotion: fd.get('exitEmotion') || '',
+      would_take_again: this.getRadioValue(form, 'wouldTakeAgain'),
       lesson: fd.get('lesson') || '',
-      volatilityToday: fd.get('volatilityToday') || '',
-      sectorPerformance: fd.get('sectorPerformance') || '',
-      economicEvents: this.getCheckboxValues(form, 'economicEvents'),
-      personalDistractions: this.getCheckboxValues(form, 'personalDistractions')
+      volatility_today: fd.get('volatilityToday') || '',
+      sector_performance: fd.get('sectorPerformance') || '',
+      economic_events: this.getCheckboxValues(form, 'economicEvents'),
+      personal_distractions: this.getCheckboxValues(form, 'personalDistractions')
     };
 
-    trade.grossPL = trade.direction === 'Long' ? (trade.exitPrice - trade.entryPrice) * trade.quantity : (trade.entryPrice - trade.exitPrice) * trade.quantity;
-    trade.netPL = trade.grossPL - 40;
-    if (trade.stopLoss && trade.targetPrice) {
-      const risk = Math.abs(trade.entryPrice - trade.stopLoss);
-      const reward = Math.abs(trade.targetPrice - trade.entryPrice);
-      trade.riskRewardRatio = risk ? reward / risk : 0;
+    trade.gross_pl = trade.direction === 'Long' ? (trade.exit_price - trade.entry_price) * trade.quantity : (trade.entry_price - trade.exit_price) * trade.quantity;
+    trade.net_pl = trade.gross_pl - 40;
+    if (trade.stop_loss && trade.target_price) {
+      const risk = Math.abs(trade.entry_price - trade.stop_loss);
+      const reward = Math.abs(trade.target_price - trade.entry_price);
+      trade.risk_reward_ratio = risk ? reward / risk : 0;
     } else {
-      trade.riskRewardRatio = 0;
+      trade.risk_reward_ratio = 0;
     }
 
-    // ADDED: More detailed logging before the request
     console.log('[DATA] Attempting to insert trade for user:', this.currentUser.id);
-    console.log('[DATA] Trade object:', trade);
-
     const { data, error } = await this.supabase
       .from('trades')
       .insert([trade])
       .select();
 
     if (error) {
-      // ADDED: Log the full error object for better debugging
       console.error('[DATA] Supabase insert error:', error);
       this.showToast(`Error saving trade: ${error.message}`, 'error');
     } else {
@@ -564,13 +554,13 @@ class TradingJournalApp {
         </thead><tbody>
           ${rows.map(t => `
             <tr onclick="app.showTradeDetails(${t.id})">
-              <td data-label="Date">${this.formatDate(t.entryDate)}</td>
+              <td data-label="Date">${this.formatDate(t.entry_date)}</td>
               <td data-label="Symbol">${t.symbol}</td>
               <td data-label="Direction"><span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span></td>
               <td data-label="Qty">${t.quantity}</td>
-              <td data-label="Entry">${this.formatCurrency(t.entryPrice)}</td>
-              <td data-label="Exit">${this.formatCurrency(t.exitPrice)}</td>
-              <td data-label="P&L" class="${t.netPL>=0?'positive':'negative'}">${this.formatCurrency(t.netPL)}</td>
+              <td data-label="Entry">${this.formatCurrency(t.entry_price)}</td>
+              <td data-label="Exit">${this.formatCurrency(t.exit_price)}</td>
+              <td data-label="P&L" class="${t.net_pl>=0?'positive':'negative'}">${this.formatCurrency(t.net_pl)}</td>
               <td data-label="Strategy">${t.strategy}</td>
             </tr>`).join('')}
         </tbody></table></div>`;
@@ -583,21 +573,21 @@ class TradingJournalApp {
   showTradeDetails(id) {
     const t = this.trades.find(tr => tr.id === id);
     if (!t) return;
-    const rrText = t.riskRewardRatio ? t.riskRewardRatio.toFixed(2) : '0.00';
+    const rrText = t.risk_reward_ratio ? t.risk_reward_ratio.toFixed(2) : '0.00';
     const body = document.getElementById('tradeModalBody');
     body.innerHTML = `<div class="trade-detail-grid">
       <div class="trade-detail-item"><div class="trade-detail-label">Symbol</div><div class="trade-detail-value">${t.symbol}</div></div>
       <div class="trade-detail-item"><div class="trade-detail-label">Direction</div><div class="trade-detail-value"><span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span></div></div>
       <div class="trade-detail-item"><div class="trade-detail-label">Quantity</div><div class="trade-detail-value">${t.quantity}</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Entry Price</div><div class="trade-detail-value">${this.formatCurrency(t.entryPrice)}</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Exit Price</div><div class="trade-detail-value">${this.formatCurrency(t.exitPrice)}</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Gross P&L</div><div class="trade-detail-value ${t.grossPL>=0?'positive':'negative'}">${this.formatCurrency(t.grossPL)}</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Net P&L</div><div class="trade-detail-value ${t.netPL>=0?'positive':'negative'}">${this.formatCurrency(t.netPL)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Entry Price</div><div class="trade-detail-value">${this.formatCurrency(t.entry_price)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Exit Price</div><div class="trade-detail-value">${this.formatCurrency(t.exit_price)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Gross P&L</div><div class="trade-detail-value ${t.gross_pl>=0?'positive':'negative'}">${this.formatCurrency(t.gross_pl)}</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Net P&L</div><div class="trade-detail-value ${t.net_pl>=0?'positive':'negative'}">${this.formatCurrency(t.net_pl)}</div></div>
       <div class="trade-detail-item"><div class="trade-detail-label">Risk:Reward</div><div class="trade-detail-value">1:${rrText}</div></div>
       <div class="trade-detail-item"><div class="trade-detail-label">Strategy</div><div class="trade-detail-value">${t.strategy}</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Sleep Quality</div><div class="trade-detail-value">${t.sleepQuality||'N/A'}/10</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">Pre-Stress</div><div class="trade-detail-value">${t.preStress||'N/A'}/10</div></div>
-      <div class="trade-detail-item"><div class="trade-detail-label">FOMO Level</div><div class="trade-detail-value">${t.fomoLevel||'N/A'}/10</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Sleep Quality</div><div class="trade-detail-value">${t.sleep_quality||'N/A'}/10</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">Pre-Stress</div><div class="trade-detail-value">${t.pre_stress||'N/A'}/10</div></div>
+      <div class="trade-detail-item"><div class="trade-detail-label">FOMO Level</div><div class="trade-detail-value">${t.fomo_level||'N/A'}/10</div></div>
     </div>
     ${t.notes?`<div style="margin-top:16px;"><strong>Notes:</strong><p>${t.notes}</p></div>`:''}
     ${t.lesson?`<div style="margin-top:16px;"><strong>Lesson Learned:</strong><p>${t.lesson}</p></div>`:''}`;
@@ -620,7 +610,6 @@ class TradingJournalApp {
 
     if (typeof Chart === 'undefined') return;
     
-    // Use a small timeout to ensure canvas is visible before drawing
     setTimeout(() => {
         this.drawPLChart();
         this.drawRRChart();
@@ -635,11 +624,11 @@ class TradingJournalApp {
     this.charts.pl?.destroy();
     if (this.trades.length < 2) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
 
-    const sorted = [...this.trades].sort((a,b) => new Date(a.entryDate) - new Date(b.entryDate));
+    const sorted = [...this.trades].sort((a,b) => new Date(a.entry_date) - new Date(b.entry_date));
     const labels = [];
     const cum = [];
     let run = 0;
-    sorted.forEach(t => { run += t.netPL; labels.push(this.formatDate(t.entryDate)); cum.push(run); });
+    sorted.forEach(t => { run += t.net_pl; labels.push(this.formatDate(t.entry_date)); cum.push(run); });
 
     this.charts.pl = new Chart(ctx, {
       type: 'line',
@@ -656,7 +645,7 @@ class TradingJournalApp {
 
     const buckets = { '<1:1':0, '1:1-1:2':0, '1:2-1:3':0, '>1:3':0 };
     this.trades.forEach(t => {
-      const rr = t.riskRewardRatio || 0;
+      const rr = t.risk_reward_ratio || 0;
       if (rr < 1) buckets['<1:1']++; else if (rr < 2) buckets['1:1-1:2']++; else if (rr < 3) buckets['1:2-1:3']++; else buckets['>1:3']++;
     });
 
@@ -677,7 +666,7 @@ class TradingJournalApp {
     this.trades.forEach(t => {
       if(!map[t.strategy]) map[t.strategy]={ total:0, wins:0 };
       map[t.strategy].total++;
-      if(t.netPL>0) map[t.strategy].wins++;
+      if(t.net_pl>0) map[t.strategy].wins++;
     });
     const labels = Object.keys(map);
     const data = labels.map(l => Math.round((map[l].wins / map[l].total) * 100));
@@ -698,11 +687,11 @@ class TradingJournalApp {
     const dowMap = Object.fromEntries(dowNames.map(d=>[d,{total:0,wins:0,net:0}]));
 
     this.trades.forEach(t => {
-      const d = new Date(t.entryDate);
+      const d = new Date(t.entry_date);
       const dow = dowNames[d.getDay()];
       dowMap[dow].total++;
-      if(t.netPL>0) dowMap[dow].wins++;
-      dowMap[dow].net+=t.netPL;
+      if(t.net_pl>0) dowMap[dow].wins++;
+      dowMap[dow].net+=t.net_pl;
     });
 
     const makeTable = (title, rows) => {
@@ -755,7 +744,7 @@ class TradingJournalApp {
     const map={};
     this.trades.forEach(t=>{
         if(t.strategy && t.strategy !== 'N/A') {
-            map[t.strategy]=(map[t.strategy]||0)+t.netPL
+            map[t.strategy]=(map[t.strategy]||0)+t.net_pl
         }
     });
     const sortedStrategies = Object.entries(map).sort((a,b)=>b[1]-a[1]);
@@ -787,10 +776,10 @@ class TradingJournalApp {
 
     for(let d=1; d<=monthEnd.getDate(); d++){
       const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const trades = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
+      const trades = this.trades.filter(t => t.entry_date && t.entry_date.startsWith(key));
       let cls = 'no-trades';
       if (trades.length) {
-        const pl = trades.reduce((sum,t)=>sum+t.netPL,0);
+        const pl = trades.reduce((sum,t)=>sum+t.net_pl,0);
         if (pl>1000) cls='profit-high'; else if (pl>0) cls='profit-low'; else if (pl<-1000) cls='loss-high'; else if (pl < 0) cls='loss-low';
       }
       cal.innerHTML += `<div class="calendar-day ${cls}">${d}</div>`;
