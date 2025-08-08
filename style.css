@@ -1956,17 +1956,37 @@ select.form-control {
     font-size: var(--font-size-xs);
   }
 }
-/* Styling for the Google Sign-in Button */
+/* --- Refined Google Sign-In Button Style --- */
 #googleSignInBtn {
-    /* --- Sizing --- */
-    /* Sets a maximum width to prevent it from being too wide */
-    max-width: 320px;
-    width: 100%; /* Allows it to be responsive on smaller screens */
-    
-    /* --- Centering --- */
-    /* This makes margin: auto work correctly */
-    display: block;
-    /* The 'auto' for left and right margin centers the button */
-    margin-left: auto;
-    margin-right: auto;
+    /* Layout & Centering */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1rem auto 0; /* Centers the button on the page */
+
+    /* SIZING - Adjust these values to your liking! */
+    max-width: 280px;      /* << REDUCED a bit more */
+    width: 100%;
+    padding: 8px 16px;     /* << REDUCED PADDING for a shorter, sleeker button */
+    font-size: 15px;       /* << REDUCED FONT SIZE */
+
+    /* Appearance */
+    color: #3c4043;
+    background-color: #ffffff;
+    border: 1px solid #dadce0;
+    border-radius: 4px; /* Optional: adds slightly rounded corners */
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+/* Controls the Google logo inside the button */
+#googleSignInBtn img {
+    height: 18px;        /* Controls the icon size */
+    margin-right: 12px;  /* Adds space between the icon and text */
+}
+
+/* A subtle hover effect to improve user experience */
+#googleSignInBtn:hover {
+    background-color: #f8f9fa;
 }
