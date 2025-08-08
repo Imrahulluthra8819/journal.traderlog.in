@@ -3,12 +3,11 @@ class TradingJournalApp {
   constructor() {
     // --- SUPABASE SETUP ---
     const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
-    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UG2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
     this.supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
     // --- APP STATE ---
     this.currentUser = null;
-    this.isLoggedIn = false; // Guard to prevent duplicate login flow
     this.allTrades = [];
     this.allConfidence = [];
     this.charts = {};
@@ -35,23 +34,24 @@ class TradingJournalApp {
 
   /**
    * Listens for Supabase auth events (login, logout) and updates the UI accordingly.
-   * CORRECTED: Added a guard (this.isLoggedIn) to prevent the login flow from running multiple times.
+   * CORRECTED: Simplified logic to prevent race conditions on repeated SIGNED_IN events.
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[AUTH] Event: ${event}`);
+      console.log(`[AUTH] Event: ${event}, Current User: ${this.currentUser?.id}, Session User: ${session?.user?.id}`);
       const user = session?.user;
 
-      if (user && !this.isLoggedIn) {
-        this.isLoggedIn = true; // Set the guard
+      // If a user exists in the session AND we haven't set it in our app yet, it's a new login.
+      if (user && !this.currentUser) {
         this.currentUser = user;
-        console.log('[AUTH] User signed in. Loading data and showing app...');
+        console.log('[AUTH] New login detected. Initializing app...');
         await this.loadUserData();
         this.showMainApp();
-      } else if (!user && this.isLoggedIn) {
-        this.isLoggedIn = false; // Reset the guard
+      } 
+      // If no user exists in the session AND we still think a user is logged in, it's a logout.
+      else if (!user && this.currentUser) {
         this.currentUser = null;
-        console.log('[AUTH] User signed out. Returning to auth screen.');
+        console.log('[AUTH] Logout detected. Resetting app...');
         this.allTrades = [];
         this.allConfidence = [];
         Object.values(this.charts).forEach(chart => chart?.destroy());
