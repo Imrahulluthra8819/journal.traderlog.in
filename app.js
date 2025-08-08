@@ -1,6 +1,6 @@
-// Trading Journal Application - Supabase Edition
-// This version contains the definitive fix for the login functionality
-// by correctly referencing the original HTML form fields.
+// Trading Journal Application - Supabase Edition v2
+// All data is stored and retrieved from your Supabase backend.
+// This version fixes issues with trade saving and user creation.
 
 class TradingJournalApp {
   constructor() {
@@ -89,22 +89,16 @@ class TradingJournalApp {
     // Login form
     document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const fd = new FormData(e.target);
+      const email = fd.get('email').trim();
+      const password = fd.get('password').trim();
       this.clearAuthErrors();
-
-      // FINAL LOGIN FIX: Read values directly from the input fields using the correct names from your original HTML
-      const form = e.target;
-      const emailInput = form.querySelector('input[name="username"]'); // Corrected to match your HTML
-      const passwordInput = form.querySelector('input[name="password"]');
-
-      const email = emailInput ? emailInput.value.trim() : '';
-      const password = passwordInput ? passwordInput.value.trim() : '';
-
       if (!email || !password) {
-        this.showAuthError('login-username-error', 'Please fill all fields'); // Corrected to match your HTML
+        this.showAuthError('login-email-error', 'Please fill all fields');
         return;
       }
 
-      const { error } = await this.supabase.auth.signInWithPassword({ email: email, password: password });
+      const { error } = await this.supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
         this.showAuthError('login-password-error', error.message);
@@ -154,10 +148,8 @@ class TradingJournalApp {
 
   showAuthError(id, msg) {
     const el = document.getElementById(id);
-    if (el) {
-      el.textContent = msg;
-      el.classList.add('active');
-    }
+    el.textContent = msg;
+    el.classList.add('active');
   }
 
   clearAuthErrors() {
@@ -472,22 +464,7 @@ class TradingJournalApp {
 
   getRadioValue(name) {
     const radio = document.querySelector(`input[name="${name}"]:checked`);
-    return radio ? radio.value : null;
-  }
-
-  // Helper to safely parse form values into numbers or null
-  getFloatOrNull(formData, key) {
-    const value = formData.get(key);
-    if (value === null || value.trim() === '') return null;
-    const parsed = parseFloat(value);
-    return isNaN(parsed) ? null : parsed;
-  }
-
-  getIntOrNull(formData, key) {
-    const value = formData.get(key);
-    if (value === null || value.trim() === '') return null;
-    const parsed = parseInt(value, 10);
-    return isNaN(parsed) ? null : parsed;
+    return radio ? radio.value : '';
   }
 
   async submitTrade() {
@@ -513,14 +490,14 @@ class TradingJournalApp {
         // Basic Details
         symbol: fd.get('symbol').toUpperCase(),
         direction: fd.get('direction'),
-        quantity: this.getFloatOrNull(fd, 'quantity'),
-        entryPrice: this.getFloatOrNull(fd, 'entryPrice'),
-        exitPrice: this.getFloatOrNull(fd, 'exitPrice'),
-        stopLoss: this.getFloatOrNull(fd, 'stopLoss'),
-        targetPrice: this.getFloatOrNull(fd, 'targetPrice'),
+        quantity: parseFloat(fd.get('quantity')),
+        entryPrice: parseFloat(fd.get('entryPrice')),
+        exitPrice: parseFloat(fd.get('exitPrice')),
+        stopLoss: parseFloat(fd.get('stopLoss')) || null,
+        targetPrice: parseFloat(fd.get('targetPrice')) || null,
         strategy: fd.get('strategy') || 'N/A',
         exitReason: fd.get('exitReason') || 'N/A',
-        confidenceLevel: this.getIntOrNull(fd, 'confidenceLevel'),
+        confidenceLevel: parseInt(fd.get('confidenceLevel')),
         entryDate: fd.get('entryDate'),
         exitDate: fd.get('exitDate'),
         preEmotion: fd.get('preEmotion') || null,
@@ -528,13 +505,13 @@ class TradingJournalApp {
         notes: fd.get('notes') || '',
   
         // Pre-Trade Psychology
-        sleepQuality: this.getIntOrNull(fd, 'sleepQuality'),
-        physicalCondition: this.getIntOrNull(fd, 'physicalCondition'),
+        sleepQuality: parseInt(fd.get('sleepQuality')) || null,
+        physicalCondition: parseInt(fd.get('physicalCondition')) || null,
         marketSentiment: fd.get('marketSentiment') || null,
         newsAwareness: fd.get('newsAwareness') || null,
         marketEnvironment: fd.get('marketEnvironment') || null,
-        fomoLevel: this.getIntOrNull(fd, 'fomoLevel'),
-        preStress: this.getIntOrNull(fd, 'preStress'),
+        fomoLevel: parseInt(fd.get('fomoLevel')) || null,
+        preStress: parseInt(fd.get('preStress')) || null,
         
         // Trade Setup Analysis
         multiTimeframes: this.getCheckboxValues('multiTimeframes'),
@@ -544,15 +521,15 @@ class TradingJournalApp {
         tradeCatalyst: fd.get('tradeCatalyst') || null,
         
         // During Trade Management
-        waitedForSetup: this.getRadioValue('waitedForSetup'),
-        positionComfort: this.getIntOrNull(fd, 'positionComfort'),
+        waitedForSetup: this.getRadioValue('waitedForSetup') || null,
+        positionComfort: parseInt(fd.get('positionComfort')) || null,
         planDeviation: fd.get('planDeviation') || null,
-        stressDuring: this.getIntOrNull(fd, 'stressDuring'),
+        stressDuring: parseInt(fd.get('stressDuring')) || null,
         
         // Exit Analysis
         primaryExitReason: fd.get('primaryExitReason') || null,
         exitEmotion: fd.get('exitEmotion') || null,
-        wouldTakeAgain: this.getRadioValue('wouldTakeAgain'),
+        wouldTakeAgain: this.getRadioValue('wouldTakeAgain') || null,
         lesson: fd.get('lesson') || '',
         
         // Market Context
@@ -562,19 +539,13 @@ class TradingJournalApp {
         personalDistractions: this.getCheckboxValues('personalDistractions')
     };
     
-    // Calculated fields are added after collecting form data
     tradeData.grossPL = tradeData.direction === 'Long' ? (tradeData.exitPrice - tradeData.entryPrice) * tradeData.quantity : (tradeData.entryPrice - tradeData.exitPrice) * tradeData.quantity;
-    tradeData.netPL = tradeData.grossPL - 40; // Assuming fixed brokerage
+    tradeData.netPL = tradeData.grossPL - 40;
     if (tradeData.stopLoss) {
       const risk = Math.abs(tradeData.entryPrice - tradeData.stopLoss) * tradeData.quantity;
       const reward = tradeData.targetPrice ? Math.abs((tradeData.direction === 'Long' ? tradeData.targetPrice - tradeData.entryPrice : tradeData.entryPrice - tradeData.targetPrice) * tradeData.quantity) : Math.abs(tradeData.grossPL);
       tradeData.riskRewardRatio = risk ? reward / risk : 0;
-    } else {
-      tradeData.riskRewardRatio = 0;
-    }
-
-    // Log the object to be sent for debugging purposes
-    console.log("Attempting to save trade:", JSON.stringify(tradeData, null, 2));
+    } else tradeData.riskRewardRatio = 0;
 
     const { data, error } = await this.supabase.from('trades').insert([tradeData]).select();
 
