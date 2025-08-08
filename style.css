@@ -1639,3 +1639,33 @@ select.form-control {
         align-items: flex-start;
     }
 }
+/* --- AI Suggestions Card Size Adjustment --- */
+
+/* Use a 6-column CSS grid for the suggestions section */
+.suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+}
+
+/* Default: all cards span 3 columns (making 2 cards per row) */
+.suggestions-grid .suggestion-card {
+  grid-column: span 3;
+}
+
+/* Target the first 3 cards to span 2 columns (making 3 cards per row) */
+.suggestions-grid .suggestion-card:nth-child(1),
+.suggestions-grid .suggestion-card:nth-child(2),
+.suggestions-grid .suggestion-card:nth-child(3) {
+  grid-column: span 2;
+}
+
+/* On screens smaller than 992px (tablets/mobiles), make all cards full-width */
+@media (max-width: 992px) {
+    .suggestions-grid .suggestion-card,
+    .suggestions-grid .suggestion-card:nth-child(1),
+    .suggestions-grid .suggestion-card:nth-child(2),
+    .suggestions-grid .suggestion-card:nth-child(3) {
+        grid-column: span 6; /* Full width for all cards on small screens */
+    }
+}
