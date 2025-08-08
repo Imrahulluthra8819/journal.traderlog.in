@@ -2,7 +2,6 @@
 class TradingJournalApp {
   constructor() {
     // --- SUPABASE SETUP ---
-    // Replace with your actual Supabase URL and Anon Key
     const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
     const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
     this.supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
@@ -38,19 +37,24 @@ class TradingJournalApp {
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChanged(async (event, session) => {
-      if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
-        this.currentUser = session.user;
-        this.showToast(`Logged in as ${this.currentUser.email}`, 'success');
-        await this.loadUserData();
-        this.showMainApp();
-      } else if (event === 'SIGNED_OUT') {
+      console.log('[AUTH] State Change Event:', event, 'Session:', session);
+      
+      const user = session?.user;
+
+      if (user) {
+        this.currentUser = user;
+        // Only load data and show app if we weren't already logged in
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+            await this.loadUserData();
+            this.showMainApp();
+        }
+      } else {
         this.currentUser = null;
         this.allTrades = [];
         this.allConfidence = [];
         Object.values(this.charts).forEach(chart => chart && chart.destroy && chart.destroy());
         this.charts = {};
         this.showAuthScreen();
-        this.showToast('Logged out successfully', 'info');
       }
     });
   }
@@ -59,49 +63,76 @@ class TradingJournalApp {
    * Sets up listeners for login and signup forms.
    */
   setupAuthListeners() {
-    // Switch tabs
     document.querySelectorAll('.auth-tab').forEach(tab => {
       tab.addEventListener('click', () => this.switchAuthTab(tab.dataset.tab));
     });
 
-    // Login form
-    document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+    const loginForm = document.getElementById('loginFormElement');
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       this.clearAuthErrors();
-      const form = e.target;
-      const email = form.email.value;
-      const password = form.password.value;
+      const submitButton = loginForm.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
       
-      const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+      try {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Logging in...';
+        
+        const email = loginForm.email.value;
+        const password = loginForm.password.value;
+        console.log('[AUTH] Attempting login for:', email);
 
-      if (error) {
-        this.showAuthError('login-password-error', error.message);
-      } else {
-        form.reset();
+        const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+          console.error('[AUTH] Login Error:', error.message);
+          this.showAuthError('login-password-error', error.message);
+        } else {
+          console.log('[AUTH] Login successful, waiting for state change.');
+          this.showToast('Login successful!', 'success');
+          loginForm.reset();
+        }
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
       }
     });
 
-    // Signup form
-    document.getElementById('signupFormElement').addEventListener('submit', async (e) => {
+    const signupForm = document.getElementById('signupFormElement');
+    signupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       this.clearAuthErrors();
-      const form = e.target;
-      const email = form.email.value;
-      const password = form.password.value;
-      const confirm = form.confirmPassword.value;
+      const submitButton = signupForm.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
 
-      if (password !== confirm) {
-        this.showAuthError('signup-confirmPassword-error', 'Passwords do not match');
-        return;
-      }
-      
-      const { data, error } = await this.supabase.auth.signUp({ email, password });
+      try {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Signing up...';
 
-      if (error) {
-        this.showAuthError('signup-email-error', error.message);
-      } else {
-        this.showToast('Signup successful! Please check your email to verify.', 'success');
-        form.reset();
+        const email = signupForm.email.value;
+        const password = signupForm.password.value;
+        const confirm = signupForm.confirmPassword.value;
+
+        if (password !== confirm) {
+          this.showAuthError('signup-confirmPassword-error', 'Passwords do not match');
+          return;
+        }
+        
+        console.log('[AUTH] Attempting signup for:', email);
+        const { data, error } = await this.supabase.auth.signUp({ email, password });
+
+        if (error) {
+          console.error('[AUTH] Signup Error:', error.message);
+          this.showAuthError('signup-email-error', error.message);
+        } else {
+          console.log('[AUTH] Signup successful.');
+          this.showToast('Signup successful! You can now log in.', 'success');
+          signupForm.reset();
+          this.switchAuthTab('login'); // Switch to login tab after successful signup
+        }
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
       }
     });
   }
@@ -110,9 +141,12 @@ class TradingJournalApp {
    * Logs the user out by calling Supabase signOut.
    */
   async logout() {
+    console.log('[AUTH] Logging out...');
     const { error } = await this.supabase.auth.signOut();
     if (error) {
       this.showToast(`Logout failed: ${error.message}`, 'error');
+    } else {
+      this.showToast('Logged out successfully', 'info');
     }
   }
 
@@ -124,8 +158,10 @@ class TradingJournalApp {
 
   showAuthError(id, msg) {
     const el = document.getElementById(id);
-    el.textContent = msg;
-    el.classList.add('active');
+    if(el) {
+        el.textContent = msg;
+        el.classList.add('active');
+    }
   }
 
   clearAuthErrors() {
@@ -143,6 +179,7 @@ class TradingJournalApp {
   async loadUserData() {
     if (!this.currentUser) return;
     
+    console.log('[DATA] Loading user data...');
     this.showToast('Loading your data...', 'info');
     const [tradesResponse, confidenceResponse] = await Promise.all([
       this.supabase.from('trades').select('*').order('entryDate', { ascending: false }),
@@ -151,16 +188,20 @@ class TradingJournalApp {
 
     if (tradesResponse.error) {
       this.showToast(`Error fetching trades: ${tradesResponse.error.message}`, 'error');
+      console.error('[DATA] Error fetching trades:', tradesResponse.error);
       this.allTrades = [];
     } else {
       this.allTrades = tradesResponse.data;
+      console.log(`[DATA] Loaded ${this.allTrades.length} trades.`);
     }
 
     if (confidenceResponse.error) {
       this.showToast(`Error fetching confidence data: ${confidenceResponse.error.message}`, 'error');
+      console.error('[DATA] Error fetching confidence:', confidenceResponse.error);
       this.allConfidence = [];
     } else {
       this.allConfidence = confidenceResponse.data;
+      console.log(`[DATA] Loaded ${this.allConfidence.length} confidence entries.`);
     }
   }
 
@@ -676,8 +717,6 @@ class TradingJournalApp {
       `Great job! You're net positive ${this.formatCurrency(s.totalPL)} with a ${s.winRate}% win rate.` :
       `You're net negative ${this.formatCurrency(s.totalPL)}. Focus on risk management and psychology.`;
 
-    // Implement other AI suggestion renders here, using this.trades and this.confidenceEntries
-    // For brevity, these are simplified.
     document.getElementById('aiFeedback').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Win Rate</div><div class="suggestion-desc">${s.winRate}% over ${s.totalTrades} trades.</div></div>`;
     document.getElementById('edgeAnalyzer').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Best Strategy</div><div class="suggestion-desc">${this.bestStrategy()}</div></div>`;
     
@@ -688,7 +727,14 @@ class TradingJournalApp {
     const ctx = document.getElementById('confidenceChart');
     if (!ctx) return;
     this.charts.conf?.destroy();
-    if (this.confidenceEntries.length < 2) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
+    if (this.confidenceEntries.length < 2) { 
+      ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); 
+      document.getElementById('confidenceAnalysis').innerHTML = '<div class="suggestion-item suggestion-info"><div class="suggestion-title">Not Enough Data</div><div class="suggestion-desc">Record daily confidence to see chart.</div></div>';
+      return; 
+    }
+
+    const avg = (this.confidenceEntries.reduce((sum,c)=>sum+c.level,0)/this.confidenceEntries.length).toFixed(1);
+    document.getElementById('confidenceAnalysis').innerHTML = `<div class="suggestion-item suggestion-info"><div class="suggestion-title">Avg Confidence</div><div class="suggestion-desc">${avg}/10 over ${this.confidenceEntries.length} days</div></div>`;
 
     const sorted = [...this.confidenceEntries].sort((a,b)=>new Date(a.date)-new Date(b.date));
     this.charts.conf = new Chart(ctx,{ type:'line', data:{ labels:sorted.map(c=>this.formatDate(c.date)), datasets:[{ label: 'Confidence', data:sorted.map(c=>c.level), borderColor:'#1FB8CD', tension:0.3 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ min:1, max:10, ticks: { stepSize: 1 } } } } });
@@ -697,8 +743,13 @@ class TradingJournalApp {
   bestStrategy() {
     if (this.trades.length===0) return 'N/A';
     const map={};
-    this.trades.forEach(t=>map[t.strategy]=(map[t.strategy]||0)+t.netPL);
-    return Object.entries(map).sort((a,b)=>b[1]-a[1])[0][0];
+    this.trades.forEach(t=>{
+        if(t.strategy && t.strategy !== 'N/A') {
+            map[t.strategy]=(map[t.strategy]||0)+t.netPL
+        }
+    });
+    const sortedStrategies = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+    return sortedStrategies.length > 0 ? sortedStrategies[0][0] : 'N/A';
   }
 
   /* ------------------------ REPORTS & CALENDAR ------------------------ */
@@ -726,7 +777,7 @@ class TradingJournalApp {
 
     for(let d=1; d<=monthEnd.getDate(); d++){
       const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const trades = this.trades.filter(t => t.entryDate.startsWith(key));
+      const trades = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
       let cls = 'no-trades';
       if (trades.length) {
         const pl = trades.reduce((sum,t)=>sum+t.netPL,0);
