@@ -1,6 +1,6 @@
-// Trading Journal Application - Supabase Edition v3
-// This version fixes the issue where trades were not being saved.
-// The tradeData object now correctly includes all form fields.
+// Trading Journal Application - Supabase Edition v4
+// This version provides a definitive fix for saving trades by ensuring all
+// optional numeric form fields are correctly formatted as numbers or null.
 
 class TradingJournalApp {
   constructor() {
@@ -464,7 +464,22 @@ class TradingJournalApp {
 
   getRadioValue(name) {
     const radio = document.querySelector(`input[name="${name}"]:checked`);
-    return radio ? radio.value : '';
+    return radio ? radio.value : null;
+  }
+
+  // Helper to safely parse form values into numbers or null
+  getFloatOrNull(formData, key) {
+    const value = formData.get(key);
+    if (value === null || value.trim() === '') return null;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+  }
+
+  getIntOrNull(formData, key) {
+    const value = formData.get(key);
+    if (value === null || value.trim() === '') return null;
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? null : parsed;
   }
 
   async submitTrade() {
@@ -485,20 +500,20 @@ class TradingJournalApp {
 
     if (hasErr) { this.showToast('Please fix errors', 'error'); return; }
 
-    // *** FIX IS HERE: This object now includes ALL fields from the form ***
+    // *** FIX IS HERE: This object now correctly parses all optional numeric fields ***
     const tradeData = {
         user_id: this.currentUser.id,
         // Basic Details
         symbol: fd.get('symbol').toUpperCase(),
         direction: fd.get('direction'),
-        quantity: parseFloat(fd.get('quantity')),
-        entryPrice: parseFloat(fd.get('entryPrice')),
-        exitPrice: parseFloat(fd.get('exitPrice')),
-        stopLoss: parseFloat(fd.get('stopLoss')) || null,
-        targetPrice: parseFloat(fd.get('targetPrice')) || null,
+        quantity: this.getFloatOrNull(fd, 'quantity'),
+        entryPrice: this.getFloatOrNull(fd, 'entryPrice'),
+        exitPrice: this.getFloatOrNull(fd, 'exitPrice'),
+        stopLoss: this.getFloatOrNull(fd, 'stopLoss'),
+        targetPrice: this.getFloatOrNull(fd, 'targetPrice'),
         strategy: fd.get('strategy') || 'N/A',
         exitReason: fd.get('exitReason') || 'N/A',
-        confidenceLevel: parseInt(fd.get('confidenceLevel')),
+        confidenceLevel: this.getIntOrNull(fd, 'confidenceLevel'),
         entryDate: fd.get('entryDate'),
         exitDate: fd.get('exitDate'),
         preEmotion: fd.get('preEmotion') || null,
@@ -506,13 +521,13 @@ class TradingJournalApp {
         notes: fd.get('notes') || '',
   
         // Pre-Trade Psychology
-        sleepQuality: parseInt(fd.get('sleepQuality')) || null,
-        physicalCondition: parseInt(fd.get('physicalCondition')) || null,
+        sleepQuality: this.getIntOrNull(fd, 'sleepQuality'),
+        physicalCondition: this.getIntOrNull(fd, 'physicalCondition'),
         marketSentiment: fd.get('marketSentiment') || null,
         newsAwareness: fd.get('newsAwareness') || null,
         marketEnvironment: fd.get('marketEnvironment') || null,
-        fomoLevel: parseInt(fd.get('fomoLevel')) || null,
-        preStress: parseInt(fd.get('preStress')) || null,
+        fomoLevel: this.getIntOrNull(fd, 'fomoLevel'),
+        preStress: this.getIntOrNull(fd, 'preStress'),
         
         // Trade Setup Analysis
         multiTimeframes: this.getCheckboxValues('multiTimeframes'),
@@ -522,15 +537,15 @@ class TradingJournalApp {
         tradeCatalyst: fd.get('tradeCatalyst') || null,
         
         // During Trade Management
-        waitedForSetup: this.getRadioValue('waitedForSetup') || null,
-        positionComfort: parseInt(fd.get('positionComfort')) || null,
+        waitedForSetup: this.getRadioValue('waitedForSetup'),
+        positionComfort: this.getIntOrNull(fd, 'positionComfort'),
         planDeviation: fd.get('planDeviation') || null,
-        stressDuring: parseInt(fd.get('stressDuring')) || null,
+        stressDuring: this.getIntOrNull(fd, 'stressDuring'),
         
         // Exit Analysis
         primaryExitReason: fd.get('primaryExitReason') || null,
         exitEmotion: fd.get('exitEmotion') || null,
-        wouldTakeAgain: this.getRadioValue('wouldTakeAgain') || null,
+        wouldTakeAgain: this.getRadioValue('wouldTakeAgain'),
         lesson: fd.get('lesson') || '',
         
         // Market Context
@@ -550,6 +565,9 @@ class TradingJournalApp {
     } else {
       tradeData.riskRewardRatio = 0;
     }
+
+    // Log the object to be sent for debugging purposes
+    console.log("Attempting to save trade:", JSON.stringify(tradeData, null, 2));
 
     const { data, error } = await this.supabase.from('trades').insert([tradeData]).select();
 
