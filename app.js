@@ -82,7 +82,7 @@ class TradingJournalApp {
         const email = loginForm.email.value;
         const password = loginForm.password.value;
 
-        const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
           this.showAuthError('login-password-error', error.message);
