@@ -1,10 +1,10 @@
-// Trading Journal Application - Supabase Edition
-// All data is now stored and retrieved from your Supabase backend.
+// Trading Journal Application - Supabase Edition v3
+// This version fixes the issue where trades were not being saved.
+// The tradeData object now correctly includes all form fields.
 
 class TradingJournalApp {
   constructor() {
     // --- SUPABASE SETUP ---
-    // Replace with your actual Supabase URL and Anon Key
     const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
     this.supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -485,48 +485,77 @@ class TradingJournalApp {
 
     if (hasErr) { this.showToast('Please fix errors', 'error'); return; }
 
+    // *** FIX IS HERE: This object now includes ALL fields from the form ***
     const tradeData = {
-      user_id: this.currentUser.id,
-      symbol: fd.get('symbol').toUpperCase(),
-      direction: fd.get('direction'),
-      quantity: parseFloat(fd.get('quantity')),
-      entryPrice: parseFloat(fd.get('entryPrice')),
-      exitPrice: parseFloat(fd.get('exitPrice')),
-      stopLoss: parseFloat(fd.get('stopLoss')) || null,
-      targetPrice: parseFloat(fd.get('targetPrice')) || null,
-      strategy: fd.get('strategy') || 'N/A',
-      exitReason: fd.get('exitReason') || 'N/A',
-      confidenceLevel: parseInt(fd.get('confidenceLevel')),
-      entryDate: fd.get('entryDate'),
-      exitDate: fd.get('exitDate'),
-      notes: fd.get('notes') || '',
-      // Psychology fields
-      sleepQuality: parseInt(fd.get('sleepQuality')) || 5,
-      physicalCondition: parseInt(fd.get('physicalCondition')) || 5,
-      marketSentiment: fd.get('marketSentiment') || '',
-      fomoLevel: parseInt(fd.get('fomoLevel')) || 1,
-      preStress: parseInt(fd.get('preStress')) || 1,
-      positionComfort: parseInt(fd.get('positionComfort')) || 5,
-      stressDuring: parseInt(fd.get('stressDuring')) || 1,
-      primaryExitReason: fd.get('primaryExitReason') || '',
-      exitEmotion: fd.get('exitEmotion') || '',
-      wouldTakeAgain: this.getRadioValue('wouldTakeAgain'),
-      lesson: fd.get('lesson') || '',
+        user_id: this.currentUser.id,
+        // Basic Details
+        symbol: fd.get('symbol').toUpperCase(),
+        direction: fd.get('direction'),
+        quantity: parseFloat(fd.get('quantity')),
+        entryPrice: parseFloat(fd.get('entryPrice')),
+        exitPrice: parseFloat(fd.get('exitPrice')),
+        stopLoss: parseFloat(fd.get('stopLoss')) || null,
+        targetPrice: parseFloat(fd.get('targetPrice')) || null,
+        strategy: fd.get('strategy') || 'N/A',
+        exitReason: fd.get('exitReason') || 'N/A',
+        confidenceLevel: parseInt(fd.get('confidenceLevel')),
+        entryDate: fd.get('entryDate'),
+        exitDate: fd.get('exitDate'),
+        preEmotion: fd.get('preEmotion') || null,
+        postEmotion: fd.get('postEmotion') || null,
+        notes: fd.get('notes') || '',
+  
+        // Pre-Trade Psychology
+        sleepQuality: parseInt(fd.get('sleepQuality')) || null,
+        physicalCondition: parseInt(fd.get('physicalCondition')) || null,
+        marketSentiment: fd.get('marketSentiment') || null,
+        newsAwareness: fd.get('newsAwareness') || null,
+        marketEnvironment: fd.get('marketEnvironment') || null,
+        fomoLevel: parseInt(fd.get('fomoLevel')) || null,
+        preStress: parseInt(fd.get('preStress')) || null,
+        
+        // Trade Setup Analysis
+        multiTimeframes: this.getCheckboxValues('multiTimeframes'),
+        volumeAnalysis: fd.get('volumeAnalysis') || null,
+        technicalConfluence: this.getCheckboxValues('technicalConfluence'),
+        marketSession: fd.get('marketSession') || null,
+        tradeCatalyst: fd.get('tradeCatalyst') || null,
+        
+        // During Trade Management
+        waitedForSetup: this.getRadioValue('waitedForSetup') || null,
+        positionComfort: parseInt(fd.get('positionComfort')) || null,
+        planDeviation: fd.get('planDeviation') || null,
+        stressDuring: parseInt(fd.get('stressDuring')) || null,
+        
+        // Exit Analysis
+        primaryExitReason: fd.get('primaryExitReason') || null,
+        exitEmotion: fd.get('exitEmotion') || null,
+        wouldTakeAgain: this.getRadioValue('wouldTakeAgain') || null,
+        lesson: fd.get('lesson') || '',
+        
+        // Market Context
+        volatilityToday: fd.get('volatilityToday') || null,
+        sectorPerformance: fd.get('sectorPerformance') || null,
+        economicEvents: this.getCheckboxValues('economicEvents'),
+        personalDistractions: this.getCheckboxValues('personalDistractions')
     };
     
+    // Calculated fields are added after collecting form data
     tradeData.grossPL = tradeData.direction === 'Long' ? (tradeData.exitPrice - tradeData.entryPrice) * tradeData.quantity : (tradeData.entryPrice - tradeData.exitPrice) * tradeData.quantity;
-    tradeData.netPL = tradeData.grossPL - 40;
+    tradeData.netPL = tradeData.grossPL - 40; // Assuming fixed brokerage
     if (tradeData.stopLoss) {
       const risk = Math.abs(tradeData.entryPrice - tradeData.stopLoss) * tradeData.quantity;
       const reward = tradeData.targetPrice ? Math.abs((tradeData.direction === 'Long' ? tradeData.targetPrice - tradeData.entryPrice : tradeData.entryPrice - tradeData.targetPrice) * tradeData.quantity) : Math.abs(tradeData.grossPL);
       tradeData.riskRewardRatio = risk ? reward / risk : 0;
-    } else tradeData.riskRewardRatio = 0;
+    } else {
+      tradeData.riskRewardRatio = 0;
+    }
 
     const { data, error } = await this.supabase.from('trades').insert([tradeData]).select();
 
     if (error) {
         console.error('Error saving trade:', error);
-        this.showToast('Could not save trade.', 'error');
+        this.showToast('Could not save trade. Check console for details.', 'error');
     } else {
         this.trades.unshift(data[0]);
         this.showToast('Trade saved successfully!', 'success');
@@ -779,11 +808,11 @@ class TradingJournalApp {
     
     let analysis = '';
     if (highFomoTrades.length > 0) {
-      const fomoWinRate = Math.round((highFomoTrades.filter(t => t.netPL > 0).length / highFomoTrades.length) * 100);
+      const fomoWinRate = highFomoTrades.length > 0 ? Math.round((highFomoTrades.filter(t => t.netPL > 0).length / highFomoTrades.length) * 100) : 0;
       analysis += `High FOMO trades: ${fomoWinRate}% win rate. `;
     }
     if (highStressTrades.length > 0) {
-      const stressWinRate = Math.round((highStressTrades.filter(t => t.netPL > 0).length / highStressTrades.length) * 100);
+      const stressWinRate = highStressTrades.length > 0 ? Math.round((highStressTrades.filter(t => t.netPL > 0).length / highStressTrades.length) * 100) : 0;
       analysis += `High stress trades: ${stressWinRate}% win rate.`;
     }
     
