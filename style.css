@@ -1956,3 +1956,17 @@ select.form-control {
     font-size: var(--font-size-xs);
   }
 }
+/* Styling for the Google Sign-in Button */
+#googleSignInBtn {
+    /* --- Sizing --- */
+    /* Sets a maximum width to prevent it from being too wide */
+    max-width: 320px;
+    width: 100%; /* Allows it to be responsive on smaller screens */
+    
+    /* --- Centering --- */
+    /* This makes margin: auto work correctly */
+    display: block;
+    /* The 'auto' for left and right margin centers the button */
+    margin-left: auto;
+    margin-right: auto;
+}
