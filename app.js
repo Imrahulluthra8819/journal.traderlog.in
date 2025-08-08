@@ -4,13 +4,13 @@ class TradingJournalApp {
     // --- FIREBASE SETUP ---
     // PASTE YOUR FIREBASE CONFIG OBJECT HERE
     const firebaseConfig = {
-      apiKey: "AIzaSyCcbykkhvTw671DG1EaAj7Tw9neQcXJjS0",
-      authDomain: "trad-77851.firebaseapp.com",
-      projectId: "trad-77851",
-      storageBucket: "trad-77851.appspot.com",
-      messagingSenderId: "1099300399869",
-      appId: "1:1099300399869:web:d201028b9168d24feb2c94",
-      measurementId: "G-9TV0H4BWN6"
+      apiKey: "AIzaSyCcbykkhvTw671DG1EaAj7Tw9neQcXJjS0",
+      authDomain: "trad-77851.firebaseapp.com",
+      projectId: "trad-77851",
+      storageBucket: "trad-77851.appspot.com",
+      messagingSenderId: "1099300399869",
+      appId: "1:1099300399869:web:d201028b9168d24feb2c94",
+      measurementId: "G-9TV0H4BWN6"
     };
 
     // Initialize Firebase
@@ -129,7 +129,33 @@ class TradingJournalApp {
         submitButton.textContent = originalButtonText;
       }
     });
+
+    // --- START: ADDED FOR GOOGLE AUTH ---
+    const googleSignInBtn = document.getElementById('googleSignInBtn');
+    if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', () => this.signInWithGoogle());
+    }
+    // --- END: ADDED FOR GOOGLE AUTH ---
   }
+
+  // --- START: ADDED FOR GOOGLE AUTH ---
+  /**
+   * Handles the Google Sign-In process via a popup.
+   */
+  async signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+          this.clearAuthErrors();
+          await this.auth.signInWithPopup(provider);
+          // On success, onAuthStateChanged will handle the rest.
+          this.showToast('Successfully signed in with Google!', 'success');
+      } catch (error) {
+          console.error('[AUTH] Google Sign-In Error:', error);
+          // Display the error message in a relevant part of the UI
+          this.showAuthError('login-password-error', `Google Sign-In Failed: ${error.message}`);
+      }
+  }
+  // --- END: ADDED FOR GOOGLE AUTH ---
 
   /**
    * Logs the user out by calling Firebase signOut.
