@@ -1,24 +1,18 @@
-// Trading Journal Application with Supabase Integration
-const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-// Emergency fix - forces login form to show after 3 seconds
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    // Replace loading screen with login form
-    const loadingElements = document.querySelectorAll('[class*="loading"]');
-    loadingElements.forEach(el => el.style.display = 'none');
-    
-    // Show your login form (add your form's ID/class)
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) loginForm.style.display = 'block';
-  }, 3000);
-});
+// Trading Journal Application - Supabase Edition
+// All data is now stored and retrieved from your Supabase backend.
 
 class TradingJournalApp {
   constructor() {
+    // --- SUPABASE SETUP ---
+    // Replace with your actual Supabase URL and Anon Key
+    const supabaseUrl = 'https://brjomrasrmbyxepjlfdq.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyam9tcmFzcm1ieXhlcGpsZmRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5NTMwODgsImV4cCI6MjA2OTUyOTA4OH0.51UGb2AE75iE6bPF_mXl_vOBPRB9JiHwFG-7jXyqIrs';
+    this.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    // --- END SUPABASE SETUP ---
+
     this.currentUser = null;
+    this.trades = []; // Local cache of trades for the current user
+    this.confidenceEntries = []; // Local cache of confidence entries
     this.charts = {};
 
     if (document.readyState === 'loading') {
@@ -29,78 +23,63 @@ class TradingJournalApp {
   }
 
   async bootstrap() {
-    // Check for existing session
-    await this.restoreSession();
     this.setupAuthListeners();
-    
-    if (this.currentUser) {
-      this.showMainApp();
-    } else {
-      this.showAuthScreen();
-    }
-  }
-
-  async restoreSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Fetch user profile
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error) {
-        console.error('Profile fetch error:', error);
-        return;
-      }
-
-      this.currentUser = {
-        id: session.user.id,
-        email: session.user.email,
-        username: profile.username,
-        trades: [],
-        confidence: []
-      };
-
-      // Load user data
-      await this.loadUserData();
-    }
-  }
-
-  async loadUserData() {
-    if (!this.currentUser) return;
-
-    // Load trades
-    const { data: trades, error: tradesError } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('user_id', this.currentUser.id)
-      .order('entryDate', { ascending: false });
-
-    if (tradesError) {
-      console.error('Trades load error:', tradesError);
-      this.showToast('Failed to load trades', 'error');
-    } else {
-      this.currentUser.trades = trades || [];
-    }
-
-    // Load confidence entries
-    const { data: confidence, error: confidenceError } = await supabase
-      .from('confidence_entries')
-      .select('*')
-      .eq('user_id', this.currentUser.id)
-      .order('date', { ascending: false });
-
-    if (confidenceError) {
-      console.error('Confidence load error:', confidenceError);
-      this.showToast('Failed to load confidence data', 'error');
-    } else {
-      this.currentUser.confidence = confidence || [];
-    }
+    this.handleAuthStateChange();
   }
 
   /* ------------------------------- AUTH ---------------------------------- */
+  handleAuthStateChange() {
+    this.supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
+        this.currentUser = session.user;
+        await this.loadUserData();
+        this.showMainApp();
+      } else if (event === 'SIGNED_OUT') {
+        this.currentUser = null;
+        this.trades = [];
+        this.confidenceEntries = [];
+        Object.values(this.charts).forEach(chart => chart && chart.destroy && chart.destroy());
+        this.charts = {};
+        this.showAuthScreen();
+      }
+    });
+  }
+  
+  async loadUserData() {
+      if (!this.currentUser) return;
+      
+      // Fetch trades
+      const { data: tradesData, error: tradesError } = await this.supabase
+          .from('trades')
+          .select('*')
+          .eq('user_id', this.currentUser.id)
+          .order('entryDate', { ascending: false });
+
+      if (tradesError) {
+          console.error('Error fetching trades:', tradesError);
+          this.showToast('Could not load trades.', 'error');
+          this.trades = [];
+      } else {
+          this.trades = tradesData;
+      }
+
+      // Fetch confidence entries
+      const { data: confidenceData, error: confidenceError } = await this.supabase
+          .from('confidence')
+          .select('*')
+          .eq('user_id', this.currentUser.id)
+          .order('date', { ascending: false });
+      
+      if (confidenceError) {
+          console.error('Error fetching confidence entries:', confidenceError);
+          this.showToast('Could not load confidence data.', 'error');
+          this.confidenceEntries = [];
+      } else {
+          this.confidenceEntries = confidenceData;
+      }
+  }
+
+
   setupAuthListeners() {
     // Switch tabs
     document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -111,19 +90,20 @@ class TradingJournalApp {
     document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const email = fd.get('username').trim(); // Using email for login
+      const email = fd.get('email').trim();
       const password = fd.get('password').trim();
       this.clearAuthErrors();
-      
       if (!email || !password) {
-        this.showAuthError('login-username-error', 'Please fill all fields');
+        this.showAuthError('login-email-error', 'Please fill all fields');
         return;
       }
-      
-      try {
-        await this.login(email, password);
-      } catch (error) {
+
+      const { error } = await this.supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
         this.showAuthError('login-password-error', error.message);
+      } else {
+        this.showToast('Logged in successfully!', 'success');
       }
     });
 
@@ -131,14 +111,17 @@ class TradingJournalApp {
     document.getElementById('signupFormElement').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const username = fd.get('username').trim();
       const email = fd.get('email').trim();
       const password = fd.get('password');
       const confirm = fd.get('confirmPassword');
       this.clearAuthErrors();
-      
-      if (!username || !email || !password) {
-        this.showAuthError('signup-username-error', 'Please fill all fields');
+
+      if (!email || !password) {
+        this.showAuthError('signup-email-error', 'Please fill all fields');
+        return;
+      }
+       if (password.length < 8) {
+        this.showAuthError('signup-password-error', 'Password must be at least 8 characters');
         return;
       }
       if (password !== confirm) {
@@ -146,86 +129,44 @@ class TradingJournalApp {
         return;
       }
 
-      try {
-        // 1. Create Supabase auth user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: email,
-          password: password,
-        });
+      const { error } = await this.supabase.auth.signUp({ email, password });
 
-        if (authError) throw authError;
-
-        // 2. Store username in profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username: username
-          });
-
-        if (profileError) throw profileError;
-
-        alert('Signup successful! Check your email for confirmation.');
-        location.reload();
-        
-      } catch (error) {
-        this.showAuthError('signup-username-error', error.message);
+      if (error) {
+        this.showAuthError('signup-email-error', error.message);
+      } else {
+        this.showToast('Account created! Please check your email to confirm.', 'success');
+        this.switchAuthTab('login');
       }
-    });
-
-    // Remove demo logins since we're using real authentication
-    document.querySelectorAll('.demo-login').forEach(btn => {
-      btn.remove();
     });
   }
 
-  async login(email, password) {
-    try {
-      // 1. Authenticate with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
+  switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.toggle('active', f.id === tab + 'Form'));
+    this.clearAuthErrors();
+  }
 
-      if (error) throw error;
+  showAuthError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('active');
+  }
 
-      // 2. Fetch user profile (username)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      // 3. Set current user
-      this.currentUser = {
-        id: data.user.id,
-        email: data.user.email,
-        username: profile.username,
-        trades: [],
-        confidence: []
-      };
-
-      // 4. Load user data
-      await this.loadUserData();
-      
-      // 5. Show welcome message and main app
-      this.showToast('Welcome, ' + this.currentUser.username + '!', 'success');
-      this.showMainApp();
-
-    } catch (error) {
-      throw new Error('Login failed: ' + error.message);
-    }
+  clearAuthErrors() {
+    document.querySelectorAll('.form-error').forEach(e => {
+      e.textContent = '';
+      e.classList.remove('active');
+    });
   }
 
   async logout() {
-    await supabase.auth.signOut();
-    this.currentUser = null;
-    Object.values(this.charts).forEach(chart => chart && chart.destroy && chart.destroy());
-    this.charts = {};
-    this.showAuthScreen();
-    this.showToast('Logged out successfully', 'success');
+    const { error } = await this.supabase.auth.signOut();
+    if (error) {
+        this.showToast('Error logging out.', 'error');
+        console.error('Logout error:', error);
+    } else {
+        this.showToast('Logged out successfully', 'info');
+    }
   }
 
   /* ------------------------------ VIEW SWITCH --------------------------- */
@@ -283,7 +224,9 @@ class TradingJournalApp {
   }
 
   updateUserInfo() {
-    document.getElementById('currentUserName').textContent = this.currentUser.username;
+    if (this.currentUser) {
+        document.getElementById('currentUserName').textContent = this.currentUser.email.split('@')[0];
+    }
   }
 
   toggleTheme() {
@@ -324,10 +267,11 @@ class TradingJournalApp {
   /* ------------------------------ HELPERS ------------------------------- */
   formatCurrency(val) {
     const sign = val < 0 ? '-' : '';
-    return sign + '₹' + Math.abs(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    return sign + '₹' + Math.abs(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   formatDate(str) {
+    if (!str) return 'N/A';
     return new Date(str).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: '2-digit' });
   }
 
@@ -341,13 +285,6 @@ class TradingJournalApp {
   }
 
   /* ---------------------- DASHBOARD RENDER ----------------------------- */
-  get trades() {
-    return this.currentUser ? this.currentUser.trades : [];
-  }
-
-  get confidenceEntries() {
-    return this.currentUser ? this.currentUser.confidence : [];
-  }
 
   calculateStats() {
     if (this.trades.length === 0) {
@@ -356,11 +293,13 @@ class TradingJournalApp {
     const totalPL = this.trades.reduce((sum, t) => sum + (t.netPL || 0), 0);
     const wins = this.trades.filter(t => t.netPL > 0).length;
     const winRate = Math.round((wins / this.trades.length) * 100);
-    const bestTrade = Math.max(...this.trades.map(t => t.netPL));
-    const worstTrade = Math.min(...this.trades.map(t => t.netPL));
-    const avgRRNum = (
-      this.trades.filter(t => t.riskRewardRatio !== undefined).reduce((sum, t, _, arr) => sum + t.riskRewardRatio / arr.length, 0)
-    ).toFixed(2);
+    const bestTrade = Math.max(0, ...this.trades.map(t => t.netPL));
+    const worstTrade = Math.min(0, ...this.trades.map(t => t.netPL));
+    const validRRTrades = this.trades.filter(t => t.riskRewardRatio !== undefined && t.riskRewardRatio > 0);
+    const avgRRNum = validRRTrades.length > 0
+      ? (validRRTrades.reduce((sum, t) => sum + t.riskRewardRatio, 0) / validRRTrades.length).toFixed(2)
+      : '0.00';
+      
     return { totalPL, winRate, totalTrades: this.trades.length, avgRR: '1:' + avgRRNum, bestTrade, worstTrade };
   }
 
@@ -380,7 +319,7 @@ class TradingJournalApp {
       return;
     }
     list.innerHTML = this.trades.slice(0, 5).map(t => `
-      <div class="trade-item" onclick="app.showTradeDetails('${t.id}')">
+      <div class="trade-item" onclick="app.showTradeDetails(${t.id})">
         <div class="trade-info">
           <span class="trade-symbol">${t.symbol}</span>
           <span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span>
@@ -393,35 +332,39 @@ class TradingJournalApp {
   async saveDailyConfidence() {
     const level = parseInt(document.getElementById('dailyConfidence').value, 10);
     const today = new Date().toISOString().split('T')[0];
+
+    // Check if already recorded
+    const { data: existing, error: checkError } = await this.supabase
+        .from('confidence')
+        .select('id')
+        .eq('user_id', this.currentUser.id)
+        .eq('date', today)
+        .single();
     
-    // Check if entry already exists for today
-    const existing = this.currentUser.confidence.find(c => c.date === today);
+    if (checkError && checkError.code !== 'PGRST116') { // Ignore 'exact one row' error
+        console.error('Error checking confidence:', checkError);
+        this.showToast('Could not save confidence.', 'error');
+        return;
+    }
+
     if (existing) {
       this.showToast("You've already recorded confidence today!", 'warning');
       return;
     }
 
-    try {
-      // Save to Supabase
-      const { error } = await supabase
-        .from('confidence_entries')
-        .insert({
-          user_id: this.currentUser.id,
-          date: today,
-          level: level
-        });
+    const { data, error } = await this.supabase
+        .from('confidence')
+        .insert([{ user_id: this.currentUser.id, date: today, level: level }])
+        .select();
 
-      if (error) throw error;
-
-      // Update local state
-      this.currentUser.confidence.push({ date: today, level });
-      document.getElementById('confidenceMessage').innerHTML = "<div class='message success'>Daily confidence recorded successfully!</div>";
-      this.showToast('Daily confidence recorded successfully!', 'success');
-      document.dispatchEvent(new CustomEvent('confidence-updated', { detail: { date: today, level } }));
-      
-    } catch (error) {
-      console.error('Save confidence error:', error);
-      this.showToast('Failed to save confidence: ' + error.message, 'error');
+    if (error) {
+        console.error('Error saving confidence:', error);
+        this.showToast('Could not save confidence.', 'error');
+    } else {
+        this.confidenceEntries.unshift(data[0]);
+        document.getElementById('confidenceMessage').innerHTML = "<div class='message success'>Daily confidence recorded successfully!</div>";
+        this.showToast('Daily confidence recorded successfully!', 'success');
+        document.dispatchEvent(new CustomEvent('confidence-updated', { detail: { date: today, level } }));
     }
   }
 
@@ -439,22 +382,14 @@ class TradingJournalApp {
     
     // Setup all range inputs with their corresponding value displays
     const rangeInputs = [
-      { name: 'confidenceLevel', displayId: 'tradeConfidenceValue' },
-      { name: 'sleepQuality', displayClass: 'range-value' },
-      { name: 'physicalCondition', displayClass: 'range-value' },
-      { name: 'fomoLevel', displayClass: 'range-value' },
-      { name: 'preStress', displayClass: 'range-value' },
-      { name: 'positionComfort', displayClass: 'range-value' },
-      { name: 'stressDuring', displayClass: 'range-value' }
+      'confidenceLevel', 'sleepQuality', 'physicalCondition', 'fomoLevel', 
+      'preStress', 'positionComfort', 'stressDuring'
     ];
 
-    rangeInputs.forEach(input => {
-      const slider = form.querySelector(`[name="${input.name}"]`);
+    rangeInputs.forEach(name => {
+      const slider = form.querySelector(`[name="${name}"]`);
       if (slider) {
-        const display = input.displayId ? 
-          document.getElementById(input.displayId) : 
-          slider.parentElement.querySelector('.range-value');
-        
+        const display = slider.parentElement.querySelector('.range-value');
         if (display) {
           slider.addEventListener('input', () => (display.textContent = slider.value));
         }
@@ -470,19 +405,16 @@ class TradingJournalApp {
       }
     });
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', e => {
       e.preventDefault();
-      await this.submitTrade();
+      this.submitTrade();
     });
 
     document.getElementById('resetTradeForm').addEventListener('click', () => {
       form.reset();
       this.updateCalculations();
       this.renderAddTrade();
-      // Reset all range value displays
       document.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
-      const tradeConfidenceValue = document.getElementById('tradeConfidenceValue');
-      if (tradeConfidenceValue) tradeConfidenceValue.textContent = '5';
     });
   }
 
@@ -508,10 +440,8 @@ class TradingJournalApp {
       if (risk > 0) riskReward = reward / risk;
     }
 
-    // Capital risk % (assume capital 100k for demo)
     const capitalRisk = ((Math.abs(entry - sl) * qty) / 100000) * 100 || 0;
 
-    // Update UI
     const setVal = (id, val, pos) => {
       const el = document.getElementById(id);
       if (el) {
@@ -527,13 +457,11 @@ class TradingJournalApp {
     if (crEl) crEl.textContent = capitalRisk.toFixed(2) + '%';
   }
 
-  // Helper function to get checkbox values
   getCheckboxValues(name) {
     const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
     return Array.from(checkboxes).map(cb => cb.value);
   }
 
-  // Helper function to get radio value
   getRadioValue(name) {
     const radio = document.querySelector(`input[name="${name}"]:checked`);
     return radio ? radio.value : '';
@@ -542,59 +470,26 @@ class TradingJournalApp {
   async submitTrade() {
     const form = document.getElementById('addTradeForm');
     const fd = new FormData(form);
-    // Clear prev errors
-    form.querySelectorAll('.form-error').forEach(e => {
-      e.textContent = '';
-      e.classList.remove('active');
-    });
+    form.querySelectorAll('.form-error').forEach(e => { e.textContent = ''; e.classList.remove('active'); });
 
-    // Validate required fields
     const required = ['symbol', 'direction', 'quantity', 'entryPrice', 'exitPrice', 'entryDate', 'exitDate'];
     let hasErr = false;
     required.forEach(field => {
       const val = fd.get(field);
       if (!val || val.toString().trim() === '') {
         const errEl = document.getElementById(field + '-error');
-        if (errEl) {
-          errEl.textContent = 'Required';
-          errEl.classList.add('active');
-        }
+        if (errEl) { errEl.textContent = 'Required'; errEl.classList.add('active'); }
         hasErr = true;
       }
     });
 
-    const qty = parseFloat(fd.get('quantity'));
-    if (isNaN(qty) || qty <= 0) {
-      const errEl = document.getElementById('quantity-error');
-      if (errEl) {
-        errEl.textContent = 'Must be positive';
-        errEl.classList.add('active');
-      }
-      hasErr = true;
-    }
+    if (hasErr) { this.showToast('Please fix errors', 'error'); return; }
 
-    const entryDate = new Date(fd.get('entryDate'));
-    const exitDate = new Date(fd.get('exitDate'));
-    if (exitDate <= entryDate) {
-      const errEl = document.getElementById('exitDate-error');
-      if (errEl) {
-        errEl.textContent = 'Exit after entry';
-        errEl.classList.add('active');
-      }
-      hasErr = true;
-    }
-
-    if (hasErr) {
-      this.showToast('Please fix errors', 'error');
-      return;
-    }
-
-    // Build comprehensive trade object with all psychology fields
-    const trade = {
-      // Basic trade details
+    const tradeData = {
+      user_id: this.currentUser.id,
       symbol: fd.get('symbol').toUpperCase(),
       direction: fd.get('direction'),
-      quantity: qty,
+      quantity: parseFloat(fd.get('quantity')),
       entryPrice: parseFloat(fd.get('entryPrice')),
       exitPrice: parseFloat(fd.get('exitPrice')),
       stopLoss: parseFloat(fd.get('stopLoss')) || null,
@@ -604,85 +499,42 @@ class TradingJournalApp {
       confidenceLevel: parseInt(fd.get('confidenceLevel')),
       entryDate: fd.get('entryDate'),
       exitDate: fd.get('exitDate'),
-      preEmotion: fd.get('preEmotion') || '',
-      postEmotion: fd.get('postEmotion') || '',
       notes: fd.get('notes') || '',
-
-      // Pre-Trade Psychology
+      // Psychology fields
       sleepQuality: parseInt(fd.get('sleepQuality')) || 5,
       physicalCondition: parseInt(fd.get('physicalCondition')) || 5,
       marketSentiment: fd.get('marketSentiment') || '',
-      newsAwareness: fd.get('newsAwareness') || '',
-      marketEnvironment: fd.get('marketEnvironment') || '',
       fomoLevel: parseInt(fd.get('fomoLevel')) || 1,
       preStress: parseInt(fd.get('preStress')) || 1,
-
-      // Trade Setup Analysis
-      multiTimeframes: this.getCheckboxValues('multiTimeframes'),
-      volumeAnalysis: fd.get('volumeAnalysis') || '',
-      technicalConfluence: this.getCheckboxValues('technicalConfluence'),
-      marketSession: fd.get('marketSession') || '',
-      tradeCatalyst: fd.get('tradeCatalyst') || '',
-
-      // During Trade Management
-      waitedForSetup: this.getRadioValue('waitedForSetup'),
       positionComfort: parseInt(fd.get('positionComfort')) || 5,
-      planDeviation: fd.get('planDeviation') || '',
       stressDuring: parseInt(fd.get('stressDuring')) || 1,
-
-      // Exit Analysis
       primaryExitReason: fd.get('primaryExitReason') || '',
       exitEmotion: fd.get('exitEmotion') || '',
       wouldTakeAgain: this.getRadioValue('wouldTakeAgain'),
       lesson: fd.get('lesson') || '',
-
-      // Market Context
-      volatilityToday: fd.get('volatilityToday') || '',
-      sectorPerformance: fd.get('sectorPerformance') || '',
-      economicEvents: this.getCheckboxValues('economicEvents'),
-      personalDistractions: this.getCheckboxValues('personalDistractions')
     };
+    
+    tradeData.grossPL = tradeData.direction === 'Long' ? (tradeData.exitPrice - tradeData.entryPrice) * tradeData.quantity : (tradeData.entryPrice - tradeData.exitPrice) * tradeData.quantity;
+    tradeData.netPL = tradeData.grossPL - 40;
+    if (tradeData.stopLoss) {
+      const risk = Math.abs(tradeData.entryPrice - tradeData.stopLoss) * tradeData.quantity;
+      const reward = tradeData.targetPrice ? Math.abs((tradeData.direction === 'Long' ? tradeData.targetPrice - tradeData.entryPrice : tradeData.entryPrice - tradeData.targetPrice) * tradeData.quantity) : Math.abs(tradeData.grossPL);
+      tradeData.riskRewardRatio = risk ? reward / risk : 0;
+    } else tradeData.riskRewardRatio = 0;
 
-    // Calculate P&L and RR
-    trade.grossPL = trade.direction === 'Long' ? (trade.exitPrice - trade.entryPrice) * trade.quantity : (trade.entryPrice - trade.exitPrice) * trade.quantity;
-    trade.netPL = trade.grossPL - 40;
-    if (trade.stopLoss) {
-      const risk = Math.abs(trade.entryPrice - trade.stopLoss) * trade.quantity;
-      const reward = trade.targetPrice ? Math.abs((trade.direction === 'Long') ? trade.targetPrice - trade.entryPrice : trade.entryPrice - trade.targetPrice) * trade.quantity : Math.abs(trade.grossPL);
-      trade.riskRewardRatio = risk ? reward / risk : 0;
-    } else trade.riskRewardRatio = 0;
+    const { data, error } = await this.supabase.from('trades').insert([tradeData]).select();
 
-    try {
-      // Save to Supabase
-      const { data, error } = await supabase
-        .from('trades')
-        .insert([{
-          ...trade,
-          user_id: this.currentUser.id
-        }])
-        .select();
-
-      if (error) throw error;
-
-      // Add to local state
-      const savedTrade = { ...trade, id: data[0].id };
-      this.currentUser.trades.unshift(savedTrade);
-      
-      this.showToast('Trade saved with enhanced psychology data!', 'success');
-      form.reset();
-      this.updateCalculations();
-      this.renderAddTrade();
-      
-      // Reset all range value displays
-      document.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
-      const tradeConfidenceValue = document.getElementById('tradeConfidenceValue');
-      if (tradeConfidenceValue) tradeConfidenceValue.textContent = '5';
-      
-      this.showSection('dashboard');
-      
-    } catch (error) {
-      console.error('Save trade error:', error);
-      this.showToast('Failed to save trade: ' + error.message, 'error');
+    if (error) {
+        console.error('Error saving trade:', error);
+        this.showToast('Could not save trade.', 'error');
+    } else {
+        this.trades.unshift(data[0]);
+        this.showToast('Trade saved successfully!', 'success');
+        form.reset();
+        this.updateCalculations();
+        this.renderAddTrade();
+        document.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
+        this.showSection('dashboard');
     }
   }
 
@@ -694,7 +546,6 @@ class TradingJournalApp {
       return;
     }
 
-    // Populate filters
     const symbols = [...new Set(this.trades.map(t => t.symbol))];
     const symbolFilter = document.getElementById('symbolFilter');
     symbolFilter.innerHTML = '<option value="">All Symbols</option>' + symbols.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -721,8 +572,8 @@ class TradingJournalApp {
         <div class="card"><table class="trade-table"><thead>
           <tr><th>Date</th><th>Symbol</th><th>Dir</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Strategy</th></tr>
         </thead><tbody>
-          ${rows.sort((a,b) => new Date(b.entryDate) - new Date(a.entryDate)).map(t => `
-            <tr onclick="app.showTradeDetails('${t.id}')">
+          ${rows.map(t => `
+            <tr onclick="app.showTradeDetails(${t.id})">
               <td data-label="Date">${this.formatDate(t.entryDate)}</td>
               <td data-label="Symbol">${t.symbol}</td>
               <td data-label="Direction"><span class="trade-direction ${t.direction.toLowerCase()}">${t.direction}</span></td>
@@ -763,7 +614,7 @@ class TradingJournalApp {
   drawPLChart() {
     const ctx = document.getElementById('plChart');
     if (!ctx) return;
-    this.charts.pl && this.charts.pl.destroy();
+    if(this.charts.pl) this.charts.pl.destroy();
     if (this.trades.length === 0) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
 
     const sorted = [...this.trades].sort((a,b) => new Date(a.entryDate) - new Date(b.entryDate));
@@ -775,14 +626,14 @@ class TradingJournalApp {
     this.charts.pl = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets:[{ label:'Cumulative P&L', data:cum, borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.4, fill:true }] },
-      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'₹'+v.toLocaleString('en-IN') } } } }
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:false, ticks:{ callback:v=>'₹'+v.toLocaleString('en-IN') } } } }
     });
   }
 
   drawRRChart() {
     const ctx = document.getElementById('rrChart');
     if (!ctx) return;
-    this.charts.rr && this.charts.rr.destroy();
+    if(this.charts.rr) this.charts.rr.destroy();
     if (this.trades.length === 0) { ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
 
     const buckets = { '<1:1':0, '1:1-1:2':0, '1:2-1:3':0, '>1:3':0 };
@@ -793,15 +644,15 @@ class TradingJournalApp {
 
     this.charts.rr = new Chart(ctx, {
       type: 'bar',
-      data: { labels:Object.keys(buckets), datasets:[{ data:Object.values(buckets), backgroundColor:['#FFC185','#B4413C','#5D878F','#1FB8CD'] }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+      data: { labels:Object.keys(buckets), datasets:[{ label: '# of Trades', data:Object.values(buckets), backgroundColor:['#FFC185','#B4413C','#5D878F','#1FB8CD'] }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks: { stepSize: 1 } } } }
     });
   }
 
   drawStrategyChart() {
     const ctx = document.getElementById('strategyChart');
     if (!ctx) return;
-    this.charts.strategy && this.charts.strategy.destroy();
+    if(this.charts.strategy) this.charts.strategy.destroy();
     if (this.trades.length===0){ ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height); return; }
 
     const map = {};
@@ -815,7 +666,7 @@ class TradingJournalApp {
 
     this.charts.strategy = new Chart(ctx, {
       type:'bar',
-      data:{ labels, datasets:[{ data, backgroundColor:'#1FB8CD' }] },
+      data:{ labels, datasets:[{ label: 'Win Rate', data, backgroundColor:'#1FB8CD' }] },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+'%' }}}}
     });
   }
@@ -872,7 +723,6 @@ class TradingJournalApp {
       `Great job! You're net positive ${this.formatCurrency(s.totalPL)} with a ${s.winRate}% win rate.` :
       `You're net negative ${this.formatCurrency(s.totalPL)}. Focus on risk management and psychology.`;
 
-    // Enhanced AI feedback with psychology analysis
     const fb = document.getElementById('aiFeedback');
     let psychologyInsight = '';
     if (this.trades.length > 0) {
@@ -902,15 +752,8 @@ class TradingJournalApp {
     }
 
     document.getElementById('repeatTrades').innerHTML = this.repeatTradeHTML();
-    
-    // Enhanced entry analysis with new psychology data
-    const entryAnalysis = this.analyzeEntryPatterns();
-    document.getElementById('entryAnalysis').innerHTML = entryAnalysis;
-    
-    // Enhanced emotional bias analysis
-    const emotionalBias = this.analyzeEmotionalBias();
-    document.getElementById('emotionalBias').innerHTML = emotionalBias;
-    
+    document.getElementById('entryAnalysis').innerHTML = this.analyzeEntryPatterns();
+    document.getElementById('emotionalBias').innerHTML = this.analyzeEmotionalBias();
     document.getElementById('setupQuality').innerHTML = '<div class="suggestion-item suggestion-info">Setup quality scoring coming soon.</div>';
     document.getElementById('timeConfidence').innerHTML = '<div class="suggestion-item suggestion-info">Time-based confidence insights coming soon.</div>';
   }
@@ -963,15 +806,14 @@ class TradingJournalApp {
   drawConfidenceChart() {
     const ctx = document.getElementById('confidenceChart');
     if (!ctx) return;
-    this.charts.conf && this.charts.conf.destroy();
+    if(this.charts.conf) this.charts.conf.destroy();
 
     const sorted = [...this.confidenceEntries].sort((a,b)=>new Date(a.date)-new Date(b.date));
-    this.charts.conf = new Chart(ctx,{ type:'line', data:{ labels:sorted.map(c=>c.date), datasets:[{ data:sorted.map(c=>c.level), borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.3, fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ min:1, max:10 } } } });
+    this.charts.conf = new Chart(ctx,{ type:'line', data:{ labels:sorted.map(c=>c.date), datasets:[{ label: 'Confidence', data:sorted.map(c=>c.level), borderColor:'#1FB8CD', backgroundColor:'rgba(31,184,205,0.15)', tension:0.3, fill:true }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ min:1, max:10, ticks: { stepSize: 1 } } } } });
   }
 
   /* ------------------------ REPORTS & CALENDAR ------------------------ */
   renderReports() {
-    // Basic summaries
     const s = this.calculateStats();
     document.getElementById('weeklyReport').innerHTML = `<div class="report-item"><span class="report-label">Total Trades</span><span class="report-value">${s.totalTrades}</span></div><div class="report-item"><span class="report-label">Win Rate</span><span class="report-value">${s.winRate}%</span></div>`;
     document.getElementById('monthlyReport').innerHTML = `<div class="report-item"><span class="report-label">Net P&L</span><span class="report-value ${s.totalPL>=0?'positive':'negative'}">${this.formatCurrency(s.totalPL)}</span></div>`;
@@ -979,7 +821,6 @@ class TradingJournalApp {
     const avgConf = this.confidenceEntries.length ? (this.confidenceEntries.reduce((sum,c)=>sum+c.level,0)/this.confidenceEntries.length).toFixed(1) : 'N/A';
     document.getElementById('emotionalReport').innerHTML = `<div class="report-item"><span class="report-label">Avg Confidence</span><span class="report-value">${avgConf}/10</span></div>`;
 
-    // Calendar
     this.currentCalendarDate = this.currentCalendarDate || new Date();
     this.buildCalendar();
   }
@@ -1007,7 +848,6 @@ class TradingJournalApp {
       cal.appendChild(div);
     });
 
-    // Empty days before start
     for(let i=0;i<monthStart.getDay();i++){
       const div=document.createElement('div');
       div.className='calendar-day no-trades';
@@ -1020,16 +860,16 @@ class TradingJournalApp {
       const trades = this.trades.filter(t => t.entryDate.startsWith(key));
       let cls = 'no-trades';
       let content = d;
+      let pl = 0;
       if (trades.length) {
-        const pl = trades.reduce((sum,t)=>sum+t.netPL,0);
+        pl = trades.reduce((sum,t)=>sum+t.netPL,0);
         if (pl>1000) cls='profit-high'; else if (pl>0) cls='profit-low'; else if (pl<-1000) cls='loss-high'; else cls='loss-low';
         content = d;
       }
       const div=document.createElement('div');
       div.className='calendar-day '+cls;
       div.textContent=content;
-      div.title = trades.length ? `${trades.length} trades, P&L: ${this.formatCurrency(trades.reduce((s,t)=>s+t.netPL,0))}` : 'No trades';
-      if(trades.length){ div.onclick=()=>alert('Trades for '+key+' will be detailed in future update.'); }
+      div.title = trades.length ? `${trades.length} trades, P&L: ${this.formatCurrency(pl)}` : 'No trades';
       cal.appendChild(div);
     }
   }
@@ -1039,25 +879,26 @@ class TradingJournalApp {
     if (this.trades.length===0) return 'N/A';
     const map={};
     this.trades.forEach(t=>map[t.strategy]=(map[t.strategy]||0)+t.netPL);
-    return Object.entries(map).sort((a,b)=>b[1]-a[1])[0][0];
+    const best = Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
+    return best ? best[0] : 'N/A';
   }
 
   exportCSV() {
     if (this.trades.length===0) { this.showToast('No trades to export','warning'); return; }
-    const header=['Date','Symbol','Direction','Qty','Entry','Exit','Stop','Target','Net P&L','Strategy','Sleep','Stress','FOMO','Notes'];
+    const header=['id','entryDate','exitDate','symbol','direction','quantity','entryPrice','exitPrice','stopLoss','targetPrice','netPL','strategy','notes','lesson'];
     const rows=this.trades.map(t=>[
-      this.formatDate(t.entryDate),t.symbol,t.direction,t.quantity,t.entryPrice,t.exitPrice,t.stopLoss||'',t.targetPrice||'',t.netPL,t.strategy,t.sleepQuality||'',t.preStress||'',t.fomoLevel||'',t.notes.replace(/"/g,'""')
+      t.id, t.entryDate, t.exitDate, t.symbol, t.direction, t.quantity, t.entryPrice, t.exitPrice, t.stopLoss||'',t.targetPrice||'',t.netPL,t.strategy,t.notes.replace(/"/g,'""'), t.lesson.replace(/"/g,'""')
     ]);
     const csv=[header].concat(rows).map(r=>r.map(f=>typeof f==='string' && f.includes(',')?`"${f}"`:f).join(',')).join('\n');
     const blob=new Blob([csv],{type:'text/csv'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url; a.download='trading_data_enhanced.csv'; a.click();
+    a.href=url; a.download='trading_journal_data.csv'; a.click();
     URL.revokeObjectURL(url);
   }
 
   showTradeDetails(id) {
-    const t = this.trades.find(tr=>tr.id === id);
+    const t = this.trades.find(tr=>tr.id===id);
     if(!t) return;
     const rrText = t.riskRewardRatio? t.riskRewardRatio.toFixed(2):'0.00';
     const body=document.getElementById('tradeModalBody');
@@ -1075,8 +916,8 @@ class TradingJournalApp {
       <div class="trade-detail-item"><div class="trade-detail-label">Pre-Stress</div><div class="trade-detail-value">${t.preStress||'N/A'}/10</div></div>
       <div class="trade-detail-item"><div class="trade-detail-label">FOMO Level</div><div class="trade-detail-value">${t.fomoLevel||'N/A'}/10</div></div>
     </div>
-    ${t.notes?`<div style="margin-top:16px;">Notes:<br>${t.notes}</div>`:''}
-    ${t.lesson?`<div style="margin-top:16px;">Lesson Learned:<br>${t.lesson}</div>`:''}`;
+    ${t.notes?`<div style="margin-top:16px;"><strong>Notes:</strong><br><p>${t.notes}</p></div>`:''}
+    ${t.lesson?`<div style="margin-top:16px;"><strong>Lesson Learned:</strong><br><p>${t.lesson}</p></div>`:''}`;
     document.getElementById('tradeModal').classList.remove('hidden');
   }
 
@@ -1084,4 +925,3 @@ class TradingJournalApp {
 }
 
 window.app = new TradingJournalApp();
-
