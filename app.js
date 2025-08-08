@@ -8,6 +8,7 @@ class TradingJournalApp {
 
     // --- APP STATE ---
     this.currentUser = null;
+    this.isLoggedIn = false; // Guard to prevent duplicate login flow
     this.allTrades = [];
     this.allConfidence = [];
     this.charts = {};
@@ -34,26 +35,26 @@ class TradingJournalApp {
 
   /**
    * Listens for Supabase auth events (login, logout) and updates the UI accordingly.
-   * CORRECTED: onAuthStateChanged -> onAuthStateChange
+   * CORRECTED: Added a guard (this.isLoggedIn) to prevent the login flow from running multiple times.
    */
   handleAuthStateChange() {
     this.supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[AUTH] State Change Event:', event, 'Session:', session);
-      
+      console.log(`[AUTH] Event: ${event}`);
       const user = session?.user;
 
-      if (user) {
+      if (user && !this.isLoggedIn) {
+        this.isLoggedIn = true; // Set the guard
         this.currentUser = user;
-        // Only load data and show app if we weren't already logged in
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            await this.loadUserData();
-            this.showMainApp();
-        }
-      } else {
+        console.log('[AUTH] User signed in. Loading data and showing app...');
+        await this.loadUserData();
+        this.showMainApp();
+      } else if (!user && this.isLoggedIn) {
+        this.isLoggedIn = false; // Reset the guard
         this.currentUser = null;
+        console.log('[AUTH] User signed out. Returning to auth screen.');
         this.allTrades = [];
         this.allConfidence = [];
-        Object.values(this.charts).forEach(chart => chart && chart.destroy && chart.destroy());
+        Object.values(this.charts).forEach(chart => chart?.destroy());
         this.charts = {};
         this.showAuthScreen();
       }
@@ -81,17 +82,13 @@ class TradingJournalApp {
         
         const email = loginForm.email.value;
         const password = loginForm.password.value;
-        console.log('[AUTH] Attempting login for:', email);
 
         const { error } = await this.supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-          console.error('[AUTH] Login Error:', error.message);
           this.showAuthError('login-password-error', error.message);
         } else {
-          console.log('[AUTH] Login successful, waiting for state change.');
-          this.showToast('Login successful!', 'success');
-          loginForm.reset();
+          // Success is handled by onAuthStateChange, no action needed here.
         }
       } finally {
         submitButton.disabled = false;
@@ -119,17 +116,14 @@ class TradingJournalApp {
           return;
         }
         
-        console.log('[AUTH] Attempting signup for:', email);
-        const { data, error } = await this.supabase.auth.signUp({ email, password });
+        const { error } = await this.supabase.auth.signUp({ email, password });
 
         if (error) {
-          console.error('[AUTH] Signup Error:', error.message);
           this.showAuthError('signup-email-error', error.message);
         } else {
-          console.log('[AUTH] Signup successful.');
           this.showToast('Signup successful! You can now log in.', 'success');
           signupForm.reset();
-          this.switchAuthTab('login'); // Switch to login tab after successful signup
+          this.switchAuthTab('login');
         }
       } finally {
         submitButton.disabled = false;
@@ -142,7 +136,6 @@ class TradingJournalApp {
    * Logs the user out by calling Supabase signOut.
    */
   async logout() {
-    console.log('[AUTH] Logging out...');
     const { error } = await this.supabase.auth.signOut();
     if (error) {
       this.showToast(`Logout failed: ${error.message}`, 'error');
