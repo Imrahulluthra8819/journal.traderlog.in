@@ -10,86 +10,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <!-- Add this entire style block -->
-    <style>
-    <!-- Add this entire style block -->
-    <style>
-        /* Default style for desktop */
-        .calendar-section {
-            max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* Styles for the new calendar tooltip */
-        .calendar-tooltip {
-            position: absolute;
-            display: none; /* Hidden by default */
-            background-color: #2c3e50; /* Dark blue-gray background */
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            z-index: 1001; /* Ensure it's on top */
-            pointer-events: none; /* Prevents tooltip from blocking mouse events */
-            font-size: 0.9em;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-width: 280px;
-            border: 1px solid #34495e;
-            transition: opacity 0.2s;
-        }
-
-        .calendar-tooltip h4 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            font-size: 1em;
-            color: #1abc9c; /* Teal color for header */
-            border-bottom: 1px solid #34495e;
-            padding-bottom: 5px;
-        }
-
-        .calendar-tooltip-trade {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 5px 0;
-            border-bottom: 1px solid #34495e;
-        }
-        .calendar-tooltip-trade:last-child {
-            border-bottom: none;
-        }
-
-        .calendar-tooltip-trade .symbol {
-            font-weight: bold;
-            margin-right: 15px;
-        }
-
-        .calendar-tooltip-trade .pl.positive {
-            color: #2ecc71; /* Green for profit */
-            font-weight: bold;
-        }
-
-        .calendar-tooltip-trade .pl.negative {
-            color: #e74c3c; /* Red for loss */
-            font-weight: bold;
-        }
-
-        /* --- START: Mobile Responsive Styles --- */
-        @media (max-width: 768px) {
-            .calendar-section {
-                max-width: 100%; /* Use full width on mobile */
-            }
-
-            .pl-calendar .calendar-day {
-                font-size: 0.8em; /* Make day numbers smaller */
-                padding: 4px; /* Reduce padding */
-            }
-
-            .calendar-legend {
-                flex-direction: column; /* Stack legend items vertically */
-                align-items: flex-start;
-            }
-        }
-        /* --- END: Mobile Responsive Styles --- */
-    </style>
 </head>
 <body>
     <div id="authScreen" class="auth-screen">
@@ -400,6 +320,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
