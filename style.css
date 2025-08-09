@@ -1643,44 +1643,42 @@ select.form-control {
    NEW DASHBOARD REDESIGN STYLES
    ========================================================================== */
 
-/* This defines the new 2x2 grid layout */
+/* ==========================================================================
+   NEW DASHBOARD 2-COLUMN LAYOUT
+   ========================================================================== */
+
 .dashboard-main-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: auto auto;
+  grid-template-columns: 1.5fr 1fr; /* Left column is wider than the right */
   gap: var(--space-24);
   margin-top: var(--space-32);
-  /* We name our grid areas for easy arrangement */
-  grid-template-areas:
-    "pl-curve  confidence"      /* <-- Swapped positions */
-    "recents   ai-suggestions";  /* <-- Swapped positions */
+  align-items: start; /* Important for vertical sizing */
 }
 
-/* Now, we place each card into its named area */
-#plCard {
-  grid-area: pl-curve;
-}
-#aiCard {
-  grid-area: ai-suggestions;
-}
-.recent-trades {
-  grid-area: recents;
-}
-.confidence-tracker {
-  grid-area: confidence;
-  align-self: start; /* <-- This new line stops it from stretching vertically */
+.dashboard-col-left,
+.dashboard-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
 }
 
-/* This makes the grid stack into a single column on smaller screens */
+.dashboard-col-right .confidence-tracker {
+  flex-shrink: 0; /* Prevents this card from shrinking */
+  height: 170px; /* Approx 30% of a larger card's height */
+}
+
+.dashboard-col-right #aiCard {
+  flex-grow: 1; /* Allows this card to take up available space */
+}
+
+.dashboard-col-right #dashboardCalendarCard {
+   flex-shrink: 0; /* Prevents this card from shrinking */
+}
+
+/* Make the grid stack into a single column on smaller screens */
 @media (max-width: 1024px) {
   .dashboard-main-grid {
     grid-template-columns: 1fr;
-    /* We also update the order for mobile view */
-    grid-template-areas:
-      "pl-curve"
-      "confidence"
-      "recents"
-      "ai-suggestions";
   }
 }
 /* ==========================================================================
