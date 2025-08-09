@@ -104,6 +104,43 @@
             <option value="$">USD ($)</option>
         </select>
         <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
+                 <h3>AI Journal Assistant</h3>
+
+            <button id="closeChatBtn" class="chat-close-btn">&times;</button>
+
+        </div>
+
+        <div id="aiChatMessages" class="chat-messages">
+
+            <div class="chat-message ai-message">
+
+                Hello! I've read your latest trade and psychology entries. How can I help you reflect today?
+
+            </div>
+
+        </div>
+
+        <div class="chat-input-container">
+
+            <input type="text" id="aiChatInput" placeholder="Ask about your trades...">
+
+            <button id="sendChatBtn" class="chat-send-btn">➤</button>
+
+        </div>
+
+    </div>
+
+    <!-- Chat Bubble -->
+
+    <div id="aiChatBubble" class="chat-bubble">
+
+        🧠
+
+    </div>
+
+</div>
+
+<!-- AI CHAT WIDGET END -->
     </div>
 </div>
 
@@ -373,27 +410,10 @@
     <!-- Chat Window -->
     <div id="aiChatWindow" class="chat-window hidden">
         <div class="chat-header">
-            <h3>AI Journal Assistant</h3>
-            <button id="closeChatBtn" class="chat-close-btn">&times;</button>
-        </div>
-        <div id="aiChatMessages" class="chat-messages">
-            <div class="chat-message ai-message">
-                Hello! I've read your latest trade and psychology entries. How can I help you reflect today?
-            </div>
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="aiChatInput" placeholder="Ask about your trades...">
-            <button id="sendChatBtn" class="chat-send-btn">➤</button>
-        </div>
-    </div>
-    <!-- Chat Bubble -->
-    <div id="aiChatBubble" class="chat-bubble">
-        🧠
-    </div>
-</div>
-<!-- AI CHAT WIDGET END -->
+   
 </body>
 </html>
+
 
 
 
