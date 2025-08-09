@@ -1,89 +1,70 @@
 :root {
+  /* --- NEW COLOR PALETTE (LIGHT MODE) --- */
   /* Primitive Color Tokens */
-  --color-white: rgba(255, 255, 255, 1);
-  --color-black: rgba(0, 0, 0, 1);
-  --color-cream-50: rgba(252, 252, 249, 1);
-  --color-cream-100: rgba(255, 255, 253, 1);
-  --color-gray-200: rgba(245, 245, 245, 1);
-  --color-gray-300: rgba(167, 169, 169, 1);
-  --color-gray-400: rgba(119, 124, 124, 1);
-  --color-slate-500: rgba(98, 108, 113, 1);
-  --color-brown-600: rgba(94, 82, 64, 1);
-  --color-charcoal-700: rgba(31, 33, 33, 1);
-  --color-charcoal-800: rgba(38, 40, 40, 1);
-  --color-slate-900: rgba(19, 52, 59, 1);
-  --color-teal-300: rgba(50, 184, 198, 1);
-  --color-teal-400: rgba(45, 166, 178, 1);
-  --color-teal-500: rgba(33, 128, 141, 1);
-  --color-teal-600: rgba(29, 116, 128, 1);
-  --color-teal-700: rgba(26, 104, 115, 1);
-  --color-teal-800: rgba(41, 150, 161, 1);
-  --color-red-400: rgba(255, 84, 89, 1);
-  --color-red-500: rgba(192, 21, 47, 1);
-  --color-orange-400: rgba(230, 129, 97, 1);
-  --color-orange-500: rgba(168, 75, 47, 1);
-
-  /* RGB versions for opacity control */
-  --color-brown-600-rgb: 94, 82, 64;
-  --color-teal-500-rgb: 33, 128, 141;
-  --color-slate-900-rgb: 19, 52, 59;
-  --color-slate-500-rgb: 98, 108, 113;
-  --color-red-500-rgb: 192, 21, 47;
-  --color-red-400-rgb: 255, 84, 89;
-  --color-orange-500-rgb: 168, 75, 47;
-  --color-orange-400-rgb: 230, 129, 97;
-
-  /* Background color tokens (Light Mode) */
-  --color-bg-1: rgba(59, 130, 246, 0.08); /* Light blue */
-  --color-bg-2: rgba(245, 158, 11, 0.08); /* Light yellow */
-  --color-bg-3: rgba(34, 197, 94, 0.08); /* Light green */
-  --color-bg-4: rgba(239, 68, 68, 0.08); /* Light red */
-  --color-bg-5: rgba(147, 51, 234, 0.08); /* Light purple */
-  --color-bg-6: rgba(249, 115, 22, 0.08); /* Light orange */
-  --color-bg-7: rgba(236, 72, 153, 0.08); /* Light pink */
-  --color-bg-8: rgba(6, 182, 212, 0.08); /* Light cyan */
+  --color-primary-val: 37, 99, 235;    /* #2563eb */
+  --color-primary-dark-val: 29, 78, 216; /* #1d4ed8 */
+  --color-secondary-val: 14, 165, 233;  /* #0ea5e9 */
+  --color-accent-val: 139, 92, 246;   /* #8b5cf6 */
+  --color-success-val: 16, 185, 129;    /* #10b981 */
+  --color-warning-val: 245, 158, 11;   /* #f59e0b */
+  --color-danger-val: 239, 68, 68;     /* #ef4444 */
+  --color-dark-val: 30, 41, 59;      /* #1e293b */
+  --color-darker-val: 15, 23, 42;      /* #0f172a */
+  --color-light-val: 248, 250, 252;    /* #f8fafc */
+  --color-gray-val: 100, 116, 139;   /* #64748b */
+  --color-gray-light-val: 203, 213, 225;/* #cbd5e1 */
+  --color-white-val: 255, 255, 255;  /* #ffffff */
 
   /* Semantic Color Tokens (Light Mode) */
-  --color-background: var(--color-cream-50);
-  --color-surface: var(--color-cream-100);
-  --color-text: var(--color-slate-900);
-  --color-text-secondary: var(--color-slate-500);
-  --color-primary: var(--color-teal-500);
-  --color-primary-hover: var(--color-teal-600);
-  --color-primary-active: var(--color-teal-700);
-  --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
-  --color-border: rgba(var(--color-brown-600-rgb), 0.2);
-  --color-btn-primary-text: var(--color-cream-50);
-  --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
-  --color-error: var(--color-red-500);
-  --color-success: var(--color-teal-500);
-  --color-warning: var(--color-orange-500);
-  --color-info: var(--color-slate-500);
-  --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
-  --color-select-caret: rgba(var(--color-slate-900-rgb), 0.8);
+  --color-background: rgb(var(--color-light-val));
+  --color-surface: rgb(var(--color-white-val));
+  --color-text: rgb(var(--color-darker-val));
+  --color-text-secondary: rgb(var(--color-gray-val));
+  --color-primary: rgb(var(--color-primary-val));
+  --color-primary-hover: rgb(var(--color-primary-dark-val));
+  --color-primary-active: rgb(var(--color-primary-dark-val));
+  --color-secondary: rgba(var(--color-gray-val), 0.1);
+  --color-secondary-hover: rgba(var(--color-gray-val), 0.15);
+  --color-secondary-active: rgba(var(--color-gray-val), 0.2);
+  --color-border: rgba(var(--color-gray-val), 0.25);
+  --color-card-border: rgba(var(--color-gray-val), 0.2);
+  --color-card-border-inner: rgba(var(--color-gray-val), 0.15);
+  --color-btn-primary-text: rgb(var(--color-white-val));
+  --color-error: rgb(var(--color-danger-val));
+  --color-success: rgb(var(--color-success-val));
+  --color-warning: rgb(var(--color-warning-val));
+  --color-info: rgb(var(--color-gray-val));
+  --color-focus-ring: rgba(var(--color-primary-val), 0.4);
+  --color-select-caret: rgba(var(--color-darker-val), 0.8);
+
+  /* RGB versions for opacity control */
+  --color-success-rgb: var(--color-success-val);
+  --color-error-rgb: var(--color-danger-val);
+  --color-warning-rgb: var(--color-warning-val);
+  --color-info-rgb: var(--color-gray-val);
+
+  /* Background color tokens (Light Mode) */
+  --color-bg-1: rgba(var(--color-primary-val), 0.1);
+  --color-bg-2: rgba(var(--color-warning-val), 0.1);
+  --color-bg-3: rgba(var(--color-success-val), 0.1);
+  --color-bg-4: rgba(var(--color-danger-val), 0.1);
+  --color-bg-5: rgba(var(--color-accent-val), 0.1);
+  --color-bg-6: rgba(249, 115, 22, 0.1); /* Orange */
+  --color-bg-7: rgba(236, 72, 153, 0.1); /* Pink */
+  --color-bg-8: rgba(var(--color-secondary-val), 0.1);
 
   /* Common style patterns */
   --focus-ring: 0 0 0 3px var(--color-focus-ring);
   --focus-outline: 2px solid var(--color-primary);
-  --status-bg-opacity: 0.15;
-  --status-border-opacity: 0.25;
-  --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-
-  /* RGB versions for opacity control */
-  --color-success-rgb: 33, 128, 141;
-  --color-error-rgb: 192, 21, 47;
-  --color-warning-rgb: 168, 75, 47;
-  --color-info-rgb: 98, 108, 113;
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
 
   /* Typography */
-  --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo,
-    Monaco, Consolas, monospace;
+  --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-base: 14px;
@@ -122,16 +103,6 @@
   --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04),
-    0 2px 4px -1px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
-    0 4px 6px -2px rgba(0, 0, 0, 0.02);
-  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.03);
-
   /* Animation */
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -144,62 +115,51 @@
   --container-xl: 1280px;
 }
 
-/* Dark mode colors */
+/* --- NEW COLOR PALETTE (DARK MODE) --- */
 [data-color-scheme="dark"] {
-  /* RGB versions for opacity control (dark mode) */
-  --color-gray-400-rgb: 119, 124, 124;
-  --color-teal-300-rgb: 50, 184, 198;
-  --color-gray-300-rgb: 167, 169, 169;
-  --color-gray-200-rgb: 245, 245, 245;
-
-  /* Colorful background palette - Dark Mode */
-  --color-bg-1: rgba(29, 78, 216, 0.15); /* Dark blue */
-  --color-bg-2: rgba(180, 83, 9, 0.15); /* Dark yellow */
-  --color-bg-3: rgba(21, 128, 61, 0.15); /* Dark green */
-  --color-bg-4: rgba(185, 28, 28, 0.15); /* Dark red */
-  --color-bg-5: rgba(107, 33, 168, 0.15); /* Dark purple */
-  --color-bg-6: rgba(194, 65, 12, 0.15); /* Dark orange */
-  --color-bg-7: rgba(190, 24, 93, 0.15); /* Dark pink */
-  --color-bg-8: rgba(8, 145, 178, 0.15); /* Dark cyan */
-  
   /* Semantic Color Tokens (Dark Mode) */
-  --color-background: var(--color-charcoal-700);
-  --color-surface: var(--color-charcoal-800);
-  --color-text: var(--color-gray-200);
-  --color-text-secondary: rgba(var(--color-gray-300-rgb), 0.7);
-  --color-primary: var(--color-teal-300);
-  --color-primary-hover: var(--color-teal-400);
-  --color-primary-active: var(--color-teal-800);
-  --color-secondary: rgba(var(--color-gray-400-rgb), 0.15);
-  --color-secondary-hover: rgba(var(--color-gray-400-rgb), 0.25);
-  --color-secondary-active: rgba(var(--color-gray-400-rgb), 0.3);
-  --color-border: rgba(var(--color-gray-400-rgb), 0.3);
-  --color-error: var(--color-red-400);
-  --color-success: var(--color-teal-300);
-  --color-warning: var(--color-orange-400);
-  --color-info: var(--color-gray-300);
-  --color-focus-ring: rgba(var(--color-teal-300-rgb), 0.4);
-  --color-btn-primary-text: var(--color-slate-900);
-  --color-card-border: rgba(var(--color-gray-400-rgb), 0.15);
-  --color-card-border-inner: rgba(var(--color-gray-400-rgb), 0.15);
-  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-  --color-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
-  --color-select-caret: rgba(var(--color-gray-200-rgb), 0.8);
-
-  /* Common style patterns - updated for dark mode */
-  --focus-ring: 0 0 0 3px var(--color-focus-ring);
-  --focus-outline: 2px solid var(--color-primary);
-  --status-bg-opacity: 0.15;
-  --status-border-opacity: 0.25;
-  --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  --color-background: rgb(var(--color-darker-val));
+  --color-surface: rgb(var(--color-dark-val));
+  --color-text: rgb(var(--color-light-val));
+  --color-text-secondary: rgb(var(--color-gray-val));
+  --color-primary: rgb(var(--color-secondary-val)); /* Using sky blue for primary in dark mode */
+  --color-primary-hover: rgb(var(--color-primary-val));
+  --color-primary-active: rgb(var(--color-primary-dark-val));
+  --color-secondary: rgba(var(--color-gray-light-val), 0.1);
+  --color-secondary-hover: rgba(var(--color-gray-light-val), 0.15);
+  --color-secondary-active: rgba(var(--color-gray-light-val), 0.2);
+  --color-border: rgba(var(--color-gray-val), 0.3);
+  --color-card-border: rgba(var(--color-gray-val), 0.2);
+  --color-card-border-inner: rgba(var(--color-gray-val), 0.15);
+  --color-btn-primary-text: rgb(var(--color-darker-val));
+  --color-error: rgb(var(--color-danger-val));
+  --color-success: rgb(var(--color-success-val));
+  --color-warning: rgb(var(--color-warning-val));
+  --color-info: rgb(var(--color-gray-light-val));
+  --color-focus-ring: rgba(var(--color-secondary-val), 0.4);
+  --color-select-caret: rgba(var(--color-light-val), 0.8);
 
   /* RGB versions for dark mode */
-  --color-success-rgb: var(--color-teal-300-rgb);
-  --color-error-rgb: var(--color-red-400-rgb);
-  --color-warning-rgb: var(--color-orange-400-rgb);
-  --color-info-rgb: var(--color-gray-300-rgb);
+  --color-success-rgb: var(--color-success-val);
+  --color-error-rgb: var(--color-danger-val);
+  --color-warning-rgb: var(--color-warning-val);
+  --color-info-rgb: var(--color-gray-light-val);
+
+  /* Background color tokens (Dark Mode) */
+  --color-bg-1: rgba(var(--color-primary-val), 0.15);
+  --color-bg-2: rgba(var(--color-warning-val), 0.15);
+  --color-bg-3: rgba(var(--color-success-val), 0.15);
+  --color-bg-4: rgba(var(--color-danger-val), 0.15);
+  --color-bg-5: rgba(var(--color-accent-val), 0.15);
+  --color-bg-6: rgba(249, 115, 22, 0.15); /* Orange */
+  --color-bg-7: rgba(236, 72, 153, 0.15); /* Pink */
+  --color-bg-8: rgba(var(--color-secondary-val), 0.15);
+
+  /* Shadows for dark mode */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.12);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,0,0,0.1);
+  --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Base styles */
@@ -399,7 +359,7 @@ select.form-control {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: var(--select-caret-light);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgb(var(--color-darker-val))' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--space-12) center;
   background-size: 16px;
@@ -407,7 +367,7 @@ select.form-control {
 }
 
 [data-color-scheme="dark"] select.form-control {
-  background-image: var(--select-caret-dark);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgb(var(--color-light-val))' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 .form-control:focus {
@@ -512,7 +472,7 @@ select.form-control {
 
 /* Dark mode specifics */
 [data-color-scheme="dark"] .btn--outline {
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid var(--color-border);
 }
 
 @font-face {
@@ -550,6 +510,7 @@ select.form-control {
 .auth-header h1 {
   margin-bottom: var(--space-8);
   color: var(--color-text);
+  justify-content: center; /* Fix for alignment */
 }
 
 .auth-header p {
@@ -1189,7 +1150,7 @@ select.form-control {
 
 .calendar-day.profit-high {
   background: var(--color-success);
-  color: var(--color-white);
+  color: var(--color-btn-primary-text);
 }
 
 .calendar-day.loss-low {
@@ -1199,7 +1160,7 @@ select.form-control {
 
 .calendar-day.loss-high {
   background: var(--color-error);
-  color: var(--color-white);
+  color: var(--color-btn-primary-text);
 }
 
 .calendar-day:hover:not(.header) {
@@ -1338,7 +1299,7 @@ select.form-control {
 .toast {
   padding: var(--space-12) var(--space-16);
   border-radius: var(--radius-base);
-  color: var(--color-white);
+  color: var(--color-btn-primary-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   box-shadow: var(--shadow-lg);
@@ -1449,7 +1410,6 @@ select.form-control {
 
 /* ==========================================================================
    MOBILE OPTIMIZATIONS
-   These styles only apply on screens 768px or smaller
    ========================================================================== */
 @media (max-width: 768px) {
   .nav-container {
@@ -1560,50 +1520,37 @@ select.form-control {
    AI SUGGESTIONS LAYOUT FIX
    ========================================================================== */
 
-/* This forces all cards in the same row to be the same height, creating a clean grid. */
 .suggestions-grid {
   align-items: stretch;
 }
 /* --- Calendar & Tooltip Styles (REVISED) --- */
 
-/* This is the main container for the calendar on the dashboard page */
 #dashboardCalendarCard {
-    /* Prevents the card from growing to fill the column's height */
     flex-grow: 0;
     flex-shrink: 0;
-
-    /* Sets a max-width to make the calendar smaller */
     max-width: 380px;
-
-    /* Centers the card horizontally within its column */
     margin-left: auto;
     margin-right: auto;
-
-    /* Ensures the card takes up only the height it needs */
     height: auto;
 }
 
-/* Reduces the padding inside the card to save space */
 #dashboardCalendarCard .card__header,
 #dashboardCalendarCard .card__body {
     padding: var(--space-12);
 }
 
-/* Makes the calendar grid itself tighter */
 #dashboardCalendarCard .pl-calendar {
-    gap: 3px; /* A little more space than before for clarity */
+    gap: 3px;
 }
 
-/* Makes the individual day squares and their text smaller */
 #dashboardCalendarCard .calendar-day {
     font-size: 11px;
     font-weight: 500;
 }
 
-/* Styles for the calendar navigation (month/year controls) */
 #dashboardCalendarCard .calendar-nav {
     gap: var(--space-8);
-    margin-bottom: var(--space-12); /* Add some space below the nav */
+    margin-bottom: var(--space-12);
 }
 
 #dashboardCalendarCard .calendar-nav .btn--sm {
@@ -1616,20 +1563,19 @@ select.form-control {
     font-weight: var(--font-weight-medium);
 }
 
-/* Styles for the calendar tooltip */
 .calendar-tooltip {
     position: absolute;
     display: none;
-    background-color: #2c3e50;
-    color: white;
+    background-color: var(--color-dark);
+    color: var(--color-light);
     padding: 12px;
     border-radius: 8px;
     z-index: 1001;
     pointer-events: none;
     font-size: 0.9em;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-lg);
     max-width: 280px;
-    border: 1px solid #34495e;
+    border: 1px solid var(--color-border);
     transition: opacity 0.2s;
 }
 
@@ -1637,8 +1583,8 @@ select.form-control {
     margin-top: 0;
     margin-bottom: 8px;
     font-size: 1em;
-    color: #1abc9c;
-    border-bottom: 1px solid #34495e;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: 5px;
 }
 
@@ -1647,7 +1593,7 @@ select.form-control {
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
-    border-bottom: 1px solid #34495e;
+    border-bottom: 1px solid var(--color-border);
 }
 .calendar-tooltip-trade:last-child {
     border-bottom: none;
@@ -1659,17 +1605,16 @@ select.form-control {
 }
 
 .calendar-tooltip-trade .pl.positive {
-    color: #2ecc71;
+    color: var(--color-success);
 }
 
 .calendar-tooltip-trade .pl.negative {
-    color: #e74c3c;
+    color: var(--color-danger);
 }
 
-/* Mobile Responsive Styles for Calendar */
 @media (max-width: 768px) {
     #dashboardCalendarCard {
-        max-width: 100%; /* Use full width on mobile */
+        max-width: 100%;
     }
 
     #dashboardCalendarCard .pl-calendar .calendar-day {
@@ -1685,24 +1630,23 @@ select.form-control {
 
 
 /* ==========================================================================
-   NEW DASHBOARD REDESIGN STYLES
-   ========================================================================== */
+   NEW DASHBOARD REDESIGN STYLES
+   ========================================================================== */
 .dashboard-main-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1fr; /* Left column is wider than the right */
+    grid-template-columns: 1.5fr 1fr;
     gap: var(--space-24);
     margin-top: var(--space-32);
-    align-items: start; /* Important for vertical sizing */
+    align-items: start;
 }
 
 .dashboard-col-left,
 .dashboard-col-right {
     display: flex;
     flex-direction: column;
-    gap: var(--space-24); /* Increased gap for better spacing */
+    gap: var(--space-24);
 }
 
-/* Make the grid stack into a single column on smaller screens */
 @media (max-width: 1024px) {
     .dashboard-main-grid {
         grid-template-columns: 1fr;
@@ -1710,8 +1654,8 @@ select.form-control {
 }
 
 /* ==========================================================================
-   DASHBOARD CARD ALIGNMENT FIX
-   ========================================================================== */
+   DASHBOARD CARD ALIGNMENT FIX
+   ========================================================================== */
 .dashboard-main-grid .card {
     display: flex;
     flex-direction: column;
@@ -1727,12 +1671,12 @@ select.form-control {
 .dashboard-chart-container {
     flex-grow: 1;
     position: relative;
-    min-height: 250px; /* Ensure chart has a minimum height */
+    min-height: 250px;
 }
 
 /* ==========================================================================
-   HEADER ACTIONS & CURRENCY SELECTOR
-   ========================================================================== */
+   HEADER ACTIONS & CURRENCY SELECTOR
+   ========================================================================== */
 .header-actions {
     display: flex;
     align-items: center;
@@ -1741,10 +1685,9 @@ select.form-control {
 
 #currencySelector {
     width: 120px;
-    height: 40px; /* Match button height */
+    height: 40px;
 }
 
-/* On smaller screens, make the header wrap nicely */
 @media (max-width: 768px) {
     .section-header {
         flex-direction: column;
@@ -1930,7 +1873,7 @@ select.form-control {
 
 .ai-message li {
     padding-left: 0;
-    margin-bottom: 16px; /* This creates the gap after each point */
+    margin-bottom: 16px;
     line-height: 1.5;
 }
 
@@ -1946,15 +1889,10 @@ select.form-control {
     gap: var(--space-12);
 }
 
-/* This controls the logo size on the login screen */
 .auth-header img {
-    height: 30px; /* Adjusted size for the bigger heading */
+    height: 30px;
 }
 
-/* This controls the logo size in the top navigation bar */
 .nav-brand img {
-    height: 24px; /* Adjusted size for the smaller heading */
-}
-.auth-header h1 {
-  justify-content: center;
+    height: 24px;
 }
