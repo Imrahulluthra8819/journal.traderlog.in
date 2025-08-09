@@ -1899,3 +1899,26 @@ select.form-control {
 .chat-send-btn:hover {
     background-color: var(--color-primary-hover);
 }
+/* --- STYLES FOR EXCITING AI RESPONSES --- */
+.ai-message h3 {
+    font-size: var(--font-size-lg);
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--color-text);
+}
+
+.ai-message ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.ai-message li {
+    padding-left: 0;
+    margin-bottom: 16px; /* This creates the gap after each point */
+    line-height: 1.5;
+}
+
+.ai-message li:last-child {
+    margin-bottom: 0;
+}
