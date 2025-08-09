@@ -1916,30 +1916,40 @@ select.form-control {
    DASHBOARD CALENDAR SIZING (REVISED)
    ========================================================================== */
 
-/* This more specific selector ensures these styles apply only on the dashboard */
-#dashboard #dashboardCalendarCard .pl-calendar {
-  gap: var(--space-2);
-}
-
-#dashboard #dashboardCalendarCard .calendar-day {
-  font-size: var(--font-size-xs); /* Uses the extra-small font size */
-  font-weight: var(--font-weight-medium);
-  padding: var(--space-2); /* Reduces padding to make day squares smaller */
-}
-
-#dashboard #dashboardCalendarCard .card__header {
-    padding: var(--space-12); /* Reduces header padding */
-}
-
-#dashboard #dashboardCalendarCard .card__body {
-    padding: var(--space-8); /* Reduces body padding */
-    flex-grow: 1;
-    overflow: hidden;
-}
-
-/* This directly controls the overall card height */
+/* This targets the calendar card specifically on the dashboard */
 #dashboard #dashboardCalendarCard {
-    max-height: 290px;
+    /* We let the content determine the height, no fixed max-height */
     display: flex;
     flex-direction: column;
+}
+
+/* Reduce padding inside the card to save space */
+#dashboard #dashboardCalendarCard .card__header {
+    padding: var(--space-10);
+}
+#dashboard #dashboardCalendarCard .card__body {
+    padding: var(--space-12);
+}
+
+/* Make the calendar grid itself tighter */
+#dashboard #dashboardCalendarCard .pl-calendar {
+  gap: 2px; /* Reduces space between the day squares */
+}
+
+/* Make the individual day squares and their text smaller */
+#dashboard #dashboardCalendarCard .calendar-day {
+  font-size: 10px; /* Makes the numbers smaller */
+  padding: 1px; /* Makes the squares themselves smaller */
+}
+
+/* Make the calendar navigation buttons and text smaller */
+#dashboard #dashboardCalendarCard .calendar-nav {
+    gap: var(--space-8);
+}
+#dashboard #dashboardCalendarCard .calendar-nav .btn--sm {
+    padding: var(--space-2) var(--space-8);
+    font-size: var(--font-size-xs);
+}
+#dashboard #dashboardCalendarCard .calendar-nav span {
+    font-size: var(--font-size-sm);
 }
