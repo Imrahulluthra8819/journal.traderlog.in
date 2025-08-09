@@ -118,71 +118,74 @@
         <!-- This is the new main grid for the rest of the dashboard content -->
       <!-- START: Paste this new grid code here -->
 <!-- START: Replace your old dashboard-main-grid with this one -->
+<!-- START: Replace your old dashboard-main-grid with this one -->
 <div class="dashboard-main-grid">
-    <!-- P&L Curve Card -->
-    <div id="plCard" class="card">
-        <div class="card__header">
-            <h3>Analytics Snapshot</h3>
-            <button class="view-all-link" data-section="analytics">View Details</button>
-        </div>
-        <div class="card__body">
-            <h4>P&L Curve</h4>
-            <div class="dashboard-chart-container">
-                <canvas id="dashboardPlChart"></canvas>
+    <!-- Left Column -->
+    <div class="dashboard-col-left">
+        <div id="plCard" class="card">
+            <div class="card__header">
+                <h3>Analytics Snapshot</h3>
+                <button class="view-all-link" data-section="analytics">View Details</button>
             </div>
-        </div>
-    </div>
-    <!-- Recent Trades Card -->
-    <div class="recent-trades card">
-        <div class="card__header">
-            <h3>Recent Trades</h3>
-            <button class="view-all-link" data-section="history">View All</button>
-        </div>
-        <div class="card__body">
-            <div id="recentTradesList">
-                <div class="loading">Loading recent trades...</div>
-            </div>
-        </div>
-    </div>
-    <!-- Confidence Tracker Card -->
-    <div class="confidence-tracker card">
-        <div class="card__body">
-            <h3>How are you feeling today?</h3>
-            <div class="confidence-controls">
-                <div class="confidence-slider-container">
-                    <label for="dailyConfidence" class="form-label">Confidence (1-10)</label>
-                    <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
-                    <div class="range-value" id="confidenceValue">5</div>
+            <div class="card__body">
+                <h4>P&L Curve</h4>
+                <div class="dashboard-chart-container">
+                    <canvas id="dashboardPlChart"></canvas>
                 </div>
-                <button class="btn btn--primary" id="saveConfidenceBtn">Submit</button>
             </div>
-            <div id="confidenceMessage" class="confidence-message"></div>
         </div>
-    </div>
-    <!-- AI Suggestions Card -->
-    <div id="aiCard" class="card">
-        <div class="card__header">
-            <h3>AI Suggestions</h3>
-            <button class="view-all-link" data-section="ai-suggestions">More Insights</button>
-        </div>
-        <div class="card__body">
-            <div id="dashboardAiFeedback" class="suggestion-content">
-                <div class="loading">Loading AI feedback...</div>
+        <div class="recent-trades card">
+            <div class="card__header">
+                <h3>Recent Trades</h3>
+                <button class="view-all-link" data-section="history">View All</button>
+            </div>
+            <div class="card__body">
+                <div id="recentTradesList">
+                    <div class="loading">Loading recent trades...</div>
+                </div>
             </div>
         </div>
     </div>
-    <!-- NEW: Dashboard Calendar Card -->
-    <div id="dashboardCalendarCard" class="card">
-        <div class="card__header">
-            <h3>P&L Calendar</h3>
-            <div class="calendar-nav">
-                <button class="btn btn--outline btn--sm" id="dashPrevMonth">‹</button>
-                <span id="dashCurrentMonth">Loading...</span>
-                <button class="btn btn--outline btn--sm" id="dashNextMonth">›</button>
+
+    <!-- Right Column -->
+    <div class="dashboard-col-right">
+        <div class="confidence-tracker card">
+            <div class="card__body">
+                <h3>How are you feeling today?</h3>
+                <div class="confidence-controls">
+                    <div class="confidence-slider-container">
+                        <label for="dailyConfidence" class="form-label">Confidence (1-10)</label>
+                        <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
+                        <div class="range-value" id="confidenceValue">5</div>
+                    </div>
+                    <button class="btn btn--primary" id="saveConfidenceBtn">Submit</button>
+                </div>
+                <div id="confidenceMessage" class="confidence-message"></div>
             </div>
         </div>
-        <div class="card__body">
-            <div id="dashPlCalendar" class="pl-calendar"></div>
+        <div id="aiCard" class="card">
+            <div class="card__header">
+                <h3>AI Suggestions</h3>
+                <button class="view-all-link" data-section="ai-suggestions">More Insights</button>
+            </div>
+            <div class="card__body">
+                <div id="dashboardAiFeedback" class="suggestion-content">
+                    <div class="loading">Loading AI feedback...</div>
+                </div>
+            </div>
+        </div>
+        <div id="dashboardCalendarCard" class="card">
+            <div class="card__header">
+                <h3>P&L Calendar</h3>
+                <div class="calendar-nav">
+                    <button class="btn btn--outline btn--sm" id="dashPrevMonth">‹</button>
+                    <span id="dashCurrentMonth">Loading...</span>
+                    <button class="btn btn--outline btn--sm" id="dashNextMonth">›</button>
+                </div>
+            </div>
+            <div class="card__body">
+                <div id="dashPlCalendar" class="pl-calendar"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -407,6 +410,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
