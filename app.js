@@ -265,13 +265,24 @@ class TradingJournalApp {
     }
   }
 
-  toggleTheme() {
-    const html = document.documentElement;
-    const current = html.getAttribute('data-color-scheme') || 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    html.setAttribute('data-color-scheme', next);
-    document.getElementById('themeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+ toggleTheme() {
+  const html = document.documentElement;
+  
+  // Check if the current theme is light
+  const isLight = html.getAttribute('data-color-scheme') === 'light';
+
+  if (isLight) {
+    // If it's light, remove the attribute to revert to the default (dark) theme.
+    html.removeAttribute('data-color-scheme');
+    // Show the sun icon, indicating a click will switch to light mode.
+    document.getElementById('themeToggle').textContent = '☀️';
+  } else {
+    // If it's dark (default), set the attribute to 'light'.
+    html.setAttribute('data-color-scheme', 'light');
+    // Show the moon icon, indicating a click will switch to dark mode.
+    document.getElementById('themeToggle').textContent = '🌙';
   }
+}
 
   showSection(id) {
     if (!id) return;
@@ -1221,3 +1232,4 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
