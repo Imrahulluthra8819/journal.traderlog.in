@@ -1266,6 +1266,88 @@ addChatMessage(text, sender) {
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messages-Container.scrollHeight;
 }
+  /**
+   * This function runs when you send a message.
+   * It shows the typing indicator, calls the AI, and then hides the indicator.
+   */
+  async handleSendMessage() {
+    const chatInput = document.getElementById('aiChatInput');
+    const question = chatInput.value.trim();
+    if (!question) return;
+
+    this.addChatMessage(question, 'user');
+    chatInput.value = '';
+    this.showTypingIndicator(true); // <-- Typing animation starts here
+
+    const trades = this.allTrades.slice(0, 20);
+    const psychology = this.allConfidence.slice(0, 20);
+
+    try {
+      const response = await fetch('/.netlify/functions/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, trades, psychology })
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const data = await response.json();
+      this.addChatMessage(data.reply, 'ai');
+
+    } catch (error) {
+      console.error("Error fetching AI response:", error);
+      this.addChatMessage("Sorry, I'm having trouble connecting. Please try again.", 'ai');
+    } finally {
+      this.showTypingIndicator(false); // <-- Typing animation stops here
+    }
+  }
+
+  /**
+   * This function displays a new message in the chat window.
+   * It now handles the special formatting (headings, lists, emojis) from the AI.
+   */
+  addChatMessage(text, sender) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    const messageElement = document.createElement('div');
+    messageElement.className = `chat-message ${sender}-message`;
+
+    if (sender === 'ai') {
+      let html = text
+        .replace(/### (.*)/g, '<h3>$1</h3>')
+        .replace(/^- (.*)/gm, '<li>$1</li>')
+        .replace(/\n\n/g, '<br><br>');
+      if (html.includes('<li>')) {
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+      }
+      messageElement.innerHTML = html;
+    } else {
+      messageElement.textContent = text;
+    }
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  /**
+   * This function creates and removes the "typing..." dots animation.
+   */
+  showTypingIndicator(show) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    let indicator = document.getElementById('typing-indicator');
+
+    if (show) {
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'typing-indicator';
+        indicator.className = 'typing-indicator';
+        indicator.innerHTML = `<span></span><span></span><span></span>`;
+        messagesContainer.appendChild(indicator);
+      }
+    } else {
+      if (indicator) indicator.remove();
+    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 // --- END: AI CHAT METHODS ---
   /* ------------------------ EXPORT ------------------------------------- */
   exportCSV() {
@@ -1283,6 +1365,7 @@ addChatMessage(text, sender) {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
