@@ -1643,53 +1643,46 @@ select.form-control {
    NEW DASHBOARD REDESIGN STYLES
    ========================================================================== */
 
+/* ==========================================================================
+   NEW DASHBOARD REDESIGN STYLES
+   ========================================================================== */
+
+/* This defines the new 2x2 grid layout */
 .dashboard-main-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: auto auto;
   gap: var(--space-24);
   margin-top: var(--space-32);
+  /* We name our grid areas for easy arrangement */
+  grid-template-areas:
+    "pl-curve  ai-suggestions"
+    "recents   confidence";
 }
 
-.dashboard-col-1,
-.dashboard-col-2 {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-24);
+/* Now, we place each card into its named area */
+#plCard {
+  grid-area: pl-curve;
+}
+#aiCard {
+  grid-area: ai-suggestions;
+}
+.recent-trades {
+  grid-area: recents;
+}
+.confidence-tracker {
+  grid-area: confidence;
 }
 
-.dashboard-glimpse-card .card__body {
-  display: flex;
-  flex-direction: column;
-}
-
-.dashboard-glimpse-card h4 {
-  margin-bottom: var(--space-12);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.dashboard-chart-container {
-  position: relative;
-  height: 250px; /* Or adjust as needed */
-  flex-grow: 1;
-}
-
-#dashboardAiFeedback .suggestion-item {
-    font-size: var(--font-size-sm);
-    padding: var(--space-8);
-    margin-bottom: var(--space-8);
-}
-
-#dashboardAiFeedback .suggestion-item:last-child {
-    margin-bottom: 0;
-}
-
-/* Responsive adjustments for the new dashboard grid */
+/* This makes the grid stack into a single column on smaller screens */
 @media (max-width: 1024px) {
   .dashboard-main-grid {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "pl-curve"
+      "ai-suggestions"
+      "recents"
+      "confidence";
   }
 }
 /* ==========================================================================
