@@ -117,9 +117,10 @@
 
         <!-- This is the new main grid for the rest of the dashboard content -->
       <!-- START: Paste this new grid code here -->
+<!-- START: Replace your old dashboard-main-grid with this one -->
 <div class="dashboard-main-grid">
     <!-- P&L Curve Card -->
-    <div id="plCard" class="card dashboard-glimpse-card">
+    <div id="plCard" class="card">
         <div class="card__header">
             <h3>Analytics Snapshot</h3>
             <button class="view-all-link" data-section="analytics">View Details</button>
@@ -128,19 +129,6 @@
             <h4>P&L Curve</h4>
             <div class="dashboard-chart-container">
                 <canvas id="dashboardPlChart"></canvas>
-            </div>
-        </div>
-    </div>
-    <!-- AI Suggestions Card -->
-    <div id="aiCard" class="card dashboard-glimpse-card">
-        <div class="card__header">
-            <h3>AI Suggestions</h3>
-            <button class="view-all-link" data-section="ai-suggestions">Get More Insights</button>
-        </div>
-        <div class="card__body">
-            <h4>AI-Based Trade Feedback</h4>
-            <div id="dashboardAiFeedback" class="suggestion-content">
-                <div class="loading">Loading AI feedback...</div>
             </div>
         </div>
     </div>
@@ -159,10 +147,10 @@
     <!-- Confidence Tracker Card -->
     <div class="confidence-tracker card">
         <div class="card__body">
-            <h3>How are you feeling about trading today?</h3>
+            <h3>How are you feeling today?</h3>
             <div class="confidence-controls">
                 <div class="confidence-slider-container">
-                    <label for="dailyConfidence" class="form-label">Confidence Level (1-10)</label>
+                    <label for="dailyConfidence" class="form-label">Confidence (1-10)</label>
                     <input type="range" id="dailyConfidence" class="range-input" min="1" max="10" value="5">
                     <div class="range-value" id="confidenceValue">5</div>
                 </div>
@@ -171,7 +159,34 @@
             <div id="confidenceMessage" class="confidence-message"></div>
         </div>
     </div>
+    <!-- AI Suggestions Card -->
+    <div id="aiCard" class="card">
+        <div class="card__header">
+            <h3>AI Suggestions</h3>
+            <button class="view-all-link" data-section="ai-suggestions">More Insights</button>
+        </div>
+        <div class="card__body">
+            <div id="dashboardAiFeedback" class="suggestion-content">
+                <div class="loading">Loading AI feedback...</div>
+            </div>
+        </div>
+    </div>
+    <!-- NEW: Dashboard Calendar Card -->
+    <div id="dashboardCalendarCard" class="card">
+        <div class="card__header">
+            <h3>P&L Calendar</h3>
+            <div class="calendar-nav">
+                <button class="btn btn--outline btn--sm" id="dashPrevMonth">‹</button>
+                <span id="dashCurrentMonth">Loading...</span>
+                <button class="btn btn--outline btn--sm" id="dashNextMonth">›</button>
+            </div>
+        </div>
+        <div class="card__body">
+            <div id="dashPlCalendar" class="pl-calendar"></div>
+        </div>
+    </div>
 </div>
+<!-- END: Replacement block -->
 <!-- END: New grid code -->
 </section>
 
@@ -392,6 +407,7 @@
     <script src="app.js"></script>
 </body>
 </html>
+
 
 
 
