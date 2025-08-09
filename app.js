@@ -251,9 +251,15 @@ document.getElementById('aiChatWidget')?.classList.add('hidden');
     });
     document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
-        document.getElementById('currencySelector').addEventListener('change', (e) => {
-        this.currencySymbol = e.target.value;
-          // --- START: ADDED FOR AI CHAT ---
+    // --- START: CORRECTED CODE TO ADD ---
+
+// This is the listener for your currency dropdown.
+document.getElementById('currencySelector').addEventListener('change', (e) => {
+    this.currencySymbol = e.target.value;
+    document.dispatchEvent(new CustomEvent('data-changed'));
+});
+
+// These are the listeners for your AI Chat, now in the correct place.
 const chatBubble = document.getElementById('aiChatBubble');
 const chatWindow = document.getElementById('aiChatWindow');
 const closeChatBtn = document.getElementById('closeChatBtn');
@@ -276,13 +282,15 @@ const sendMessageHandler = () => {
     }
 };
 if (sendChatBtn) sendChatBtn.addEventListener('click', sendMessageHandler);
-if (chatInput) chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendMessageHandler();
-});
-// --- END: ADDED FOR AI CHAT ---
-        // This event will trigger a refresh of the current section
-        document.dispatchEvent(new CustomEvent('data-changed'));
+if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault(); // Prevents other actions
+            sendMessageHandler();
+        }
     });
+}
+// --- END: CORRECTED CODE TO ADD ---
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
 
     const slider = document.getElementById('dailyConfidence');
@@ -1274,6 +1282,7 @@ showTypingIndicator(show) {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
