@@ -1239,31 +1239,32 @@ async handleSendMessage() {
     }
 }
 
+// Replace your old addChatMessage function with this one
 addChatMessage(text, sender) {
     const messagesContainer = document.getElementById('aiChatMessages');
     const messageElement = document.createElement('div');
     messageElement.className = `chat-message ${sender}-message`;
-    messageElement.textContent = text;
-    messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
 
-showTypingIndicator(show) {
-    const messagesContainer = document.getElementById('aiChatMessages');
-    let indicator = document.getElementById('typing-indicator');
-
-    if (show) {
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'typing-indicator';
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = `<span></span><span></span><span></span>`;
-            messagesContainer.appendChild(indicator);
+    if (sender === 'ai') {
+        // Simple Markdown to HTML conversion for AI messages
+        let html = text
+            .replace(/### (.*)/g, '<h3>$1</h3>') // Converts ### Heading to <h3>
+            .replace(/^- (.*)/gm, '<li>$1</li>') // Converts - Bullet to <li>
+            .replace(/\n/g, '<br>'); // Respects newlines for spacing
+        
+        // Wrap list items in a <ul> tag
+        if (html.includes('<li>')) {
+            html = '<ul>' + html + '</ul>';
         }
+        
+        messageElement.innerHTML = html;
     } else {
-        if (indicator) indicator.remove();
+        // User messages are plain text for security
+        messageElement.textContent = text;
     }
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messages-Container.scrollHeight;
 }
 // --- END: AI CHAT METHODS ---
   /* ------------------------ EXPORT ------------------------------------- */
@@ -1282,6 +1283,7 @@ showTypingIndicator(show) {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
