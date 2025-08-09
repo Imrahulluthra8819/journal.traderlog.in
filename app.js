@@ -925,11 +925,17 @@ document.getElementById('dashNextMonth').addEventListener('click', () => this.ch
   }
 
 // PASTE THIS NEW BLOCK IN ITS PLACE
+// PASTE THIS NEW BLOCK IN ITS PLACE
 changeCalendarMonth(offset) {
   this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + offset);
   // Re-render whichever calendar is visible
   if (document.getElementById('dashboard').classList.contains('active')) {
       this.buildDashboardCalendar();
+  }
+  if (document.getElementById('reports').classList.contains('active')) {
+      this.buildCalendar();
+  }
+}
   }
   if (document.getElementById('reports').classList.contains('active')) {
       this.buildCalendar();
@@ -1469,6 +1475,7 @@ buildDashboardCalendar() {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
