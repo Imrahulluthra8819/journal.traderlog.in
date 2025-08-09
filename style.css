@@ -1915,44 +1915,40 @@ select.form-control {
    DASHBOARD CALENDAR SIZING (FORCEFUL OVERRIDE)
    ========================================================================== */
 
-/* ==========================================================================
-   DASHBOARD CALENDAR SIZING (FINAL - NO CLIPPING)
-   ========================================================================== */
-
 /* This targets the calendar card specifically on the dashboard */
 #dashboard #dashboardCalendarCard {
-    /* We let the content determine the height */
-    display: flex;
-    flex-direction: column;
+    height: auto !important; /* Let content determine height */
+    max-height: none !important; /* Remove any previous height limits */
 }
 
 /* Reduce padding inside the card to save space */
 #dashboard #dashboardCalendarCard .card__header {
-    padding: var(--space-10);
+    padding: 10px !important;
 }
 #dashboard #dashboardCalendarCard .card__body {
-    padding: var(--space-12);
+    padding: 10px !important;
 }
 
 /* Make the calendar grid itself tighter */
 #dashboard #dashboardCalendarCard .pl-calendar {
-  gap: 2px; /* Reduces space between the day squares */
+  gap: 2px !important;
 }
 
 /* Make the individual day squares and their text smaller */
 #dashboard #dashboardCalendarCard .calendar-day {
-  font-size: 10px; /* Makes the numbers smaller */
-  padding: 1px;    /* Makes the squares themselves smaller */
+  font-size: 10px !important;
+  padding: 2px !important; /* A little padding to keep it clean */
+  font-weight: 500 !important;
 }
 
 /* Make the calendar navigation buttons and text smaller */
 #dashboard #dashboardCalendarCard .calendar-nav {
-    gap: var(--space-8);
+    gap: 8px !important;
 }
 #dashboard #dashboardCalendarCard .calendar-nav .btn--sm {
-    padding: var(--space-2) var(--space-8);
-    font-size: var(--font-size-xs);
+    padding: 2px 8px !important;
+    font-size: 11px !important;
 }
 #dashboard #dashboardCalendarCard .calendar-nav span {
-    font-size: var(--font-size-sm);
+    font-size: 12px !important;
 }
