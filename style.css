@@ -1911,3 +1911,22 @@ select.form-control {
 .ai-message li:last-child {
     margin-bottom: 0;
 }
+/* ==========================================================================
+   DASHBOARD CALENDAR SIZING
+   ========================================================================== */
+
+/* This targets the calendar grid specifically on the dashboard */
+#dashboardCalendarCard .pl-calendar {
+  gap: var(--space-2); /* Makes the space between days smaller */
+}
+
+/* This makes the day numbers (1, 2, 3...) smaller */
+#dashboardCalendarCard .calendar-day {
+  font-size: var(--font-size-xs); /* Uses the extra-small font size */
+  font-weight: var(--font-weight-medium);
+}
+
+/* This reduces the padding inside the calendar card to make it tighter */
+#dashboardCalendarCard .card__body {
+    padding: var(--space-12);
+}
