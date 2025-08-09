@@ -1659,7 +1659,7 @@ select.form-control {
 .dashboard-col-right {
   display: flex;
   flex-direction: column;
-  gap: var(--space-24);
+  gap: var(--space-12);
 }
 
 .dashboard-col-right .confidence-tracker {
