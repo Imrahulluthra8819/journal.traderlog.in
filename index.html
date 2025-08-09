@@ -104,43 +104,6 @@
             <option value="$">USD ($)</option>
         </select>
         <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
-                 <h3>AI Journal Assistant</h3>
-
-            <button id="closeChatBtn" class="chat-close-btn">&times;</button>
-
-        </div>
-
-        <div id="aiChatMessages" class="chat-messages">
-
-            <div class="chat-message ai-message">
-
-                Hello! I've read your latest trade and psychology entries. How can I help you reflect today?
-
-            </div>
-
-        </div>
-
-        <div class="chat-input-container">
-
-            <input type="text" id="aiChatInput" placeholder="Ask about your trades...">
-
-            <button id="sendChatBtn" class="chat-send-btn">➤</button>
-
-        </div>
-
-    </div>
-
-    <!-- Chat Bubble -->
-
-    <div id="aiChatBubble" class="chat-bubble">
-
-        🧠
-
-    </div>
-
-</div>
-
-<!-- AI CHAT WIDGET END -->
     </div>
 </div>
 
@@ -399,7 +362,45 @@
         </main>
         <div id="tradeModal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h2>Trade Details</h2><button class="modal-close" onclick="app.hideTradeModal()">&times;</button></div><div class="modal-body" id="tradeModalBody"></div><div class="modal-footer"><button class="btn btn--outline" onclick="app.hideTradeModal()">Close</button><button class="btn btn--primary" id="editTradeBtn">Edit Trade</button></div></div></div>
     </div>
+  <h3>AI Journal Assistant</h3>
 
+            <button id="closeChatBtn" class="chat-close-btn">&times;</button>
+
+        </div>
+
+        <div id="aiChatMessages" class="chat-messages">
+
+            <div class="chat-message ai-message">
+
+                Hello! I've read your latest trade and psychology entries. How can I help you reflect today?
+
+            </div>
+
+        </div>
+
+        <div class="chat-input-container">
+
+            <input type="text" id="aiChatInput" placeholder="Ask about your trades...">
+
+            <button id="sendChatBtn" class="chat-send-btn">➤</button>
+
+        </div>
+
+    </div>
+
+    <!-- Chat Bubble -->
+
+    <div id="aiChatBubble" class="chat-bubble">
+
+        🧠
+
+    </div>
+
+</div>
+
+
+
+<!-- AI CHAT WIDGET END -->
     <div id="toastContainer" class="toast-container"></div>
     <!-- Add this line -->
     <div id="calendarTooltip" class="calendar-tooltip"></div>
@@ -413,6 +414,7 @@
    
 </body>
 </html>
+
 
 
 
