@@ -1951,15 +1951,20 @@ select.form-control {
 }
 #dashboard #dashboardCalendarCard .calendar-nav span {
     font-size: 12px !important
-/* --- Styles for Header Logo --- */
+/* --- Styles for Header Logo (Corrected Sizes) --- */
 .nav-brand,
 .auth-header h1 {
     display: flex;
     align-items: center;
-    gap: var(--space-12); /* Adjust space between logo and text */
+    gap: var(--space-12);
 }
 
-.nav-brand img,
+/* This controls the logo size on the login screen */
 .auth-header img {
-    height: 32px; /* Adjust the size of the logo */
+    height: 30px; /* Adjusted size for the bigger heading */
+}
+
+/* This controls the logo size in the top navigation bar */
+.nav-brand img {
+    height: 24px; /* Adjusted size for the smaller heading */
 }
