@@ -1912,21 +1912,34 @@ select.form-control {
     margin-bottom: 0;
 }
 /* ==========================================================================
-   DASHBOARD CALENDAR SIZING
+/* ==========================================================================
+   DASHBOARD CALENDAR SIZING (REVISED)
    ========================================================================== */
 
-/* This targets the calendar grid specifically on the dashboard */
-#dashboardCalendarCard .pl-calendar {
-  gap: var(--space-2); /* Makes the space between days smaller */
+/* This more specific selector ensures these styles apply only on the dashboard */
+#dashboard #dashboardCalendarCard .pl-calendar {
+  gap: var(--space-2);
 }
 
-/* This makes the day numbers (1, 2, 3...) smaller */
-#dashboardCalendarCard .calendar-day {
+#dashboard #dashboardCalendarCard .calendar-day {
   font-size: var(--font-size-xs); /* Uses the extra-small font size */
   font-weight: var(--font-weight-medium);
+  padding: var(--space-2); /* Reduces padding to make day squares smaller */
 }
 
-/* This reduces the padding inside the calendar card to make it tighter */
-#dashboardCalendarCard .card__body {
-    padding: var(--space-12);
+#dashboard #dashboardCalendarCard .card__header {
+    padding: var(--space-12); /* Reduces header padding */
+}
+
+#dashboard #dashboardCalendarCard .card__body {
+    padding: var(--space-8); /* Reduces body padding */
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+/* This directly controls the overall card height */
+#dashboard #dashboardCalendarCard {
+    max-height: 290px;
+    display: flex;
+    flex-direction: column;
 }
