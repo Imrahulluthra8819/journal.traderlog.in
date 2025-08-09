@@ -302,6 +302,8 @@ if (chatInput) {
     document.getElementById('exportData').addEventListener('click', () => this.exportCSV());
     document.getElementById('prevMonth').addEventListener('click', () => this.changeCalendarMonth(-1));
     document.getElementById('nextMonth').addEventListener('click', () => this.changeCalendarMonth(1));
+    document.getElementById('dashPrevMonth').addEventListener('click', () => this.changeCalendarMonth(-1));
+document.getElementById('dashNextMonth').addEventListener('click', () => this.changeCalendarMonth(1));
 
     document.addEventListener('data-changed', () => {
         const activeSection = document.querySelector('.section.active');
@@ -338,6 +340,7 @@ if (chatInput) {
       case 'analytics': this.renderAnalytics(); break;
       case 'ai-suggestions': this.renderAISuggestions(); break;
       case 'reports': this.renderReports(); break;
+        this.buildDashboardCalendar();
     }
   }
 
@@ -921,10 +924,17 @@ if (chatInput) {
     document.getElementById('emotionalReport').innerHTML = this.generateEmotionalReport();
   }
 
-  changeCalendarMonth(offset) {
-    this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth()+offset);
-    this.buildCalendar();
+// PASTE THIS NEW BLOCK IN ITS PLACE
+changeCalendarMonth(offset) {
+  this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + offset);
+  // Re-render whichever calendar is visible
+  if (document.getElementById('dashboard').classList.contains('active')) {
+      this.buildDashboardCalendar();
   }
+  if (document.getElementById('reports').classList.contains('active')) {
+      this.buildCalendar();
+  }
+}
 
   // Replace the old buildCalendar function with this one
   buildCalendar() {
@@ -1349,6 +1359,51 @@ addChatMessage(text, sender) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 // --- END: AI CHAT METHODS ---
+  // --- START: NEW DASHBOARD CALENDAR METHOD ---
+buildDashboardCalendar() {
+    const date = this.currentCalendarDate;
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+    document.getElementById('dashCurrentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const cal = document.getElementById('dashPlCalendar');
+    if (!cal) return;
+    cal.innerHTML = ''; // Clear previous calendar
+
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
+        const headerEl = document.createElement('div');
+        headerEl.className = 'calendar-day header';
+        headerEl.textContent = d;
+        cal.appendChild(headerEl);
+    });
+
+    for (let i = 0; i < monthStart.getDay(); i++) {
+        const spacerEl = document.createElement('div');
+        spacerEl.className = 'calendar-day no-trades';
+        cal.appendChild(spacerEl);
+    }
+
+    for (let d = 1; d <= monthEnd.getDate(); d++) {
+        const dayEl = document.createElement('div');
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const tradesOnDay = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
+
+        let cls = 'no-trades';
+        if (tradesOnDay.length > 0) {
+            const pl = tradesOnDay.reduce((sum, t) => sum + t.netPL, 0);
+            if (pl > 1000) cls = 'profit-high';
+            else if (pl > 0) cls = 'profit-low';
+            else if (pl < -1000) cls = 'loss-high';
+            else if (pl < 0) cls = 'loss-low';
+            else cls = 'profit-low';
+        }
+
+        dayEl.className = `calendar-day ${cls}`;
+        dayEl.textContent = d;
+        cal.appendChild(dayEl);
+    }
+}
+// --- END: NEW DASHBOARD CALENDAR METHOD ---
   /* ------------------------ EXPORT ------------------------------------- */
   exportCSV() {
     if (this.trades.length===0) { this.showToast('No trades to export','warning'); return; }
@@ -1365,6 +1420,7 @@ addChatMessage(text, sender) {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
