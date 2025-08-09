@@ -55,6 +55,9 @@ class TradingJournalApp {
         this.currentUser = user;
         await this.loadUserData();
         this.showMainApp();
+        // This line makes the chat widget appear
+document.getElementById('aiChatWidget')?.classList.remove('hidden');
+        
       } else {
         console.log('[AUTH] User is signed out.');
         this.currentUser = null;
@@ -63,6 +66,8 @@ class TradingJournalApp {
         Object.values(this.charts).forEach(chart => chart?.destroy());
         this.charts = {};
         this.showAuthScreen();
+        // This line makes the chat widget disappear
+document.getElementById('aiChatWidget')?.classList.add('hidden');
       }
     });
   }
@@ -248,6 +253,33 @@ class TradingJournalApp {
     document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
         document.getElementById('currencySelector').addEventListener('change', (e) => {
         this.currencySymbol = e.target.value;
+          // --- START: ADDED FOR AI CHAT ---
+const chatBubble = document.getElementById('aiChatBubble');
+const chatWindow = document.getElementById('aiChatWindow');
+const closeChatBtn = document.getElementById('closeChatBtn');
+const chatInput = document.getElementById('aiChatInput');
+const sendChatBtn = document.getElementById('sendChatBtn');
+
+if (chatBubble) {
+    chatBubble.addEventListener('click', () => {
+        chatWindow.classList.toggle('hidden');
+    });
+}
+if (closeChatBtn) {
+    closeChatBtn.addEventListener('click', () => {
+        chatWindow.classList.add('hidden');
+    });
+}
+const sendMessageHandler = () => {
+    if (chatInput.value.trim()) {
+        this.handleSendMessage();
+    }
+};
+if (sendChatBtn) sendChatBtn.addEventListener('click', sendMessageHandler);
+if (chatInput) chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendMessageHandler();
+});
+// --- END: ADDED FOR AI CHAT ---
         // This event will trigger a refresh of the current section
         document.dispatchEvent(new CustomEvent('data-changed'));
     });
@@ -1165,6 +1197,67 @@ class TradingJournalApp {
       const worstTrade = Math.min(0, ...trades.map(t => t.netPL));
       return { totalPL, winRate, totalTrades: trades.length, bestTrade, worstTrade };
   }
+  // --- START: AI CHAT METHODS ---
+
+async handleSendMessage() {
+    const chatInput = document.getElementById('aiChatInput');
+    const question = chatInput.value.trim();
+    if (!question) return;
+
+    this.addChatMessage(question, 'user');
+    chatInput.value = '';
+    this.showTypingIndicator(true);
+
+    const trades = this.allTrades.slice(0, 20);
+    const psychology = this.allConfidence.slice(0, 20);
+
+    try {
+        const response = await fetch('/.netlify/functions/ask-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, trades, psychology })
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+        const data = await response.json();
+        this.addChatMessage(data.reply, 'ai');
+
+    } catch (error) {
+        console.error("Error fetching AI response:", error);
+        this.addChatMessage("Sorry, I'm having trouble connecting. Please try again.", 'ai');
+    } finally {
+        this.showTypingIndicator(false);
+    }
+}
+
+addChatMessage(text, sender) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    const messageElement = document.createElement('div');
+    messageElement.className = `chat-message ${sender}-message`;
+    messageElement.textContent = text;
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+showTypingIndicator(show) {
+    const messagesContainer = document.getElementById('aiChatMessages');
+    let indicator = document.getElementById('typing-indicator');
+
+    if (show) {
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'typing-indicator';
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = `<span></span><span></span><span></span>`;
+            messagesContainer.appendChild(indicator);
+        }
+    } else {
+        if (indicator) indicator.remove();
+    }
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+// --- END: AI CHAT METHODS ---
   /* ------------------------ EXPORT ------------------------------------- */
   exportCSV() {
     if (this.trades.length===0) { this.showToast('No trades to export','warning'); return; }
@@ -1181,6 +1274,7 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
