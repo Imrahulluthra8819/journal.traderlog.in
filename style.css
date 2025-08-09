@@ -1643,10 +1643,6 @@ select.form-control {
    NEW DASHBOARD REDESIGN STYLES
    ========================================================================== */
 
-/* ==========================================================================
-   NEW DASHBOARD REDESIGN STYLES
-   ========================================================================== */
-
 /* This defines the new 2x2 grid layout */
 .dashboard-main-grid {
   display: grid;
@@ -1656,8 +1652,8 @@ select.form-control {
   margin-top: var(--space-32);
   /* We name our grid areas for easy arrangement */
   grid-template-areas:
-    "pl-curve  ai-suggestions"
-    "recents   confidence";
+    "pl-curve  confidence"      /* <-- Swapped positions */
+    "recents   ai-suggestions";  /* <-- Swapped positions */
 }
 
 /* Now, we place each card into its named area */
@@ -1672,17 +1668,19 @@ select.form-control {
 }
 .confidence-tracker {
   grid-area: confidence;
+  align-self: start; /* <-- This new line stops it from stretching vertically */
 }
 
 /* This makes the grid stack into a single column on smaller screens */
 @media (max-width: 1024px) {
   .dashboard-main-grid {
     grid-template-columns: 1fr;
+    /* We also update the order for mobile view */
     grid-template-areas:
       "pl-curve"
-      "ai-suggestions"
+      "confidence"
       "recents"
-      "confidence";
+      "ai-suggestions";
   }
 }
 /* ==========================================================================
