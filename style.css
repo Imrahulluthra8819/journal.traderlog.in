@@ -1915,40 +1915,44 @@ select.form-control {
    DASHBOARD CALENDAR SIZING (FORCEFUL OVERRIDE)
    ========================================================================== */
 
+/* ==========================================================================
+   DASHBOARD CALENDAR SIZING (FINAL - NO CLIPPING)
+   ========================================================================== */
+
 /* This targets the calendar card specifically on the dashboard */
 #dashboard #dashboardCalendarCard {
-    height: auto !important; /* Let content determine height */
-    max-height: none !important; /* Remove any previous height limits */
+    /* We let the content determine the height */
+    display: flex;
+    flex-direction: column;
 }
 
 /* Reduce padding inside the card to save space */
 #dashboard #dashboardCalendarCard .card__header {
-    padding: 10px !important;
+    padding: var(--space-10);
 }
 #dashboard #dashboardCalendarCard .card__body {
-    padding: 10px !important;
+    padding: var(--space-12);
 }
 
 /* Make the calendar grid itself tighter */
 #dashboard #dashboardCalendarCard .pl-calendar {
-  gap: 2px !important;
+  gap: 2px; /* Reduces space between the day squares */
 }
 
 /* Make the individual day squares and their text smaller */
 #dashboard #dashboardCalendarCard .calendar-day {
-  font-size: 10px !important;
-  padding: 2px !important; /* A little padding to keep it clean */
-  font-weight: 500 !important;
+  font-size: 10px; /* Makes the numbers smaller */
+  padding: 1px;    /* Makes the squares themselves smaller */
 }
 
 /* Make the calendar navigation buttons and text smaller */
 #dashboard #dashboardCalendarCard .calendar-nav {
-    gap: 8px !important;
+    gap: var(--space-8);
 }
 #dashboard #dashboardCalendarCard .calendar-nav .btn--sm {
-    padding: 2px 8px !important;
-    font-size: 11px !important;
+    padding: var(--space-2) var(--space-8);
+    font-size: var(--font-size-xs);
 }
 #dashboard #dashboardCalendarCard .calendar-nav span {
-    font-size: 12px !important;
+    font-size: var(--font-size-sm);
 }
