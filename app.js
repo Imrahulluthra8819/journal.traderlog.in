@@ -1403,6 +1403,55 @@ buildDashboardCalendar() {
         cal.appendChild(dayEl);
     }
 }
+  // --- START: NEW DASHBOARD CALENDAR METHOD ---
+buildDashboardCalendar() {
+    const date = this.currentCalendarDate;
+    const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
+    document.getElementById('dashCurrentMonth').textContent = monthStart.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+    const cal = document.getElementById('dashPlCalendar');
+    if (!cal) return;
+    cal.innerHTML = '';
+
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
+        const headerEl = document.createElement('div');
+        headerEl.className = 'calendar-day header';
+        headerEl.textContent = d;
+        cal.appendChild(headerEl);
+    });
+
+    for (let i = 0; i < monthStart.getDay(); i++) {
+        const spacerEl = document.createElement('div');
+        spacerEl.className = 'calendar-day no-trades';
+        cal.appendChild(spacerEl);
+    }
+
+    for (let d = 1; d <= monthEnd.getDate(); d++) {
+        const dayEl = document.createElement('div');
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const tradesOnDay = this.trades.filter(t => t.entryDate && t.entryDate.startsWith(key));
+
+        let cls = 'no-trades';
+        if (tradesOnDay.length > 0) {
+            const pl = tradesOnDay.reduce((sum, t) => sum + t.netPL, 0);
+            if (pl > 1000) cls = 'profit-high';
+            else if (pl > 0) cls = 'profit-low';
+            else if (pl < -1000) cls = 'loss-high';
+            else if (pl < 0) cls = 'loss-low';
+            else cls = 'profit-low';
+
+            dayEl.addEventListener('mouseenter', (e) => this.showCalendarTooltip(e, tradesOnDay, key));
+            dayEl.addEventListener('mousemove', (e) => this.updateTooltipPosition(e));
+            dayEl.addEventListener('mouseleave', () => this.hideCalendarTooltip());
+        }
+
+        dayEl.className = `calendar-day ${cls}`;
+        dayEl.textContent = d;
+        cal.appendChild(dayEl);
+    }
+}
+// --- END: NEW DASHBOARD CALENDAR METHOD ---
 // --- END: NEW DASHBOARD CALENDAR METHOD ---
   /* ------------------------ EXPORT ------------------------------------- */
   exportCSV() {
@@ -1420,6 +1469,7 @@ buildDashboardCalendar() {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
 
 
