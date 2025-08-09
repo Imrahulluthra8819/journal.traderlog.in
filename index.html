@@ -362,19 +362,39 @@
         </main>
         <div id="tradeModal" class="modal hidden"><div class="modal-content"><div class="modal-header"><h2>Trade Details</h2><button class="modal-close" onclick="app.hideTradeModal()">&times;</button></div><div class="modal-body" id="tradeModalBody"></div><div class="modal-footer"><button class="btn btn--outline" onclick="app.hideTradeModal()">Close</button><button class="btn btn--primary" id="editTradeBtn">Edit Trade</button></div></div></div>
     </div>
+    <!-- ======================================================= -->
+<!-- THIS IS THE CORRECT PLACE FOR THE CHAT WIDGET           -->
+<!-- ======================================================= -->
+<div id="aiChatWidget" class="chat-widget hidden">
+    <!-- Chat Window -->
+    <div id="aiChatWindow" class="chat-window hidden">
+        <div class="chat-header">
+            <h3>AI Journal Assistant</h3>
+            <button id="closeChatBtn" class="chat-close-btn">&times;</button>
+        </div>
+        <div id="aiChatMessages" class="chat-messages">
+            <div class="chat-message ai-message">
+                Hello! How can I help you reflect today?
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="aiChatInput" placeholder="Ask about your trades...">
+            <button id="sendChatBtn" class="chat-send-btn">➤</button>
+        </div>
+    </div>
+    <!-- Chat Bubble -->
+    <div id="aiChatBubble" class="chat-bubble">
+        🧠
+    </div>
+</div>
     <div id="toastContainer" class="toast-container"></div>
     <!-- Add this line -->
     <div id="calendarTooltip" class="calendar-tooltip"></div>
 
     <script src="app.js"></script>
-    <!-- AI CHAT WIDGET START -->
-<div id="aiChatWidget" class="chat-widget hidden">
-    <!-- Chat Window -->
-    <div id="aiChatWindow" class="chat-window hidden">
-        <div class="chat-header">
-   
 </body>
 </html>
+
 
 
 
