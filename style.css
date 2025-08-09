@@ -1951,3 +1951,15 @@ select.form-control {
 }
 #dashboard #dashboardCalendarCard .calendar-nav span {
     font-size: 12px !important
+/* --- Styles for Header Logo --- */
+.nav-brand,
+.auth-header h1 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12); /* Adjust space between logo and text */
+}
+
+.nav-brand img,
+.auth-header img {
+    height: 32px; /* Adjust the size of the logo */
+}
