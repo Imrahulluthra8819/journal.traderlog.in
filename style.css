@@ -1522,3 +1522,8 @@ select.form-control {
 }
 .auth-header img { height: 30px; }
 .nav-brand img { height: 24px; }
+/* Fix for Time-Based Analysis card layout */
+#analytics .chart-container {
+  display: flex;
+  flex-direction: column;
+}
