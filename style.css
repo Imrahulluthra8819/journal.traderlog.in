@@ -1955,3 +1955,6 @@ select.form-control {
 .nav-brand img {
     height: 24px; /* Adjusted size for the smaller heading */
 }
+.auth-header h1 {
+  justify-content: center;
+}
