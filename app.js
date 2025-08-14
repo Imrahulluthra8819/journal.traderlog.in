@@ -424,7 +424,26 @@ class TradingJournalApp {
       this.updateCalculations();
       this.renderAddTrade();
       form.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
+      // ** START: CUSTOM STRATEGY CHANGE **
+      // Hide the 'Other' field on reset
+      document.getElementById('otherStrategyGroup').classList.add('hidden');
+      // ** END: CUSTOM STRATEGY CHANGE **
     });
+
+    // ** START: CUSTOM STRATEGY CHANGE **
+    // Add event listener for the strategy dropdown to show/hide the custom input
+    const strategySelect = document.getElementById('addTradeStrategySelect');
+    const otherStrategyGroup = document.getElementById('otherStrategyGroup');
+    if (strategySelect && otherStrategyGroup) {
+        strategySelect.addEventListener('change', function() {
+            if (this.value === 'Other') {
+                otherStrategyGroup.classList.remove('hidden');
+            } else {
+                otherStrategyGroup.classList.add('hidden');
+            }
+        });
+    }
+    // ** END: CUSTOM STRATEGY CHANGE **
   }
 
   updateCalculations() {
@@ -465,6 +484,16 @@ class TradingJournalApp {
       this.showToast('You must be logged in to add a trade.', 'error');
       return;
     }
+
+    // ** START: CUSTOM STRATEGY CHANGE **
+    // Determine the final strategy value to be saved
+    let finalStrategy = fd.get('strategy');
+    if (finalStrategy === 'Other') {
+        const customStrategy = fd.get('other_strategy').trim();
+        finalStrategy = customStrategy || 'Other (unspecified)';
+    }
+    // ** END: CUSTOM STRATEGY CHANGE **
+
     const trade = {
       symbol: fd.get('symbol').toUpperCase(),
       direction: fd.get('direction'),
@@ -473,7 +502,7 @@ class TradingJournalApp {
       exitPrice: parseFloat(fd.get('exitPrice')),
       stopLoss: parseFloat(fd.get('stopLoss')) || null,
       targetPrice: parseFloat(fd.get('targetPrice')) || null,
-      strategy: fd.get('strategy') || 'N/A',
+      strategy: finalStrategy, // Use the final determined strategy
       exitReason: fd.get('exitReason') || 'N/A',
       confidenceLevel: parseInt(fd.get('confidenceLevel')),
       entryDate: fd.get('entryDate'),
@@ -523,6 +552,10 @@ class TradingJournalApp {
       form.reset();
       this.updateCalculations();
       this.renderAddTrade();
+       // ** START: CUSTOM STRATEGY CHANGE **
+      // Hide the 'Other' field after submission
+      document.getElementById('otherStrategyGroup').classList.add('hidden');
+      // ** END: CUSTOM STRATEGY CHANGE **
       document.dispatchEvent(new CustomEvent('data-changed'));
       this.showSection('dashboard');
     } catch (error) {
@@ -541,7 +574,12 @@ class TradingJournalApp {
     const symbols = [...new Set(this.trades.map(t => t.symbol))];
     const symbolFilter = document.getElementById('symbolFilter');
     symbolFilter.innerHTML = '<option value="">All Symbols</option>' + symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+    
+    // ** START: CUSTOM STRATEGY CHANGE **
+    // This code now dynamically includes any custom strategies you've saved. No changes were needed here.
     const strategies = [...new Set(this.trades.map(t => t.strategy))];
+    // ** END: CUSTOM STRATEGY CHANGE **
+
     const strategyFilter = document.getElementById('strategyFilter');
     strategyFilter.innerHTML = '<option value="">All Strategies</option>' + strategies.map(s => `<option value="${s}">${s}</option>`).join('');
     const applyFilters = () => {
@@ -1232,4 +1270,3 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
-
