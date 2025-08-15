@@ -1,70 +1,137 @@
 // You must have node-fetch installed in your project: npm install node-fetch
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
+/**
+ * Fetches news articles for a given symbol from the Marketaux API.
+ * @param {string} symbols - The stock/crypto/forex symbol (e.g., 'AAPL,TSLA').
+ * @param {string} apiKey - The Marketaux API key.
+ * @returns {Promise<Array|null>} A promise that resolves to an array of news articles or null if an error occurs.
+ */
+async function fetchNews(symbols, apiKey) {
+    if (!apiKey) {
+        console.error("MARKETAUX_API_KEY environment variable is not set.");
+        // Return a specific object to indicate the key is missing
+        return { error: "missing_key" };
+    }
+    // Fetches the top 3 most recent, English-language articles for the given symbol
+    const url = `https://api.marketaux.com/v1/news/all?symbols=${symbols}&filter_entities=true&language=en&limit=3&api_token=${apiKey}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error(`Marketaux API error: ${response.status} ${await response.text()}`);
+            return null;
+        }
+        const data = await response.json();
+        return data.data || []; // Return the array of articles
+    } catch (error) {
+        console.error("Error fetching news:", error);
+        return null;
+    }
+}
+
 exports.handler = async function (event) {
     // Standard security check to ensure only POST requests are processed
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    // Get the data sent from your app and the secure API key from Netlify
     const { question, trades, psychology } = JSON.parse(event.body);
-    const apiKey = process.env.GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const marketauxApiKey = process.env.MARKETAUX_API_KEY; // Your new Marketaux API key
 
-    // A crucial safety check to make sure the API key is available
-    if (!apiKey) {
+    if (!geminiApiKey) {
         console.error("GEMINI_API_KEY environment variable not set.");
-        return { statusCode: 500, body: JSON.stringify({ error: "API key is not configured." }) };
+        return { statusCode: 500, body: JSON.stringify({ error: "Gemini API key is not configured." }) };
     }
 
-    // --- THIS IS THE NEW, MENTOR-FOCUSED PROMPT WITH IMPROVED LOGIC ---
-    const prompt = `
-        ## Persona & Rules (VERY IMPORTANT)
-        - **Your Persona:** You are TradeMentor, an AI trading coach with 20 years of experience as a profitable retail trader. You act, behave, and answer like a real-life mentor. Your answers should feel real, not like a chatbot.
-        - **Your Goal:** Help the user by answering their questions about trading.
-        - **Tone & Style:** Be direct, wise, and encouraging. Your answers must be short, concise, interactive, and to-the-point.
-        - **Language:** Use simple, 6th-grade English. Avoid complex jargon.
-        - **Core Principle:** Give realistic and actionable solutions.
+    let prompt;
+    let newsArticles = [];
 
-        ## How to Answer (VERY IMPORTANT)
-        You must handle two types of questions:
-        1.  **Data-Specific Questions:** If the question is about the user's performance (e.g., "Why did I lose my last trade?"), base your analysis PRIMARILY on the provided **User's Data** below.
-        2.  **General Trading Questions:** If the question is about a general trading concept (e.g., "How can I become profitable?" or "What is risk management?"), answer it based on your 20 years of experience. You don't need to force connections to the user's data if it's not relevant.
+    // --- NEWS ANALYSIS LOGIC ---
+    // Detects if the user is asking a question about news
+    const newsRegex = /news on|news for|news about|what's the news for/i;
+    if (newsRegex.test(question)) {
+        // Extracts the symbol from the user's question (e.g., "news for AAPL" -> "AAPL")
+        const symbolMatch = question.split(newsRegex)[1]?.trim().split(" ")[0].toUpperCase();
+        
+        if (symbolMatch) {
+            console.log(`[NEWS] Detected news query for symbol: ${symbolMatch}`);
+            newsArticles = await fetchNews(symbolMatch, marketauxApiKey);
 
-        ## Output Format Rules (FOLLOW PRECISELY)
-        - Start with a brief, encouraging introductory sentence.
-        - For each point, you MUST follow this structure exactly:
-            1. A bolded heading for the topic using Markdown (e.g., **Master Your Strategy**).
-            2. On the next line, write your analysis or advice. Use emojis (e.g., 📈, 🧠).
-            3. On the next line, write the bolded heading **Mentor Tip**.
-            4. On the next line, provide a short, actionable tip. Use emojis (e.g., 💰, 🧘‍♂️).
-            5. Add a blank line after the Mentor Tip to create visual separation.
-        - **Do NOT use bullet points ('*' or '-') at the start of lines.**
-        - End with a short, encouraging conclusion.
+            if (newsArticles?.error === "missing_key") {
+                 // If the API key is missing, inform the user how to configure it.
+                 prompt = `The user asked about news for ${symbolMatch}, but the Marketaux API key is missing. Please inform the user that the news feature is not configured and that they need to add their MARKETAUX_API_KEY to the Netlify environment variables to enable it.`;
+            } else if (newsArticles && newsArticles.length > 0) {
+                // If news is found, create a detailed prompt for Gemini to analyze it
+                prompt = `
+                    ## Persona & Rules (VERY IMPORTANT)
+                    - **Your Persona:** You are TradeMentor, an expert AI trading coach.
+                    - **Your Goal:** Analyze the provided news articles for a specific stock symbol (${symbolMatch}) and explain the potential market impact in a clear, structured way.
+                    - **Tone & Style:** Be direct, insightful, and professional. Use simple, easy-to-understand language.
 
-        ## Clarification & Guardrails
-        - **Ambiguous Questions:** If a user's question is unclear, ask for more details to understand them better. For example: "That's a great question. Could you tell me a bit more about what you mean by 'market noise'?"
-        - **Off-Topic Guardrail:** If the question is clearly NOT related to trading (e.g., "What's the weather like?"), you MUST respond ONLY with: "Please ask a trade-related question. I can help analyze your performance, psychology, and strategies."
+                    ## How to Answer (VERY IMPORTANT)
+                    You MUST analyze the provided news articles and answer the user's question. Structure your response precisely as follows:
+                    1.  Start with a brief, one-sentence summary of the most critical news headline.
+                    2.  Create a bolded heading: **Potential Impact Analysis**.
+                    3.  Under it, provide a **Sentiment:** (e.g., Bullish, Bearish, Neutral, Mixed) based on the overall tone of the news.
+                    4.  Next, provide a **Probable Impact:** (e.g., High, Medium, Low) and write a short paragraph explaining *why* the news could affect the stock's price, mentioning specific details from the articles.
+                    5.  Create a bolded heading: **Mentor Tip**.
+                    6.  Under it, provide a short, actionable tip for a trader (e.g., "Given the positive earnings surprise, watch for a potential breakout above the key resistance level at $150," or "With the ongoing legal uncertainty, it might be wise to wait for more clarity before taking a new position.").
+                    - **Do NOT use bullet points ('*' or '-') at the start of lines.**
 
-        ## Your Task
-        Analyze the user's question and data below. Decide if it's a specific or general question and answer it following all the rules above.
+                    ## User's Question
+                    "${question}"
 
-        ---
-        ## User's Data
+                    ## Recent News Articles for ${symbolMatch}
+                    ${JSON.stringify(newsArticles, null, 2)}
+                `;
+            } else {
+                // If no news is found for the symbol
+                prompt = `The user asked for news about "${symbolMatch}", but I couldn't find any recent, relevant articles for that symbol using the Marketaux API. Please inform the user that no significant news was found and suggest they double-check the ticker symbol.`;
+            }
+        }
+    }
 
-        **Recent Trades:**
-        ${JSON.stringify(trades, null, 2)}
+    // --- EXISTING TRADE/GENERAL ANALYSIS LOGIC ---
+    if (!prompt) { // If the prompt wasn't set by the news logic, use the original logic
+        prompt = `
+            ## Persona & Rules (VERY IMPORTANT)
+            - **Your Persona:** You are TradeMentor, an AI trading coach with 20 years of experience.
+            - **Your Goal:** Help the user by answering their questions about their trading performance or general trading concepts.
+            - **Tone & Style:** Be direct, wise, and encouraging.
+            - **Language:** Use simple English.
 
-        **Recent Psychology/Confidence Entries:**
-        ${JSON.stringify(psychology, null, 2)}
-        ---
+            ## How to Answer (VERY IMPORTANT)
+            Handle two types of questions:
+            1.  **Data-Specific Questions:** If the question is about the user's performance, base your analysis on the provided **User's Data**.
+            2.  **General Trading Questions:** If the question is about a general trading concept, answer it based on your experience.
 
-        ## User's Question
-        "${question}"
-    `;
+            ## Output Format Rules (FOLLOW PRECISELY)
+            - Start with a brief, encouraging introductory sentence.
+            - For each point, you MUST follow this structure exactly:
+                1. A bolded heading (e.g., **Master Your Strategy**).
+                2. Your analysis or advice on the next line.
+                3. A bolded heading **Mentor Tip** on the next line.
+                4. A short, actionable tip on the next line.
+                5. Add a blank line after the Mentor Tip.
+            - **Do NOT use bullet points ('*' or '-') at the start of lines.**
+            - **Off-Topic Guardrail:** If the question is not related to trading, respond ONLY with: "Please ask a trade-related question."
+
+            ---
+            ## User's Data
+            **Recent Trades:**
+            ${JSON.stringify(trades, null, 2)}
+            **Recent Psychology/Confidence Entries:**
+            ${JSON.stringify(psychology, null, 2)}
+            ---
+
+            ## User's Question
+            "${question}"
+        `;
+    }
 
     // The URL for the Google Gemini API
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
     
     // The data payload we will send to the API
     const payload = {
@@ -83,7 +150,6 @@ exports.handler = async function (event) {
             body: JSON.stringify(payload)
         });
 
-        // If the API gives an error, we'll catch it and log it
         if (!apiResponse.ok) {
             const errorBody = await apiResponse.text();
             console.error("API Error:", errorBody);
@@ -91,18 +157,14 @@ exports.handler = async function (event) {
         }
 
         const result = await apiResponse.json();
-        
-        // Safely extract the AI's text response
         const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't generate a response.";
 
-        // Send the clean, successful response back to your app
         return {
             statusCode: 200,
             body: JSON.stringify({ reply: reply.trim() }),
         };
 
     } catch (error) {
-        // If anything goes wrong, log the error and send a generic error message to the app
         console.error("Function Error:", error);
         return {
             statusCode: 500,
