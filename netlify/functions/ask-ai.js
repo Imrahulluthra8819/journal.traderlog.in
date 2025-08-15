@@ -2,19 +2,72 @@
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 /**
- * Fetches news articles for a given symbol from the Marketaux API.
- * @param {string} symbols - The stock/crypto/forex symbol (e.g., 'AAPL,TSLA').
- * @param {string} apiKey - The Marketaux API key.
- * @returns {Promise<Array|null>} A promise that resolves to an array of news articles or null if an error occurs.
+ * A helper function to make calls to the Gemini API.
+ * @param {string} prompt - The prompt to send to the Gemini API.
+ * @param {string} apiKey - Your Gemini API key.
+ * @returns {Promise<string|null>} The text response from the API, or null if an error occurs.
  */
-async function fetchNews(symbols, apiKey) {
+async function callGemini(prompt, apiKey) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        safetySettings: [
+            { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" },
+            { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE" }
+        ]
+    };
+    try {
+        const apiResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!apiResponse.ok) {
+            const errorBody = await apiResponse.text();
+            console.error("Gemini API Error:", errorBody);
+            return null;
+        }
+        const result = await apiResponse.json();
+        return result.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    } catch (error) {
+        console.error("Gemini Function Error:", error);
+        return null;
+    }
+}
+
+
+/**
+ * Fetches news articles from the Marketaux API based on dynamic search parameters.
+ * @param {object} params - An object containing search parameters.
+ * @param {string} params.symbols - Comma-separated ticker symbols.
+ * @param {string} params.countries - Comma-separated country codes.
+ * @param {string} params.search - General search query string.
+ * @param {string} apiKey - The Marketaux API key.
+ * @returns {Promise<Array|object|null>} A promise that resolves to an array of news articles or an error object.
+ */
+async function fetchNews(params, apiKey) {
     if (!apiKey) {
         console.error("MARKETAUX_API_KEY environment variable is not set.");
-        // Return a specific object to indicate the key is missing
         return { error: "missing_key" };
     }
-    // Fetches the top 3 most recent, English-language articles for the given symbol
-    const url = `https://api.marketaux.com/v1/news/all?symbols=${symbols}&filter_entities=true&language=en&limit=3&api_token=${apiKey}`;
+    
+    const { symbols, countries, search } = params;
+    
+    // Construct the query string for the Marketaux API
+    const queryParams = new URLSearchParams({
+        filter_entities: 'true',
+        language: 'en',
+        limit: 5, // Fetch up to 5 relevant articles for better context
+        api_token: apiKey
+    });
+
+    if (symbols) queryParams.set('symbols', symbols);
+    if (countries) queryParams.set('countries', countries);
+    if (search) queryParams.set('search', search);
+
+    const url = `https://api.marketaux.com/v1/news/all?${queryParams.toString()}`;
+    console.log(`[NEWS] Fetching news from URL: ${url}`);
+
     try {
         const response = await fetch(url);
         if (!response.ok) {
@@ -22,7 +75,7 @@ async function fetchNews(symbols, apiKey) {
             return null;
         }
         const data = await response.json();
-        return data.data || []; // Return the array of articles
+        return data.data || [];
     } catch (error) {
         console.error("Error fetching news:", error);
         return null;
@@ -30,14 +83,13 @@ async function fetchNews(symbols, apiKey) {
 }
 
 exports.handler = async function (event) {
-    // Standard security check to ensure only POST requests are processed
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     const { question, trades, psychology } = JSON.parse(event.body);
     const geminiApiKey = process.env.GEMINI_API_KEY;
-    const marketauxApiKey = process.env.MARKETAUX_API_KEY; // Your new Marketaux API key
+    const marketauxApiKey = process.env.MARKETAUX_API_KEY;
 
     if (!geminiApiKey) {
         console.error("GEMINI_API_KEY environment variable not set.");
@@ -45,68 +97,89 @@ exports.handler = async function (event) {
     }
 
     let prompt;
-    let newsArticles = [];
-    let symbolMatch = null;
+    let finalReply = null;
 
-    // --- REVISED NEWS ANALYSIS LOGIC ---
-    // Check if the question contains the word "news" in any context.
+    // --- NEW 2-STEP NEWS ANALYSIS LOGIC ---
+    // Step 1: Check if the user is asking about news.
     if (/\bnews\b/i.test(question)) {
-        // Clean the question of punctuation and split it into words.
-        const words = question.replace(/[?,.]/g, '').split(' ');
-        const newsIndex = words.findIndex(word => word.toLowerCase() === 'news');
-
-        // If "news" is found, look for a potential ticker symbol in the words that follow.
-        if (newsIndex !== -1) {
-            for (let i = newsIndex + 1; i < words.length; i++) {
-                // A common format for a ticker is 2-10 uppercase letters. This is a robust way to find symbols.
-                if (/^[A-Z]{2,10}$/.test(words[i])) {
-                    symbolMatch = words[i];
-                    break; // Found the first likely symbol, so stop looking.
-                }
-            }
-        }
+        console.log("[AI] News query detected. Starting entity extraction.");
         
-        if (symbolMatch) {
-            console.log(`[NEWS] Detected news query for symbol: ${symbolMatch}`);
-            newsArticles = await fetchNews(symbolMatch, marketauxApiKey);
+        // Step 1a: Ask Gemini to extract search terms from the question.
+        const entityExtractionPrompt = `
+            You are an expert financial analyst AI. Your task is to extract key entities from a user's question about financial news. Analyze the user's question and return a JSON object with the appropriate search parameters for a news API. The JSON object must have three keys: "symbols", "countries", and "search".
+
+            - "symbols": A comma-separated string of stock, crypto, or forex tickers (e.g., "AAPL,TSLA", "BTCUSD,ETHUSD").
+            - "countries": A comma-separated string of two-letter ISO country codes (e.g., "us,in").
+            - "search": A string for general topic searches (e.g., "geopolitics", "interest rates", "crypto market").
+
+            Rules:
+            - If you identify a market like "Indian market", map it to the country code "in". For "US market", use "us".
+            - If you identify a specific ticker (like RELIANCE, BTC, EURUSD), put it in "symbols".
+            - If the user asks about a broad topic like "geopolitics", "fed", "crypto", or "forex market", put it in the "search" field.
+            - If a key has no relevant entity, its value MUST be null.
+            - Your response MUST be ONLY the raw JSON object and nothing else.
+
+            User's Question: "${question}"
+        `;
+
+        const extractedJson = await callGemini(entityExtractionPrompt, geminiApiKey);
+        let searchParams = null;
+        try {
+            if (extractedJson) {
+                searchParams = JSON.parse(extractedJson);
+            }
+        } catch (e) {
+            console.error("Failed to parse JSON from Gemini entity extraction:", extractedJson);
+        }
+
+        let queryContext = "the market";
+        if (searchParams) {
+             // Determine the context for the final prompt
+            if (searchParams.symbols) queryContext = searchParams.symbols;
+            else if (searchParams.countries === 'in') queryContext = "the Indian market";
+            else if (searchParams.countries === 'us') queryContext = "the US market";
+            else if (searchParams.search) queryContext = `news related to "${searchParams.search}"`;
+
+            // Step 1b: Fetch news using the extracted parameters.
+            const newsArticles = await fetchNews(searchParams, marketauxApiKey);
 
             if (newsArticles?.error === "missing_key") {
-                 // If the API key is missing, inform the user how to configure it.
-                 prompt = `The user asked about news for ${symbolMatch}, but the Marketaux API key is missing. Please inform the user that the news feature is not configured and that they need to add their MARKETAUX_API_KEY to the Netlify environment variables to enable it.`;
+                 finalReply = "The news feature is not configured. The site owner needs to add a MARKETAUX_API_KEY to the Netlify environment variables to enable it.";
             } else if (newsArticles && newsArticles.length > 0) {
-                // If news is found, create a detailed prompt for Gemini to analyze it
-                prompt = `
+                // Step 2: Build the final analysis prompt for Gemini.
+                const analysisPrompt = `
                     ## Persona & Rules (VERY IMPORTANT)
-                    - **Your Persona:** You are TradeMentor, an expert AI trading coach.
-                    - **Your Goal:** Analyze the provided news articles for a specific stock symbol (${symbolMatch}) and explain the potential market impact in a clear, structured way.
-                    - **Tone & Style:** Be direct, insightful, and professional. Use simple, easy-to-understand language.
+                    - **Your Persona:** You are TradeMentor, an expert AI market analyst.
+                    - **Your Goal:** Analyze the provided news articles regarding ${queryContext} and summarize the overall sentiment and potential impact for a trader.
+                    - **Tone & Style:** Authoritative, clear, and concise.
 
                     ## How to Answer (VERY IMPORTANT)
-                    You MUST analyze the provided news articles and answer the user's question. Structure your response precisely as follows:
-                    1.  Start with a brief, one-sentence summary of the most critical news headline.
-                    2.  Create a bolded heading: **Potential Impact Analysis**.
-                    3.  Under it, provide a **Sentiment:** (e.g., Bullish, Bearish, Neutral, Mixed) based on the overall tone of the news.
-                    4.  Next, provide a **Probable Impact:** (e.g., High, Medium, Low) and write a short paragraph explaining *why* the news could affect the stock's price, mentioning specific details from the articles.
-                    5.  Create a bolded heading: **Mentor Tip**.
-                    6.  Under it, provide a short, actionable tip for a trader (e.g., "Given the positive earnings surprise, watch for a potential breakout above the key resistance level at $150," or "With the ongoing legal uncertainty, it might be wise to wait for more clarity before taking a new position.").
-                    - **Do NOT use bullet points ('*' or '-') at the start of lines.**
+                    You MUST analyze the provided news articles. Structure your response precisely as follows:
+                    1.  Start with a one-sentence summary of the most significant news affecting ${queryContext}.
+                    2.  Create a bolded heading: **Overall Market Sentiment**.
+                    3.  Under it, provide a **Sentiment:** (e.g., Cautiously Optimistic, Bearish, Neutral, Volatile) and a short paragraph explaining the key drivers behind this sentiment, citing themes from the news.
+                    4.  Create a bolded heading: **Key Themes & Potential Impact**.
+                    5.  Briefly list 2-3 key themes from the news (e.g., Inflation data, Tech sector earnings, Regulatory updates) and their potential impact on ${queryContext}.
+                    6.  Create a bolded heading: **Mentor Tip**.
+                    7.  Provide a short, actionable tip relevant to the current news and market conditions.
 
                     ## User's Question
                     "${question}"
 
-                    ## Recent News Articles for ${symbolMatch}
+                    ## Recent News Articles for Analysis
                     ${JSON.stringify(newsArticles, null, 2)}
                 `;
+                finalReply = await callGemini(analysisPrompt, geminiApiKey);
             } else {
-                // If no news is found for the symbol
-                prompt = `The user asked for news about "${symbolMatch}", but I couldn't find any recent, relevant articles for that symbol using the Marketaux API. Please inform the user that no significant news was found and suggest they double-check the ticker symbol.`;
+                finalReply = `I couldn't find any recent, significant news related to your query about ${queryContext}. The market may be quiet, or you can try rephrasing your question.`;
             }
         }
     }
 
-    // --- EXISTING TRADE/GENERAL ANALYSIS LOGIC ---
-    if (!prompt) { // If the prompt wasn't set by the news logic, use the original logic
-        prompt = `
+    // --- FALLBACK TO EXISTING TRADE/GENERAL ANALYSIS LOGIC ---
+    if (!finalReply) { 
+        console.log("[AI] No news query detected. Using general trade analysis prompt.");
+        const generalPrompt = `
             ## Persona & Rules (VERY IMPORTANT)
             - **Your Persona:** You are TradeMentor, an AI trading coach with 20 years of experience.
             - **Your Goal:** Help the user by answering their questions about their trading performance or general trading concepts.
@@ -140,47 +213,11 @@ exports.handler = async function (event) {
             ## User's Question
             "${question}"
         `;
+        finalReply = await callGemini(generalPrompt, geminiApiKey);
     }
 
-    // The URL for the Google Gemini API
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-    
-    // The data payload we will send to the API
-    const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        safetySettings: [
-            { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE" },
-            { "category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE" }
-        ]
+    return {
+        statusCode: 200,
+        body: JSON.stringify({ reply: finalReply || "I'm sorry, I couldn't generate a response at this time." }),
     };
-
-    // The main logic to call the AI and handle the response
-    try {
-        const apiResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!apiResponse.ok) {
-            const errorBody = await apiResponse.text();
-            console.error("API Error:", errorBody);
-            throw new Error(`API Error: ${apiResponse.status}`);
-        }
-
-        const result = await apiResponse.json();
-        const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I couldn't generate a response.";
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ reply: reply.trim() }),
-        };
-
-    } catch (error) {
-        console.error("Function Error:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: "An internal error occurred." }),
-        };
-    }
 };
