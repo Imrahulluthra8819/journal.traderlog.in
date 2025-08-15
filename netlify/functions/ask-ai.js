@@ -96,7 +96,6 @@ exports.handler = async function (event) {
         return { statusCode: 500, body: JSON.stringify({ error: "Gemini API key is not configured." }) };
     }
 
-    let prompt;
     let finalReply = null;
 
     // --- NEW 2-STEP NEWS ANALYSIS LOGIC ---
@@ -126,14 +125,16 @@ exports.handler = async function (event) {
         let searchParams = null;
         try {
             if (extractedJson) {
-                searchParams = JSON.parse(extractedJson);
+                // Sanitize the response from Gemini to ensure it's valid JSON
+                const sanitizedJson = extractedJson.replace(/```json/g, '').replace(/```/g, '').trim();
+                searchParams = JSON.parse(sanitizedJson);
             }
         } catch (e) {
             console.error("Failed to parse JSON from Gemini entity extraction:", extractedJson);
         }
 
         let queryContext = "the market";
-        if (searchParams) {
+        if (searchParams && (searchParams.symbols || searchParams.countries || searchParams.search)) {
              // Determine the context for the final prompt
             if (searchParams.symbols) queryContext = searchParams.symbols;
             else if (searchParams.countries === 'in') queryContext = "the Indian market";
@@ -173,6 +174,9 @@ exports.handler = async function (event) {
             } else {
                 finalReply = `I couldn't find any recent, significant news related to your query about ${queryContext}. The market may be quiet, or you can try rephrasing your question.`;
             }
+        } else {
+             // This case handles when "news" is in the query but no entities are extracted
+             finalReply = "I see you're asking about news, but I couldn't identify a specific stock, market, or topic. Could you please be more specific? For example, ask 'any news on RELIANCE?' or 'what's the news for the Indian market?'.";
         }
     }
 
