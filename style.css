@@ -132,7 +132,7 @@
   --color-bg-4: rgba(var(--color-danger-val), 0.1);
   --color-bg-5: rgba(var(--color-accent-val), 0.1);
   --color-bg-6: rgba(249, 115, 22, 0.1);
-  --color-bg-7: rgba(236, 72, 153, 0.1);
+  --color-bg-7: rgba(236, 72, 153, 0.15);
   --color-bg-8: rgba(var(--color-secondary-val), 0.1);
 
   /* Shadows for light mode */
@@ -818,13 +818,20 @@ select.form-control {
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-20);
+  overflow-y: auto; /* Make container scrollable if content overflows */
 }
 .chart-container h3 {
   margin: 0 0 var(--space-16) 0;
   text-align: center;
   color: var(--color-text);
 }
-.time-table { margin-top: var(--space-24); }
+#timeChart {
+    display: none; /* Hide the empty canvas used as a placeholder */
+}
+.time-table { 
+    margin-top: var(--space-24); 
+    overflow-x: auto;
+}
 .time-table table.trade-table th { background: var(--color-bg-2); }
 .time-table h4 {
   margin-bottom: var(--space-12);
@@ -1115,33 +1122,94 @@ select.form-control {
     background: var(--color-border);
 }
 
+/* --- HAMBURGER MENU STYLES --- */
+.nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    z-index: 1001;
+}
+.hamburger {
+    display: block;
+    position: relative;
+    width: 24px;
+    height: 2px;
+    background: var(--color-text);
+    transition: all 0.2s ease-in-out;
+}
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--color-text);
+    transition: all 0.2s ease-in-out;
+}
+.hamburger::before { top: -8px; }
+.hamburger::after { bottom: -8px; }
+
+.nav-toggle.active .hamburger { background: transparent; }
+.nav-toggle.active .hamburger::before { transform: rotate(45deg) translate(5px, 6px); }
+.nav-toggle.active .hamburger::after { transform: rotate(-45deg) translate(5px, -6px); }
+
 
 /* ==========================================================================
    MOBILE OPTIMIZATIONS
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .nav-toggle {
+      display: block;
+  }
   .nav-container {
-    flex-direction: column;
-    padding: var(--space-12);
-    height: auto;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: var(--space-12) var(--space-16);
+  }
+  .nav-collapse {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      flex-direction: column;
+      padding: var(--space-16);
+      box-shadow: var(--shadow-md);
+      z-index: 1000;
+  }
+  .nav-collapse.active {
+      display: flex;
   }
   .nav-menu {
-    margin-top: var(--space-12);
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--space-8);
+      flex-direction: column;
+      width: 100%;
+      align-items: flex-start;
+      margin-top: 0;
+      border-top: none;
+      padding-top: 0;
+      gap: 0;
   }
   .nav-link {
-    padding: var(--space-8) var(--space-12);
-    height: auto;
-    line-height: 1.5;
+      width: 100%;
+      text-align: left;
+      padding: var(--space-12) var(--space-16);
+      border-bottom: none;
+      border-radius: var(--radius-base);
+  }
+  .nav-link:hover {
+      background: var(--color-secondary);
   }
   .nav-user {
-    margin-top: var(--space-12);
-    width: 100%;
-    justify-content: space-between;
+      margin-top: var(--space-16);
+      padding-top: var(--space-16);
+      border-top: 1px solid var(--color-border);
+      width: 100%;
+      justify-content: space-between;
   }
   .stats-grid,
   .form-grid,
@@ -1168,44 +1236,7 @@ select.form-control {
     width: 100%;
     justify-content: flex-start;
   }
-  /* This converts the table to a "card" view on mobile */
-  .trade-table,
-  .trade-table thead,
-  .trade-table tbody,
-  .trade-table th,
-  .trade-table td,
-  .trade-table tr {
-    display: block;
-  }
-  .trade-table thead tr {
-    position: absolute;
-    top: -9999px;
-    left: -9999px;
-  }
-  .trade-table tr {
-    border: 1px solid var(--color-border);
-    margin-bottom: var(--space-8);
-    padding: var(--space-12);
-    border-radius: var(--radius-base);
-  }
-  .trade-table td {
-    border: none;
-    position: relative;
-    padding-left: 50%;
-    padding-bottom: var(--space-8);
-    text-align: right;
-  }
-  .trade-table td:before {
-    content: attr(data-label);
-    position: absolute;
-    left: var(--space-12);
-    width: 45%;
-    padding-right: var(--space-10);
-    white-space: nowrap;
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text-secondary);
-    text-align: left;
-  }
+
   .pl-calendar { gap: var(--space-2); }
 }
 
@@ -1531,5 +1562,15 @@ select.form-control {
     .chat-window {
         width: 420px;
         height: 600px;
+    }
+    .nav-collapse {
+        display: flex !important;
+        position: static;
+        width: auto;
+        background: none;
+        border: none;
+        flex-direction: row;
+        padding: 0;
+        box-shadow: none;
     }
 }
