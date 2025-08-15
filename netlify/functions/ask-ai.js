@@ -173,15 +173,15 @@ exports.handler = async function (event) {
 
             Rules:
             - Prioritize extracting concrete, searchable terms.
-            - If the question is about a specific market, use a general but effective search term.
+            - If the question is about a general market, map it to a set of relevant, high-impact ticker symbols.
             - If a key has no relevant entity, its value MUST be null.
             - Your response MUST be ONLY the raw JSON object.
 
             Examples:
-            - User Question: "is there any news that can impact the forex market today?" -> {"symbols": null, "countries": null, "search": "forex market"}
+            - User Question: "is there any news that can impact the forex market today?" -> {"symbols": "EURUSD,GBPUSD,USDJPY", "countries": null, "search": null}
             - User Question: "is there any news related to geo politics, trump and fed that can impact the global market?" -> {"symbols": null, "countries": null, "search": "geopolitics trump federal reserve global market"}
-            - User Question: "is there any news in crypto that can impact the crypto market?" -> {"symbols": null, "countries": null, "search": "crypto market"}
-            - User Question: "is there any news in indian market that can impact the market?" -> {"symbols": null, "countries": "in", "search": "indian stock market"}
+            - User Question: "is there any news in crypto that can impact the crypto market?" -> {"symbols": "BTCUSD,ETHUSD,SOLUSD", "countries": null, "search": null}
+            - User Question: "is there any news in indian market that can impact the market?" -> {"symbols": "NIFTY_50,SENSEX", "countries": "in", "search": null}
             - User Question: "any news on RELIANCE?" -> {"symbols": "RELIANCE", "countries": null, "search": null}
 
             User's Question: "${question}"
