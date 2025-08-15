@@ -82,6 +82,34 @@ async function fetchNews(params, apiKey) {
     }
 }
 
+/**
+ * Fetches the latest price for a given symbol from the Marketaux API.
+ * @param {string} symbol - The stock/crypto/forex symbol (e.g., 'AAPL').
+ * @param {string} apiKey - The Marketaux API key.
+ * @returns {Promise<object|null>} A promise that resolves to the price data or null.
+ */
+async function fetchPrice(symbol, apiKey) {
+    if (!apiKey) {
+        console.error("MARKETAUX_API_KEY environment variable is not set.");
+        return { error: "missing_key" };
+    }
+    const url = `https://api.marketaux.com/v1/finance/quotes?symbols=${symbol}&api_token=${apiKey}`;
+    console.log(`[PRICE] Fetching price from URL: ${url}`);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error(`Marketaux Price API error: ${response.status} ${await response.text()}`);
+            return null;
+        }
+        const data = await response.json();
+        return data.data && data.data.length > 0 ? data.data[0] : null;
+    } catch (error) {
+        console.error("Error fetching price:", error);
+        return null;
+    }
+}
+
+
 exports.handler = async function (event) {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
@@ -98,34 +126,70 @@ exports.handler = async function (event) {
 
     let finalReply = null;
 
-    // --- NEW 2-STEP NEWS ANALYSIS LOGIC ---
-    // Step 1: Check if the user is asking about news.
-    if (/\bnews\b/i.test(question)) {
+    // --- NEW 3-STEP ANALYSIS LOGIC ---
+    // Step 1: Check for a price query first.
+    if (/\bprice\b/i.test(question)) {
+        console.log("[AI] Price query detected. Extracting symbol.");
+        const priceSymbolPrompt = `
+            You are an AI assistant. Your task is to extract a single, valid stock, crypto, or forex ticker symbol from the user's question.
+            - For "Nifty50" or "Nifty 50", use "NIFTY50".
+            - For "BTC" or "Bitcoin", use "BTCUSD".
+            - For "Reliance", use "RELIANCE".
+            - Your response MUST be ONLY the extracted symbol and nothing else.
+            
+            User's Question: "${question}"
+        `;
+        const symbol = await callGemini(priceSymbolPrompt, geminiApiKey);
+
+        if (symbol) {
+            const priceData = await fetchPrice(symbol.trim(), marketauxApiKey);
+            if (priceData?.error === "missing_key") {
+                finalReply = "The price feature is not configured. The site owner needs to add a MARKETAUX_API_KEY to the Netlify environment variables to enable it.";
+            } else if (priceData) {
+                const priceFormatPrompt = `
+                    You are TradeMentor. The user asked for a price. You have the latest data.
+                    Format the response clearly and concisely.
+                    - Start with the symbol and its name.
+                    - State the current price clearly.
+                    - Mention the day's change and percentage change, indicating if it's up or down with an emoji (📈 or 📉).
+                    - Keep it short and direct.
+                    
+                    Data: ${JSON.stringify(priceData)}
+                `;
+                finalReply = await callGemini(priceFormatPrompt, geminiApiKey);
+            } else {
+                finalReply = `I couldn't fetch the current price for "${symbol.trim()}". Please ensure it's a valid ticker symbol.`;
+            }
+        } else {
+            finalReply = "I see you're asking about a price, but I couldn't identify the symbol. Please ask again with a clear ticker, like 'What is the price of AAPL?'.";
+        }
+    }
+    // Step 2: If not a price query, check for a news query.
+    else if (/\bnews\b/i.test(question)) {
         console.log("[AI] News query detected. Starting entity extraction.");
         
-        // Step 1a: Ask Gemini to extract search terms from the question.
         const entityExtractionPrompt = `
-            You are an expert financial analyst AI. Your task is to extract key entities from a user's question about financial news. Analyze the user's question and return a JSON object with the appropriate search parameters for a news API. The JSON object must have three keys: "symbols", "countries", and "search".
-
-            - "symbols": A comma-separated string of stock, crypto, or forex tickers (e.g., "AAPL,TSLA", "BTCUSD,ETHUSD").
-            - "countries": A comma-separated string of two-letter ISO country codes (e.g., "us,in").
-            - "search": A string for general topic searches (e.g., "geopolitics", "interest rates", "crypto market").
+            You are an expert financial analyst AI. Your task is to extract key entities from a user's question about financial news to be used in a news API search. Return a JSON object with "symbols", "countries", and "search" keys.
 
             Rules:
-            - If you identify a market like "Indian market", map it to the country code "in". For "US market", use "us".
-            - If you identify a specific ticker (like RELIANCE, BTC, EURUSD), put it in "symbols".
-            - If the user asks about a broad topic like "geopolitics", "fed", "crypto", or "forex market", put it in the "search" field.
+            - Prioritize extracting concrete, searchable terms.
+            - If the question is about a specific market, use a general but effective search term.
             - If a key has no relevant entity, its value MUST be null.
-            - Your response MUST be ONLY the raw JSON object and nothing else.
+            - Your response MUST be ONLY the raw JSON object.
+
+            Examples:
+            - User Question: "is there any news that can impact the forex market today?" -> {"symbols": null, "countries": null, "search": "forex market"}
+            - User Question: "is there any news related to geo politics, trump and fed that can impact the global market?" -> {"symbols": null, "countries": null, "search": "geopolitics trump federal reserve global market"}
+            - User Question: "is there any news in crypto that can impact the crypto market?" -> {"symbols": null, "countries": null, "search": "crypto market"}
+            - User Question: "is there any news in indian market that can impact the market?" -> {"symbols": null, "countries": "in", "search": "indian stock market"}
+            - User Question: "any news on RELIANCE?" -> {"symbols": "RELIANCE", "countries": null, "search": null}
 
             User's Question: "${question}"
         `;
-
         const extractedJson = await callGemini(entityExtractionPrompt, geminiApiKey);
         let searchParams = null;
         try {
             if (extractedJson) {
-                // Sanitize the response from Gemini to ensure it's valid JSON
                 const sanitizedJson = extractedJson.replace(/```json/g, '').replace(/```/g, '').trim();
                 searchParams = JSON.parse(sanitizedJson);
             }
@@ -135,19 +199,16 @@ exports.handler = async function (event) {
 
         let queryContext = "the market";
         if (searchParams && (searchParams.symbols || searchParams.countries || searchParams.search)) {
-             // Determine the context for the final prompt
             if (searchParams.symbols) queryContext = searchParams.symbols;
             else if (searchParams.countries === 'in') queryContext = "the Indian market";
             else if (searchParams.countries === 'us') queryContext = "the US market";
             else if (searchParams.search) queryContext = `news related to "${searchParams.search}"`;
 
-            // Step 1b: Fetch news using the extracted parameters.
             const newsArticles = await fetchNews(searchParams, marketauxApiKey);
 
             if (newsArticles?.error === "missing_key") {
                  finalReply = "The news feature is not configured. The site owner needs to add a MARKETAUX_API_KEY to the Netlify environment variables to enable it.";
             } else if (newsArticles && newsArticles.length > 0) {
-                // Step 2: Build the final analysis prompt for Gemini.
                 const analysisPrompt = `
                     ## Persona & Rules (VERY IMPORTANT)
                     - **Your Persona:** You are TradeMentor, an expert AI market analyst.
@@ -176,14 +237,13 @@ exports.handler = async function (event) {
                 finalReply = `I couldn't find any recent, significant news related to your query about ${queryContext}. The market may be quiet, or you can try rephrasing your question.`;
             }
         } else {
-             // This case handles when "news" is in the query but no entities are extracted
              finalReply = "I see you're asking about news, but I couldn't identify a specific stock, market, or topic. Could you please be more specific? For example, ask 'any news on RELIANCE?' or 'what's the news for the Indian market?'.";
         }
     }
 
-    // --- FALLBACK TO EXISTING TRADE/GENERAL ANALYSIS LOGIC ---
+    // --- Step 3: FALLBACK TO EXISTING TRADE/GENERAL ANALYSIS LOGIC ---
     if (!finalReply) { 
-        console.log("[AI] No news query detected. Using general trade analysis prompt.");
+        console.log("[AI] No price or news query detected. Using general trade analysis prompt.");
         const generalPrompt = `
             ## Persona & Rules (VERY IMPORTANT)
             - **Your Persona:** You are TradeMentor, an AI trading coach with 20 years of experience.
