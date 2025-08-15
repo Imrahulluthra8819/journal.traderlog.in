@@ -21,6 +21,8 @@ class TradingJournalApp {
     this.currentUser = null;
     this.allTrades = [];
     this.allConfidence = [];
+    this.allNotes = [];
+    this.currentEditingNoteId = null; // To track the note being edited
     this.charts = {};
     this.mainListenersAttached = false;
     this.currentCalendarDate = new Date();
@@ -56,6 +58,7 @@ class TradingJournalApp {
         this.currentUser = null;
         this.allTrades = [];
         this.allConfidence = [];
+        this.allNotes = [];
         Object.values(this.charts).forEach(chart => chart?.destroy());
         this.charts = {};
         this.showAuthScreen();
@@ -173,17 +176,21 @@ class TradingJournalApp {
     this.showToast('Loading your data...', 'info');
     const tradesQuery = this.db.collection('users').doc(this.currentUser.uid).collection('trades').orderBy('entryDate', 'desc').get();
     const confidenceQuery = this.db.collection('users').doc(this.currentUser.uid).collection('confidence').orderBy('date', 'desc').get();
+    const notesQuery = this.db.collection('users').doc(this.currentUser.uid).collection('notes').orderBy('date', 'desc').get();
     try {
-      const [tradesSnapshot, confidenceSnapshot] = await Promise.all([tradesQuery, confidenceQuery]);
+      const [tradesSnapshot, confidenceSnapshot, notesSnapshot] = await Promise.all([tradesQuery, confidenceQuery, notesQuery]);
       this.allTrades = tradesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log(`[DATA] Loaded ${this.allTrades.length} trades.`);
       this.allConfidence = confidenceSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log(`[DATA] Loaded ${this.allConfidence.length} confidence entries.`);
+      this.allNotes = notesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log(`[DATA] Loaded ${this.allNotes.length} notes.`);
     } catch (error) {
       console.error("[DATA] Error loading user data:", error);
       this.showToast(`Error loading data: ${error.message}`, 'error');
       this.allTrades = [];
       this.allConfidence = [];
+      this.allNotes = [];
     }
   }
 
@@ -217,6 +224,8 @@ class TradingJournalApp {
     });
     document.getElementById('quickAddTrade').addEventListener('click', () => this.showSection('add-trade'));
     document.getElementById('saveConfidenceBtn').addEventListener('click', () => this.saveDailyConfidence());
+    document.getElementById('saveNoteBtn').addEventListener('click', () => this.saveNote());
+    document.getElementById('saveNoteChangesBtn').addEventListener('click', () => this.saveNoteChanges()); // Listener for modal save
     this.setupAddTradeForm();
     document.getElementById('exportData').addEventListener('click', () => this.exportCSV());
     document.getElementById('prevMonth').addEventListener('click', () => this.changeCalendarMonth(-1));
@@ -317,6 +326,7 @@ class TradingJournalApp {
     switch (id) {
       case 'dashboard': this.renderDashboard(); break;
       case 'add-trade': this.renderAddTrade(); break;
+      case 'notes': this.renderNotes(); break;
       case 'history': this.renderHistory(); break;
       case 'analytics': this.renderAnalytics(); break;
       case 'ai-suggestions': this.renderAISuggestions(); break;
@@ -455,6 +465,121 @@ class TradingJournalApp {
     }
   }
 
+  /* ----------------------- NOTES SECTION ------------------------------ */
+  
+  async saveNote() {
+    const content = document.getElementById('dailyNoteContent').value.trim();
+    if (!content) {
+        this.showToast("Note content cannot be empty.", 'warning');
+        return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    const existingNote = this.allNotes.find(note => note.date === today);
+
+    try {
+        if (existingNote) {
+            // Update existing note for today
+            await this.db.collection('users').doc(this.currentUser.uid).collection('notes').doc(existingNote.id).update({
+                content: content,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // Update local state
+            const noteIndex = this.allNotes.findIndex(n => n.id === existingNote.id);
+            this.allNotes[noteIndex].content = content;
+            this.showToast('Note for today updated!', 'success');
+        } else {
+            // Add new note for today
+            const docRef = await this.db.collection('users').doc(this.currentUser.uid).collection('notes').add({
+                date: today,
+                content: content,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            this.allNotes.unshift({ id: docRef.id, date: today, content: content });
+            this.showToast('Note saved successfully!', 'success');
+        }
+        document.dispatchEvent(new CustomEvent('data-changed'));
+    } catch (error) {
+        this.showToast(`Error saving note: ${error.message}`, 'error');
+        console.error("[DATA] Error saving note:", error);
+    }
+  }
+
+  renderNotes() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayNote = this.allNotes.find(note => note.date === today);
+    const noteContentEl = document.getElementById('dailyNoteContent');
+    
+    noteContentEl.value = todayNote ? todayNote.content : '';
+
+    const historyContainer = document.getElementById('notesHistoryContainer');
+    if (this.allNotes.length === 0) {
+        historyContainer.innerHTML = '<div class="empty-state">You have not written any notes yet.</div>';
+        return;
+    }
+
+    historyContainer.innerHTML = this.allNotes.map(note => {
+        const notePreview = note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '');
+        return `
+        <div class="note-item clickable" onclick="app.showNoteDetails('${note.id}')">
+            <div class="note-header">
+                <h4 class="note-date">${new Date(note.date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+            </div>
+            <div class="note-content">
+                <p>${notePreview.replace(/\n/g, '<br>')}</p>
+            </div>
+        </div>
+    `}).join('');
+  }
+
+  showNoteDetails(noteId) {
+    const note = this.allNotes.find(n => n.id === noteId);
+    if (!note) return;
+
+    this.currentEditingNoteId = noteId;
+    const modalBody = document.getElementById('noteModalBody');
+    modalBody.innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Note for ${new Date(note.date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}</label>
+            <textarea id="editNoteContent" class="form-control" rows="12">${note.content}</textarea>
+        </div>
+    `;
+    document.getElementById('noteModal').classList.remove('hidden');
+  }
+
+  hideNoteModal() {
+      document.getElementById('noteModal').classList.add('hidden');
+      this.currentEditingNoteId = null;
+  }
+
+  async saveNoteChanges() {
+    if (!this.currentEditingNoteId) return;
+
+    const newContent = document.getElementById('editNoteContent').value.trim();
+    if (!newContent) {
+        this.showToast('Note content cannot be empty.', 'warning');
+        return;
+    }
+
+    try {
+        await this.db.collection('users').doc(this.currentUser.uid).collection('notes').doc(this.currentEditingNoteId).update({
+            content: newContent,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        const noteIndex = this.allNotes.findIndex(n => n.id === this.currentEditingNoteId);
+        if (noteIndex > -1) {
+            this.allNotes[noteIndex].content = newContent;
+        }
+
+        this.showToast('Note updated successfully!', 'success');
+        this.hideNoteModal();
+        document.dispatchEvent(new CustomEvent('data-changed'));
+    } catch (error) {
+        this.showToast(`Error updating note: ${error.message}`, 'error');
+        console.error("[DATA] Error updating note:", error);
+    }
+  }
+
   /* ----------------------- ADD TRADE FORM ------------------------------ */
   renderAddTrade() {
     const now = new Date();
@@ -485,14 +610,9 @@ class TradingJournalApp {
       this.updateCalculations();
       this.renderAddTrade();
       form.querySelectorAll('.range-value').forEach(el => el.textContent = '5');
-      // ** START: CUSTOM STRATEGY CHANGE **
-      // Hide the 'Other' field on reset
       document.getElementById('otherStrategyGroup').classList.add('hidden');
-      // ** END: CUSTOM STRATEGY CHANGE **
     });
 
-    // ** START: CUSTOM STRATEGY CHANGE **
-    // Add event listener for the strategy dropdown to show/hide the custom input
     const strategySelect = document.getElementById('addTradeStrategySelect');
     const otherStrategyGroup = document.getElementById('otherStrategyGroup');
     if (strategySelect && otherStrategyGroup) {
@@ -504,7 +624,6 @@ class TradingJournalApp {
             }
         });
     }
-    // ** END: CUSTOM STRATEGY CHANGE **
   }
 
   updateCalculations() {
@@ -546,14 +665,11 @@ class TradingJournalApp {
       return;
     }
 
-    // ** START: CUSTOM STRATEGY CHANGE **
-    // Determine the final strategy value to be saved
     let finalStrategy = fd.get('strategy');
     if (finalStrategy === 'Other') {
         const customStrategy = fd.get('other_strategy').trim();
         finalStrategy = customStrategy || 'Other (unspecified)';
     }
-    // ** END: CUSTOM STRATEGY CHANGE **
 
     const trade = {
       symbol: fd.get('symbol').toUpperCase(),
@@ -563,7 +679,7 @@ class TradingJournalApp {
       exitPrice: parseFloat(fd.get('exitPrice')),
       stopLoss: parseFloat(fd.get('stopLoss')) || null,
       targetPrice: parseFloat(fd.get('targetPrice')) || null,
-      strategy: finalStrategy, // Use the final determined strategy
+      strategy: finalStrategy,
       exitReason: fd.get('exitReason') || 'N/A',
       confidenceLevel: parseInt(fd.get('confidenceLevel')),
       entryDate: fd.get('entryDate'),
@@ -613,10 +729,7 @@ class TradingJournalApp {
       form.reset();
       this.updateCalculations();
       this.renderAddTrade();
-       // ** START: CUSTOM STRATEGY CHANGE **
-      // Hide the 'Other' field after submission
       document.getElementById('otherStrategyGroup').classList.add('hidden');
-      // ** END: CUSTOM STRATEGY CHANGE **
       document.dispatchEvent(new CustomEvent('data-changed'));
       this.showSection('dashboard');
     } catch (error) {
@@ -636,10 +749,7 @@ class TradingJournalApp {
     const symbolFilter = document.getElementById('symbolFilter');
     symbolFilter.innerHTML = '<option value="">All Symbols</option>' + symbols.map(s => `<option value="${s}">${s}</option>`).join('');
     
-    // ** START: CUSTOM STRATEGY CHANGE **
-    // This code now dynamically includes any custom strategies you've saved. No changes were needed here.
     const strategies = [...new Set(this.trades.map(t => t.strategy))];
-    // ** END: CUSTOM STRATEGY CHANGE **
 
     const strategyFilter = document.getElementById('strategyFilter');
     strategyFilter.innerHTML = '<option value="">All Strategies</option>' + strategies.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -880,7 +990,6 @@ class TradingJournalApp {
       const widgetContainer = document.getElementById('tradingview_chart_widget');
       if (!widgetContainer) return;
   
-      // Clear any previous content
       widgetContainer.innerHTML = '';
   
       const theme = document.documentElement.getAttribute('data-color-scheme') === 'light' ? 'light' : 'dark';
@@ -971,7 +1080,6 @@ class TradingJournalApp {
 
   changeCalendarMonth(offset) {
     this.currentCalendarDate.setMonth(this.currentCalendarDate.getMonth() + offset);
-    // Re-render whichever calendar is visible
     if (document.getElementById('dashboard').classList.contains('active')) {
         this.buildDashboardCalendar();
     }
@@ -1238,7 +1346,7 @@ class TradingJournalApp {
 
     this.addChatMessage(question, 'user');
     chatInput.value = '';
-    this.showTypingIndicator(true); // <-- Typing animation starts here
+    this.showTypingIndicator(true);
 
     const trades = this.allTrades.slice(0, 20);
     const psychology = this.allConfidence.slice(0, 20);
@@ -1259,7 +1367,7 @@ class TradingJournalApp {
       console.error("Error fetching AI response:", error);
       this.addChatMessage("Sorry, I'm having trouble connecting. Please try again.", 'ai');
     } finally {
-      this.showTypingIndicator(false); // <-- Typing animation stops here
+      this.showTypingIndicator(false);
     }
   }
 
