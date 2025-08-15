@@ -25,6 +25,8 @@ class TradingJournalApp {
     this.mainListenersAttached = false;
     this.currentCalendarDate = new Date();
     this.currencySymbol = '₹'; // Default to INR
+    this.tickerWidgetLoaded = false;
+    this.chartsWidgetLoaded = false;
 
     // --- BOOTSTRAP ---
     if (document.readyState === 'loading') {
@@ -265,24 +267,29 @@ class TradingJournalApp {
     }
   }
 
- toggleTheme() {
-  const html = document.documentElement;
-  
-  // Check if the current theme is light
-  const isLight = html.getAttribute('data-color-scheme') === 'light';
+  toggleTheme() {
+      const html = document.documentElement;
+      const isLight = html.getAttribute('data-color-scheme') === 'light';
 
-  if (isLight) {
-    // If it's light, remove the attribute to revert to the default (dark) theme.
-    html.removeAttribute('data-color-scheme');
-    // Show the sun icon, indicating a click will switch to light mode.
-    document.getElementById('themeToggle').textContent = '☀️';
-  } else {
-    // If it's dark (default), set the attribute to 'light'.
-    html.setAttribute('data-color-scheme', 'light');
-    // Show the moon icon, indicating a click will switch to dark mode.
-    document.getElementById('themeToggle').textContent = '🌙';
+      if (isLight) {
+          html.removeAttribute('data-color-scheme');
+          document.getElementById('themeToggle').textContent = '☀️';
+      } else {
+          html.setAttribute('data-color-scheme', 'light');
+          document.getElementById('themeToggle').textContent = '🌙';
+      }
+
+      // Force reload of widgets if they are visible
+      if (document.getElementById('dashboard').classList.contains('active')) {
+          this.tickerWidgetLoaded = false;
+          this.loadTickerWidget();
+      }
+      if (document.getElementById('charts').classList.contains('active')) {
+          this.chartsWidgetLoaded = false;
+          this.renderCharts();
+      }
   }
-}
+
 
   showSection(id) {
     if (!id) return;
@@ -296,6 +303,7 @@ class TradingJournalApp {
       case 'analytics': this.renderAnalytics(); break;
       case 'ai-suggestions': this.renderAISuggestions(); break;
       case 'reports': this.renderReports(); break;
+      case 'charts': this.renderCharts(); break;
     }
   }
 
@@ -345,6 +353,7 @@ class TradingJournalApp {
   }
 
   renderDashboard() {
+    this.loadTickerWidget();
     const s = this.calculateStats();
     const totalPLEl = document.getElementById('totalPL');
     totalPLEl.textContent = this.formatCurrency(s.totalPL);
@@ -370,6 +379,40 @@ class TradingJournalApp {
     this.renderDashboardAIFeedback();
     this.buildDashboardCalendar();
   }
+  
+  loadTickerWidget() {
+      if (this.tickerWidgetLoaded && document.getElementById('tradingview-ticker-widget-script')) return;
+
+      const theme = document.documentElement.getAttribute('data-color-scheme') === 'light' ? 'light' : 'dark';
+      const script = document.createElement('script');
+      script.id = 'tradingview-ticker-widget-script';
+      script.type = 'text/javascript';
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+          "symbols": [
+              { "description": "SENSEX", "proName": "BSE:SENSEX" },
+              { "description": "NIFTY 50", "proName": "NSE:NIFTY" },
+              { "description": "S&P 500", "proName": "FOREXCOM:SPXUSD" },
+              { "description": "NASDAQ 100", "proName": "FOREXCOM:NSXUSD" },
+              { "description": "BTC/USD", "proName": "BITSTAMP:BTCUSD" },
+              { "description": "ETH/USD", "proName": "BITSTAMP:ETHUSD" }
+          ],
+          "showSymbolLogo": true,
+          "colorTheme": theme,
+          "isTransparent": true,
+          "displayMode": "adaptive",
+          "locale": "in"
+      });
+
+      const container = document.getElementById('newsTickerContainer');
+      if (container) {
+          container.innerHTML = ''; // Clear previous widget
+          container.appendChild(script);
+          this.tickerWidgetLoaded = true;
+      }
+  }
+
 
   async saveDailyConfidence() {
     const level = parseInt(document.getElementById('dailyConfidence').value, 10);
@@ -811,6 +854,52 @@ class TradingJournalApp {
     }).join('');
     makeTable('Day-of-Week Analysis', dowRows);
   }
+
+  /* ----------------------- CHARTS SECTION ----------------------------- */
+  renderCharts() {
+      if (this.chartsWidgetLoaded || typeof TradingView === 'undefined') return;
+  
+      const widgetContainer = document.getElementById('tradingview_chart_widget');
+      if (!widgetContainer) return;
+  
+      // Clear any previous content
+      widgetContainer.innerHTML = '';
+  
+      const theme = document.documentElement.getAttribute('data-color-scheme') === 'light' ? 'light' : 'dark';
+  
+      // Use the Advanced Real-Time Chart Widget for full functionality
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://s3.tradingview.com/tv.js';
+      script.onload = () => {
+          new TradingView.widget({
+              "autosize": true,
+              "symbol": "NSE:NIFTY",
+              "interval": "D",
+              "timezone": "Asia/Kolkata",
+              "theme": theme,
+              "style": "1",
+              "locale": "in",
+              "enable_publishing": false,
+              "allow_symbol_change": true,
+              "details": true,
+              "hotlist": true,
+              "calendar": true,
+              "watchlist": [
+                "NSE:NIFTY",
+                "NSE:BANKNIFTY",
+                "NSE:RELIANCE",
+                "NSE:HDFCBANK",
+                "FX:EURUSD",
+                "BITSTAMP:BTCUSD"
+              ],
+              "container_id": "tradingview_chart_widget"
+          });
+      };
+      widgetContainer.appendChild(script);
+      this.chartsWidgetLoaded = true;
+  }
+
 
   /* ----------------------- AI SUGGESTIONS ----------------------------- */
   renderAISuggestions() {
