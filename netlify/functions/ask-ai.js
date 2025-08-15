@@ -46,13 +46,25 @@ exports.handler = async function (event) {
 
     let prompt;
     let newsArticles = [];
+    let symbolMatch = null;
 
-    // --- NEWS ANALYSIS LOGIC ---
-    // Detects if the user is asking a question about news
-    const newsRegex = /news on|news for|news about|what's the news for/i;
-    if (newsRegex.test(question)) {
-        // Extracts the symbol from the user's question (e.g., "news for AAPL" -> "AAPL")
-        const symbolMatch = question.split(newsRegex)[1]?.trim().split(" ")[0].toUpperCase();
+    // --- REVISED NEWS ANALYSIS LOGIC ---
+    // Check if the question contains the word "news" in any context.
+    if (/\bnews\b/i.test(question)) {
+        // Clean the question of punctuation and split it into words.
+        const words = question.replace(/[?,.]/g, '').split(' ');
+        const newsIndex = words.findIndex(word => word.toLowerCase() === 'news');
+
+        // If "news" is found, look for a potential ticker symbol in the words that follow.
+        if (newsIndex !== -1) {
+            for (let i = newsIndex + 1; i < words.length; i++) {
+                // A common format for a ticker is 2-10 uppercase letters. This is a robust way to find symbols.
+                if (/^[A-Z]{2,10}$/.test(words[i])) {
+                    symbolMatch = words[i];
+                    break; // Found the first likely symbol, so stop looking.
+                }
+            }
+        }
         
         if (symbolMatch) {
             console.log(`[NEWS] Detected news query for symbol: ${symbolMatch}`);
