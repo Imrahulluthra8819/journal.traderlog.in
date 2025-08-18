@@ -513,7 +513,28 @@
     </div>
     <div id="toastContainer" class="toast-container"></div>
     <div id="calendarTooltip" class="calendar-tooltip"></div>
+    <!-- START: Add this new modal for non-subscribed users -->
+<div id="subscribeModal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px; text-align: center;">
+        <div class="modal-header">
+            <h2>Subscription Required</h2>
+        </div>
+        <div class="modal-body">
+            <div style="font-size: 48px; margin-bottom: 16px;">🚀</div>
+            <p id="subscribeModalMessage" style="font-size: 1.1rem; color: var(--color-text-secondary); line-height: 1.6;">
+                To access your trading journal, please choose a plan.
+            </p>
+        </div>
+        <div class="modal-footer" style="justify-content: center;">
+            <button class="btn btn--primary btn--full-width" id="redirectToPaymentBtn">
+                Subscribe Now
+            </button>
+        </div>
+    </div>
+</div>
+<!-- END: New modal -->
 
     <script src="app.js"></script>
 </body>
 </html>
+
