@@ -45,27 +45,48 @@ class TradingJournalApp {
 
   /* ------------------------------- AUTH ---------------------------------- */
 
-  handleAuthStateChange() {
+  // In your Trading Journal's app.js, inside the TradingJournalApp class
+handleAuthStateChange() {
     this.auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        console.log('[AUTH] User is signed in:', user.uid);
-        this.currentUser = user;
-        await this.loadUserData();
-        this.showMainApp();
-        document.getElementById('aiChatWidget')?.classList.remove('hidden');
-      } else {
-        console.log('[AUTH] User is signed out.');
-        this.currentUser = null;
-        this.allTrades = [];
-        this.allConfidence = [];
-        this.allNotes = [];
-        Object.values(this.charts).forEach(chart => chart?.destroy());
-        this.charts = {};
-        this.showAuthScreen();
-        document.getElementById('aiChatWidget')?.classList.add('hidden');
-      }
+        if (this.accessCheckUnsubscribe) this.accessCheckUnsubscribe();
+
+        if (user) {
+            this.currentUser = user;
+            const userDocRef = this.db.collection('free_trial_users').doc(user.uid);
+
+            this.accessCheckUnsubscribe = userDocRef.onSnapshot(async (doc) => {
+                if (!doc.exists) {
+                    this.auth.signOut(); return;
+                }
+
+                const userData = doc.data();
+                const now = new Date();
+                let hasAccess = false;
+
+                if (userData.status === 'trialing' && userData.trial_end_date.toDate() > now) {
+                    hasAccess = true;
+                } else if (userData.subscription_status === 'active') {
+                    hasAccess = true;
+                }
+
+                if (hasAccess) {
+                    if (!this.mainListenersAttached) {
+                        await this.loadUserData();
+                        this.showMainApp();
+                    }
+                } else {
+                    document.getElementById('mainApp').classList.add('hidden');
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('subscribeModal').style.display = 'flex';
+                    this.auth.signOut();
+                }
+            });
+        } else {
+            this.currentUser = null;
+            this.showAuthScreen();
+        }
     });
-  }
+}
 
   setupAuthListeners() {
     document.querySelectorAll('.auth-tab').forEach(tab => {
@@ -1478,3 +1499,4 @@ class TradingJournalApp {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
