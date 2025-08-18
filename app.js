@@ -45,7 +45,7 @@ class TradingJournalApp {
 
   /* ------------------------------- AUTH ---------------------------------- */
 
-  // In your Trading Journal's app.js, inside the TradingJournalApp class
+// In your Trading Journal's app.js, inside the TradingJournalApp class
 handleAuthStateChange() {
     this.auth.onAuthStateChanged(async (user) => {
         if (this.accessCheckUnsubscribe) this.accessCheckUnsubscribe();
@@ -56,7 +56,9 @@ handleAuthStateChange() {
 
             this.accessCheckUnsubscribe = userDocRef.onSnapshot(async (doc) => {
                 if (!doc.exists) {
-                    this.auth.signOut(); return;
+                    console.log('User record not found. Logging out.');
+                    this.auth.signOut();
+                    return;
                 }
 
                 const userData = doc.data();
@@ -65,7 +67,7 @@ handleAuthStateChange() {
 
                 if (userData.status === 'trialing' && userData.trial_end_date.toDate() > now) {
                     hasAccess = true;
-                } else if (userData.subscription_status === 'active') {
+                } else if (userData.status === 'active' && userData.subscription_end_date && userData.subscription_end_date.toDate() > now) {
                     hasAccess = true;
                 }
 
@@ -75,10 +77,13 @@ handleAuthStateChange() {
                         this.showMainApp();
                     }
                 } else {
+                    console.log('User access has expired. Logging out.');
                     document.getElementById('mainApp').classList.add('hidden');
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('subscribeModal').style.display = 'flex';
-                    this.auth.signOut();
+                    if (this.auth.currentUser) {
+                        this.auth.signOut();
+                    }
                 }
             });
         } else {
@@ -1499,4 +1504,5 @@ handleAuthStateChange() {
 
 // Initialize the app
 window.app = new TradingJournalApp();
+
 
