@@ -119,6 +119,8 @@
                                 <option value="₹">INR (₹)</option>
                                 <option value="$">USD ($)</option>
                             </select>
+                            <!-- "My Rulebook" button added here -->
+                            <button class="btn btn--secondary" id="showRulebookBtn">My Rulebook</button>
                             <button class="btn btn--primary" id="quickAddTrade">+ Add New Trade</button>
                         </div>
                     </div>
@@ -307,6 +309,19 @@
                                             </div>
                                         </div>
                                     </details>
+                                    
+                                    <!-- Rulebook Check section added here -->
+                                    <details class="collapse-card">
+                                        <summary>Rulebook Check</summary>
+                                        <div class="collapse-content">
+                                            <div class="form-group full-width">
+                                                <label class="form-label">Which rules did you follow for this trade?</label>
+                                                <div id="rulebookChecklist" class="checkbox-group">
+                                                    <!-- Checkboxes will be dynamically inserted here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </details>
 
                                     <details class="collapse-card">
                                         <summary>During Trade Management</summary>
@@ -443,7 +458,21 @@
                 <div class="container">
                     <div class="section-header"><h1>Reports & Calendar</h1><button class="btn btn--primary" id="exportData">Export to CSV</button></div>
                     <div class="calendar-section card"><div class="card__header"><h3>P&L Calendar</h3><div class="calendar-nav"><button class="btn btn--outline btn--sm" id="prevMonth">‹</button><span id="currentMonth">July 2025</span><button class="btn btn--outline btn--sm" id="nextMonth">›</button></div></div><div class="card__body"><div id="plCalendar" class="pl-calendar"></div><div class="calendar-legend"><div class="legend-item"><div class="legend-color profit-high"></div><span>High Profit (>₹1000)</span></div><div class="legend-item"><div class="legend-color profit-low"></div><span>Profit</span></div><div class="legend-item"><div class="legend-color no-trades"></div><span>No Trades</span></div><div class="legend-item"><div class="legend-color loss-low"></div><span>Loss</span></div><div class="legend-item"><div class="legend-color loss-high"></div><span>High Loss (<-₹1000)</span></div></div></div></div>
-                    <div class="reports-grid"><div class="report-card card"><div class="card__body"><h3>Weekly Summary</h3><div id="weeklyReport"><div class="loading">Generating weekly report...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Monthly Analysis</h3><div id="monthlyReport"><div class="loading">Generating monthly report...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Strategy Performance</h3><div id="strategyReport"><div class="loading">Analyzing strategies...</div></div></div></div><div class="report-card card"><div class="card__body"><h3>Emotional Patterns</h3><div id="emotionalReport"><div class="loading">Analyzing emotional patterns...</div></div></div></div></div>
+                    <div class="reports-grid">
+                        <div class="report-card card"><div class="card__body"><h3>Weekly Summary</h3><div id="weeklyReport"><div class="loading">Generating weekly report...</div></div></div></div>
+                        <div class="report-card card"><div class="card__body"><h3>Monthly Analysis</h3><div id="monthlyReport"><div class="loading">Generating monthly report...</div></div></div></div>
+                        <div class="report-card card"><div class="card__body"><h3>Strategy Performance</h3><div id="strategyReport"><div class="loading">Analyzing strategies...</div></div></div></div>
+                        <div class="report-card card"><div class="card__body"><h3>Emotional Patterns</h3><div id="emotionalReport"><div class="loading">Analyzing emotional patterns...</div></div></div></div>
+                        <!-- Rulebook Report card added here -->
+                        <div class="report-card card">
+                            <div class="card__body">
+                                <h3>Rulebook Adherence</h3>
+                                <div id="rulebookReport">
+                                    <div class="loading">Generating rulebook report...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -481,6 +510,44 @@
                 <div class="modal-footer">
                     <button class="btn btn--outline" onclick="app.hideNoteModal()">Close</button>
                     <button class="btn btn--primary" id="saveNoteChangesBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rulebook Modal added here -->
+        <div id="rulebookModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>My Rulebook</h2>
+                    <button class="modal-close" onclick="app.hideRulebookModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                        <div class="card__header"><h3>Add/Edit Rule</h3></div>
+                        <div class="card__body">
+                            <form id="rulebookForm">
+                                <input type="hidden" id="ruleId" name="ruleId">
+                                <div class="form-group">
+                                    <label for="ruleTitle" class="form-label">Rule Title</label>
+                                    <input type="text" id="ruleTitle" name="ruleTitle" class="form-control" placeholder="e.g., Don't chase trades" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ruleDescription" class="form-label">Rule Description</label>
+                                    <textarea id="ruleDescription" name="ruleDescription" class="form-control" rows="3" placeholder="Detailed description of the rule"></textarea>
+                                </div>
+                                <div class="form-actions" style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                                    <button type="button" id="cancelEditRuleBtn" class="btn btn--outline hidden">Cancel</button>
+                                    <button type="submit" class="btn btn--primary">Save Rule</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card__header"><h3>Saved Rules</h3></div>
+                        <div id="ruleListContainer" class="card__body">
+                            <!-- Rules will be loaded here -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
